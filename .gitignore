@@ -1,3 +1,4 @@
 .idea
 .env
 shopping_agent_merchant_agent.egg-info
+__pycache__

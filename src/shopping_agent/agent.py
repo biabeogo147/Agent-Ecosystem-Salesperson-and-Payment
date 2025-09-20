@@ -1,7 +1,39 @@
-from config import *
-from tools import *
+import sys
+
+from mcp import StdioServerParameters
+
+from google.adk.tools import MCPToolset
+from google.adk.tools.mcp_tool import StdioConnectionParams
 from google.adk.agents import Agent, LlmAgent
 from google.adk.models.lite_llm import LiteLlm
+
+from config import *
+from my_mcp import PATH_TO_MCP_SERVER
+
+
+def get_mcp_toolset() -> MCPToolset:
+    """Get MCP Toolset"""
+    py_cmd = sys.executable or ("python3" if os.name != "nt" else "python")
+
+    if not PATH_TO_MCP_SERVER.exists():
+        raise FileNotFoundError(f"MCP server script not found: {PATH_TO_MCP_SERVER}")
+
+    # env = os.environ.copy()
+    cwd = str(PATH_TO_MCP_SERVER.parent)
+
+    return MCPToolset(
+        connection_params=StdioConnectionParams(
+            server_params=StdioServerParameters(
+                command=py_cmd,
+                args=[str(PATH_TO_MCP_SERVER)],
+                # env=env,
+                cwd=cwd,
+                # startup_timeout_seconds=15,
+                # healthcheck_command=None,  # hoặc ["python","-V"] nếu SDK hỗ trợ
+            )
+        )
+    )
+
 
 def gemini_shopping_agent() -> Agent:
     return Agent(
@@ -9,8 +41,9 @@ def gemini_shopping_agent() -> Agent:
         model="gemini-2.0-flash",
         description="Shopping helper with local catalog and shipping calculator",
         instruction="You are a shopping assistant. Help users find products and calculate shipping costs based on weight and distance.",
-        tools=[find_product, calc_shipping],
+        tools=[get_mcp_toolset()],
     )
+
 
 def llm_shopping_agent() -> LlmAgent:
     return LlmAgent(
@@ -22,7 +55,7 @@ def llm_shopping_agent() -> LlmAgent:
         ),
         description="Shopping helper with local catalog and shipping calculator",
         instruction="You are a shopping assistant. Help users find products and calculate shipping costs based on weight and distance.",
-        tools=[find_product, calc_shipping],
+        tools=[get_mcp_toolset()],
     )
 
 

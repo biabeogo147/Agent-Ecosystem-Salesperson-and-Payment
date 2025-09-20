@@ -1,6 +1,6 @@
 from utils.response_format import ResponseFormat
 
-def find_product(query: str) -> str:
+async def find_product(query: str) -> str:
     """
     Find product by SKU or substring of name.
     """
@@ -18,7 +18,7 @@ def find_product(query: str) -> str:
     return ResponseFormat(data=results).to_json()
 
 
-def calc_shipping(weight: float, distance: float) -> str:
+async def calc_shipping(weight: float, distance: float) -> str:
     """
     Calculate shipping cost based on weight (kg) and distance (km).
     """

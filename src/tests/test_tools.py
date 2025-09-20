@@ -1,38 +1,34 @@
-def test_find_product_by_sku():
+import asyncio
+import pytest
+
+
+@pytest.mark.asyncio
+async def test_find_product_by_sku():
     from my_mcp.tools import find_product
 
-    # Test case 1: Valid SKU
-    response = find_product("SKU001")
-    print(response)
+    t1 = asyncio.create_task(find_product("SKU001"))
+    t2 = asyncio.create_task(find_product("INVALID_SKU"))
+    t3 = asyncio.create_task(find_product(""))
 
-    # Test case 2: Invalid SKU
-    response = find_product("INVALID_SKU")
-    print(response)
+    r1, r2, r3 = await asyncio.gather(t1, t2, t3)
 
-    # Test case 3: Empty SKU
-    response = find_product("")
-    print(response)
+    print(r1)
+    print(r2)
+    print(r3)
 
 
-def test_calc_shipping():
+@pytest.mark.asyncio
+async def test_calc_shipping():
     from my_mcp.tools import calc_shipping
 
-    # Test case 1: Standard case
-    response = calc_shipping(10, 100)
-    print(response)
+    t1 = asyncio.create_task(calc_shipping(10, 100))
+    t2 = asyncio.create_task(calc_shipping(0, 100))
+    t3 = asyncio.create_task(calc_shipping(10, 0))
+    t4 = asyncio.create_task(calc_shipping(0, 0))
 
-    # Test case 2: Zero weight
-    response = calc_shipping(0, 100)
-    print(response)
+    r1, r2, r3, r4 = await asyncio.gather(t1, t2, t3, t4)
 
-    # Test case 3: Zero distance
-    response = calc_shipping(10, 0)
-    print(response)
-
-    # Test case 4: Zero weight and distance
-    response = calc_shipping(0, 0)
-    print(response)
-
-    # Test case 5: Large values
-    response = calc_shipping(100, 1000)
-    print(response)
+    print(r1)
+    print(r2)
+    print(r3)
+    print(r4)

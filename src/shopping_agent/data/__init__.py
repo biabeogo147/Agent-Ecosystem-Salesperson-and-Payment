@@ -1,5 +1,11 @@
-with open("shopping_agent/data/products.json", "r") as file:
-    import json
+import os
+import json
+
+BASE_DIR = os.path.dirname(__file__)
+DATA_PATH = os.path.join(BASE_DIR, "products.json")
+
+
+with open(DATA_PATH, "r", encoding="utf-8") as file:
     lst_product = json.load(file)
 
 

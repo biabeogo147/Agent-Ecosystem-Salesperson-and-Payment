@@ -12,7 +12,7 @@ from my_mcp import PATH_TO_MCP_SERVER
 
 with open("src/shopping_agent/instruction.txt", "r") as f:
     _INSTRUCTION = f.read().strip()
-_DESCRIPTION = "Shopping helper with local catalog, shipping calculator and stock reservation"
+_DESCRIPTION = "Shopping helper finding products, shipping calculator and reserving stock"
 
 
 def get_mcp_toolset() -> MCPToolset:

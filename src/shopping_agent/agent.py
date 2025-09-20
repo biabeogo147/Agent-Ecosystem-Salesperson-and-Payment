@@ -10,6 +10,10 @@ from google.adk.models.lite_llm import LiteLlm
 from config import *
 from my_mcp import PATH_TO_MCP_SERVER
 
+with open("src/shopping_agent/instruction.txt", "r") as f:
+    _INSTRUCTION = f.read().strip()
+_DESCRIPTION = "Shopping helper with local catalog, shipping calculator and stock reservation"
+
 
 def get_mcp_toolset() -> MCPToolset:
     """Get MCP Toolset"""
@@ -39,8 +43,8 @@ def gemini_shopping_agent() -> Agent:
     return Agent(
         name="shopping_agent",
         model="gemini-2.0-flash",
-        description="Shopping helper with local catalog and shipping calculator",
-        instruction="You are a shopping assistant. Help users find products and calculate shipping costs based on weight and distance.",
+        description=_DESCRIPTION,
+        instruction=_INSTRUCTION,
         tools=[get_mcp_toolset()],
     )
 
@@ -53,8 +57,8 @@ def llm_shopping_agent() -> LlmAgent:
             api_base=OPENAI_API_KEY,
             api_key=OPENAI_API_BASE,
         ),
-        description="Shopping helper with local catalog and shipping calculator",
-        instruction="You are a shopping assistant. Help users find products and calculate shipping costs based on weight and distance.",
+        description=_DESCRIPTION,
+        instruction=_INSTRUCTION,
         tools=[get_mcp_toolset()],
     )
 

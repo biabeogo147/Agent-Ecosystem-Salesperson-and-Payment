@@ -32,3 +32,20 @@ async def test_calc_shipping():
     print(r2)
     print(r3)
     print(r4)
+
+
+@pytest.mark.asyncio
+async def test_reserve_stock():
+    from my_mcp.tools import reserve_stock
+
+    t1 = asyncio.create_task(reserve_stock("SKU001", 5))
+    t2 = asyncio.create_task(reserve_stock("SKU001", 90))
+    t3 = asyncio.create_task(reserve_stock("INVALID_SKU", 1))
+    t4 = asyncio.create_task(reserve_stock("SKU002", 100))
+
+    r1, r2, r3, r4 = await asyncio.gather(t1, t2, t3, t4)
+
+    print(r1)
+    print(r2)
+    print(r3)
+    print(r4)

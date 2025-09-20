@@ -1,0 +1,20 @@
+{
+  "SKU001": {
+    "sku": "SKU001",
+    "name": "Wireless Mouse",
+    "price": 25.99,
+    "currency": "USD"
+  },
+  "SKU002": {
+    "sku": "SKU002",
+    "name": "Mechanical Keyboard",
+    "price": 79.99,
+    "currency": "USD"
+  },
+  "SKU003": {
+    "sku": "SKU003",
+    "name": "HD Monitor",
+    "price": 199.99,
+    "currency": "USD"
+  }
+}

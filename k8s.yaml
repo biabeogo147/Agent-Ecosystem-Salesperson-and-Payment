@@ -1,0 +1,168 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: shopping-agents
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: shopping-agents-config
+  namespace: shopping-agents
+data:
+  MCP_SERVICE_URL: "http://mcp-service.shopping-agents.svc.cluster.local:8000"
+  MCP_SERVICE_TIMEOUT: "10"
+  LOG_LEVEL: "info"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-service
+  namespace: shopping-agents
+  labels:
+    app: mcp-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mcp-service
+  template:
+    metadata:
+      labels:
+        app: mcp-service
+    spec:
+      containers:
+        - name: mcp-service
+          image: your-registry/mcp-service:latest
+          imagePullPolicy: Always
+          command: ["python", "-m", "my_mcp.server"]
+          ports:
+            - containerPort: 8000
+          env:
+            - name: MCP_SERVICE_HOST
+              value: "0.0.0.0"
+            - name: MCP_SERVICE_PORT
+              value: "8000"
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: shopping-agents-config
+                  key: LOG_LEVEL
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-service
+  namespace: shopping-agents
+spec:
+  selector:
+    app: mcp-service
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shopping-session-api
+  namespace: shopping-agents
+  labels:
+    app: shopping-session-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: shopping-session-api
+  template:
+    metadata:
+      labels:
+        app: shopping-session-api
+    spec:
+      containers:
+        - name: shopping-session-api
+          image: your-registry/shopping-session-api:latest
+          imagePullPolicy: Always
+          command: ["python", "-m", "a2a.server"]
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: shopping-agents-config
+          env:
+            - name: SHOP_API_HOST
+              value: "0.0.0.0"
+            - name: SHOP_API_PORT
+              value: "8080"
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "750m"
+              memory: "1Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: shopping-session-api
+  namespace: shopping-agents
+spec:
+  selector:
+    app: shopping-session-api
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: shopping-agents-ingress
+  namespace: shopping-agents
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: shopping-agents.example.com
+      http:
+        paths:
+          - path: /api(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: shopping-session-api
+                port:
+                  number: 8080

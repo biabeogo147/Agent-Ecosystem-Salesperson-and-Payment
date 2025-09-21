@@ -18,9 +18,9 @@ from utils.app_string import (
 )
 from utils.response_format import ResponseFormat
 from utils.status import Status
-from .urls import MCP_URLS
+from my_mcp.urls import MCP_URLS
 
-from .tools import calc_shipping, find_product, reserve_stock
+from my_mcp.tools import calc_shipping, find_product, reserve_stock
 
 logger = logging.getLogger(__name__)
 

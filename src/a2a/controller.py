@@ -68,10 +68,11 @@ def create_http_server(host: str, port: int, service: ShoppingService | None = N
     if service is None:
         handler_cls = ShoppingRequestHandler
     else:
-        class CustomShoppingHandler(ShoppingRequestHandler):
-            service = service
-
-        handler_cls = CustomShoppingHandler
+        handler_cls = type(
+            "CustomShoppingHandler",
+            (ShoppingRequestHandler,),
+            {"service": service},
+        )
 
     return ThreadingHTTPServer((host, port), handler_cls)
 

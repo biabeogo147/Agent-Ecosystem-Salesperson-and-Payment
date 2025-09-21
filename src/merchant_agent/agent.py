@@ -9,33 +9,33 @@ from urllib.parse import urlparse, urlunparse
 
 from config import MODEL_NAME, OPENAI_API_BASE, OPENAI_API_KEY
 
-try:  # pragma: no cover - optional dependency handling
+try:  
     from google.adk.tools import MCPToolset as _GoogleMCPToolset
-except ImportError:  # pragma: no cover - exercised implicitly in tests
+except ImportError:  
     _GoogleMCPToolset = None
 
-try:  # pragma: no cover - optional dependency handling
+try:  
     from google.adk.tools.mcp_tool import StreamableHTTPConnectionParams as _StreamableHTTPConnectionParams
-except ImportError:  # pragma: no cover - exercised implicitly in tests
+except ImportError:  
     _StreamableHTTPConnectionParams = None
 
-try:  # pragma: no cover - optional dependency handling
+try:  
     from google.adk.tools.mcp_tool import HttpConnectionParams as _HttpConnectionParams
-except ImportError:  # pragma: no cover - exercised implicitly in tests
+except ImportError:  
     _HttpConnectionParams = None
 
-try:  # pragma: no cover - optional dependency handling
+try:  
     from google.adk.agents import Agent as _GoogleAgent, LlmAgent as _GoogleLlmAgent
-except ImportError:  # pragma: no cover - exercised implicitly in tests
+except ImportError:  
     _GoogleAgent = None
     _GoogleLlmAgent = None
 
-try:  # pragma: no cover - optional dependency handling
+try:  
     from google.adk.models.lite_llm import LiteLlm as _GoogleLiteLlm
-except ImportError:  # pragma: no cover - exercised implicitly in tests
+except ImportError:  
     _GoogleLiteLlm = None
 
-if TYPE_CHECKING:  # pragma: no cover - type-checking only
+if TYPE_CHECKING:
     from google.adk.agents import Agent, LlmAgent
     from google.adk.models.lite_llm import LiteLlm
     from google.adk.tools import MCPToolset
@@ -112,7 +112,7 @@ def _create_http_connection_params(service_url: str) -> Any:
         if option in signature.parameters:
             kwargs[option] = service_url
             break
-    else:  # pragma: no cover - depends on external library implementation
+    else:
         raise RuntimeError(
             "Unsupported google-adk HTTP connection parameter signature; cannot determine URL argument."
         )
@@ -165,7 +165,7 @@ def llm_merchant_agent() -> "LlmAgent":
     )
 
 
-try:  # pragma: no cover - graceful failure when google-adk is absent
+try:
     root_agent = gemini_merchant_agent()
-except RuntimeError:  # pragma: no cover - exercised implicitly in tests
+except RuntimeError:  
     root_agent = None

@@ -14,7 +14,7 @@ from utils.response_format import ResponseFormat
 from utils.status import Status
 from my_mcp.urls import MCP_URLS
 
-from .service import MCPService
+from service import MCPService
 
 logger = logging.getLogger(__name__)
 

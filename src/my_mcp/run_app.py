@@ -7,7 +7,7 @@ from typing import Tuple
 
 import uvicorn
 
-from .controller import app
+from controller import app
 
 
 def _load_config() -> Tuple[str, int, str]:

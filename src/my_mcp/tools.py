@@ -1,3 +1,5 @@
+from google.adk.tools import FunctionTool
+
 from utils.response_format import ResponseFormat
 from utils.status import Status
 from utils.app_string import *
@@ -50,3 +52,16 @@ async def reserve_stock(sku: str, quantity: int) -> str:
 
     product["stock"] -= quantity
     return ResponseFormat(data=True).to_json()
+
+
+print("Initializing ADK tool...")
+find_product_tool = FunctionTool(find_product)
+calc_shipping_tool = FunctionTool(calc_shipping)
+reserve_stock_tool = FunctionTool(reserve_stock)
+ADK_TOOLS = {
+    find_product_tool.name: find_product_tool,
+    calc_shipping_tool.name: calc_shipping_tool,
+    reserve_stock_tool.name: reserve_stock_tool,
+}
+for adk_tool in ADK_TOOLS.values():
+    print(f"ADK tool '{adk_tool.name}' initialized and ready to be exposed via MCP.")

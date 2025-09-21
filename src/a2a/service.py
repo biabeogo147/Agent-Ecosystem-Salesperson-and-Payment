@@ -18,7 +18,7 @@ from utils.app_string import (
 )
 from utils.response_format import ResponseFormat
 from utils.status import Status
-from utils.urls import SHOPPING_URLS
+from merchant_agent.urls import SHOPPING_URLS
 
 
 class ShoppingService:

@@ -14,9 +14,9 @@ from fastapi.responses import JSONResponse
 from utils.app_string import INVALID_JSON_BODY, INVALID_REQUEST_PAYLOAD
 from utils.response_format import ResponseFormat
 from utils.status import Status
-from utils.urls import MCP_URLS
+from my_mcp.urls import MCP_URLS
 
-from .api import MCPService
+from .service import MCPService
 
 logger = logging.getLogger(__name__)
 

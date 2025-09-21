@@ -5,7 +5,7 @@ from merchant_agent.rule_based import RuleBasedMerchantAgent
 from shopping_agent.rule_based import RuleBasedShoppingAgent
 from data import get_product_list
 from a2a.session import ShoppingA2ASession
-from my_mcp.api import create_app as create_mcp_app
+from my_mcp.service import create_app as create_mcp_app
 
 
 def test_a2a_workflow_completes_successfully():

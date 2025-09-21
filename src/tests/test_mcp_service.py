@@ -7,10 +7,10 @@ pytest.importorskip("fastapi.testclient")
 from fastapi.testclient import TestClient
 
 from merchant_agent.mcp_client import MCPServiceClient, MCPServiceError
-from my_mcp.api import create_app
-from my_mcp.server import create_fastapi_app
+from my_mcp.service import create_app
+from my_mcp.controller import create_fastapi_app
 from utils.status import Status
-from utils.urls import MCP_URLS
+from my_mcp.urls import MCP_URLS
 
 
 def test_mcp_client_can_list_and_invoke_tools():

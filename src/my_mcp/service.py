@@ -18,7 +18,7 @@ from utils.app_string import (
 )
 from utils.response_format import ResponseFormat
 from utils.status import Status
-from utils.urls import MCP_URLS
+from .urls import MCP_URLS
 
 from .tools import calc_shipping, find_product, reserve_stock
 

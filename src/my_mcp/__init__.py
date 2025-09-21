@@ -2,13 +2,13 @@
 
 from pathlib import Path
 
-from .api import create_app
+from .service import create_app
 
-PATH_TO_MCP_SERVER = Path(__file__).parent.joinpath("server.py").resolve()
+PATH_TO_MCP_SERVER = Path(__file__).parent.joinpath("controller.py").resolve()
 
 
 def create_fastapi_app(*args, **kwargs):
-    from .server import create_fastapi_app as factory
+    from .controller import create_fastapi_app as factory
 
     return factory(*args, **kwargs)
 

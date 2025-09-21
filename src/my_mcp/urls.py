@@ -1,5 +1,3 @@
-"""Centralised URL definitions for service endpoints."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -14,18 +12,7 @@ class MCPURLs:
     tool_invoke_prefix: str = "/v1/tools/"
     tool_invoke_suffix: str = ":invoke"
     websocket: str = "/ws/tools"
-    health: str = "/healthz"
-
-
-@dataclass(frozen=True)
-class ShoppingURLs:
-    """URL mapping for the shopping session orchestrator."""
-
-    health: str = "/healthz"
-    sessions: str = "/v1/sessions"
+    health: str = "/health"
 
 
 MCP_URLS = MCPURLs()
-SHOPPING_URLS = ShoppingURLs()
-
-__all__ = ["MCP_URLS", "SHOPPING_URLS", "MCPURLs", "ShoppingURLs"]

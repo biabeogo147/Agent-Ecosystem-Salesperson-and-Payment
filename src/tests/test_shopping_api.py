@@ -2,9 +2,9 @@ import asyncio
 
 from a2a.api import create_app as create_session_service
 from merchant_agent.mcp_client import MCPServiceClient
-from my_mcp.api import create_app as create_mcp_service
+from my_mcp.service import create_app as create_mcp_service
 from utils.status import Status
-from utils.urls import SHOPPING_URLS
+from merchant_agent.urls import SHOPPING_URLS
 
 
 def _invoke_session(payload: dict):

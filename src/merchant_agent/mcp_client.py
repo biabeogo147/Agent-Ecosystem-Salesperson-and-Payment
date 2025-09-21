@@ -10,9 +10,9 @@ from http.client import HTTPConnection, HTTPSConnection, HTTPResponse
 from typing import Any, Mapping
 from urllib.parse import urlparse
 
-from my_mcp.api import MCPService
+from my_mcp.service import MCPService
 from utils.status import Status
-from utils.urls import MCP_URLS
+from my_mcp.urls import MCP_URLS
 
 
 class MCPServiceError(RuntimeError):

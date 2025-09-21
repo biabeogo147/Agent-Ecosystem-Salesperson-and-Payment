@@ -18,22 +18,18 @@ _DESCRIPTION = "Salesperson who helps Customers to find products, calculate ship
 def get_mcp_toolset() -> MCPToolset:
     """Get MCP Toolset"""
     py_cmd = sys.executable or ("python3" if os.name != "nt" else "python")
+    cwd = str(PATH_TO_MCP_SERVER.parent)
 
     if not PATH_TO_MCP_SERVER.exists():
         raise FileNotFoundError(f"MCP server script not found: {PATH_TO_MCP_SERVER}")
 
-    # env = os.environ.copy()
-    cwd = str(PATH_TO_MCP_SERVER.parent)
 
     return MCPToolset(
         connection_params=StdioConnectionParams(
             server_params=StdioServerParameters(
                 command=py_cmd,
                 args=[str(PATH_TO_MCP_SERVER)],
-                # env=env,
                 cwd=cwd,
-                # startup_timeout_seconds=15,
-                # healthcheck_command=None,  # hoặc ["python","-V"] nếu SDK hỗ trợ
             )
         )
     )

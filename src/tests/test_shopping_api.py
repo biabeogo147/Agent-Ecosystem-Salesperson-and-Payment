@@ -4,6 +4,7 @@ from a2a.api import create_app as create_session_service
 from merchant_agent.mcp_client import MCPServiceClient
 from my_mcp.api import create_app as create_mcp_service
 from utils.status import Status
+from utils.urls import SHOPPING_URLS
 
 
 def _invoke_session(payload: dict):
@@ -11,7 +12,7 @@ def _invoke_session(payload: dict):
         mcp_service = create_mcp_service()
         mcp_client = MCPServiceClient(transport=mcp_service)
         session_service = create_session_service(mcp_client=mcp_client)
-        return await session_service.dispatch("POST", "/v1/sessions", payload)
+        return await session_service.dispatch("POST", SHOPPING_URLS.sessions, payload)
 
     return asyncio.run(_run())
 

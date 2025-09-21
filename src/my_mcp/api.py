@@ -18,6 +18,7 @@ from utils.app_string import (
 )
 from utils.response_format import ResponseFormat
 from utils.status import Status
+from utils.urls import MCP_URLS
 
 from .tools import calc_shipping, find_product, reserve_stock
 
@@ -175,13 +176,15 @@ class MCPService:
     async def dispatch(self, method: str, path: str, payload: Any | None) -> tuple[int, Any]:
         """Helper used by HTTP adapters to route requests."""
 
-        if method == "GET" and path == "/v1/tools":
+        if method == "GET" and path == MCP_URLS.list_tools:
             return await self.list_tools()
-        if method == "POST" and path.startswith("/v1/tools/") and path.endswith(":invoke"):
-            tool_name = path[len("/v1/tools/") : -len(":invoke")]
+        invoke_prefix = MCP_URLS.tool_invoke_prefix
+        invoke_suffix = MCP_URLS.tool_invoke_suffix
+        if method == "POST" and path.startswith(invoke_prefix) and path.endswith(invoke_suffix):
+            tool_name = path[len(invoke_prefix) : -len(invoke_suffix)]
             arguments = payload.get("arguments", {}) if isinstance(payload, Mapping) else {}
             return await self.invoke_tool(tool_name, arguments)
-        if method == "GET" and path == "/healthz":
+        if method == "GET" and path == MCP_URLS.health:
             body = ResponseFormat(
                 status=Status.SUCCESS,
                 message=SUCCESS,

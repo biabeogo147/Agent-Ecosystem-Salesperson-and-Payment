@@ -18,6 +18,7 @@ from utils.app_string import (
 )
 from utils.response_format import ResponseFormat
 from utils.status import Status
+from utils.urls import SHOPPING_URLS
 
 
 class ShoppingService:
@@ -27,14 +28,14 @@ class ShoppingService:
         self._mcp_client = mcp_client or MCPServiceClient()
 
     async def dispatch(self, method: str, path: str, payload: Mapping[str, Any] | None) -> tuple[int, Any]:
-        if method == "GET" and path == "/healthz":
+        if method == "GET" and path == SHOPPING_URLS.health:
             body = ResponseFormat(
                 status=Status.SUCCESS,
                 message=SUCCESS,
                 data={"service": "shopping_api"},
             )
             return 200, body.to_dict()
-        if method == "POST" and path == "/v1/sessions":
+        if method == "POST" and path == SHOPPING_URLS.sessions:
             return await self._handle_session(payload or {})
         body = ResponseFormat(
             status=Status.UNKNOWN_ENDPOINT,

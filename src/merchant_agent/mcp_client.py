@@ -12,6 +12,7 @@ from urllib.parse import urlparse
 
 from my_mcp.api import MCPService
 from utils.status import Status
+from utils.urls import MCP_URLS
 
 
 class MCPServiceError(RuntimeError):
@@ -41,6 +42,16 @@ class MCPServiceClient:
         default_port = 443 if self._scheme == "https" else 80
         self._port = parsed.port or default_port
         self._base_path = parsed.path.rstrip("/")
+        if self._base_path and not self._base_path.startswith("/"):
+            self._base_path = f"/{self._base_path}"
+        self._list_tools_path = MCP_URLS.list_tools
+        self._invoke_path_template = MCP_URLS.tool_invoke
+        ws_scheme = "wss" if self._scheme == "https" else "ws"
+        ws_path = f"{self._base_path}{MCP_URLS.websocket}" if self._base_path else MCP_URLS.websocket
+        if (self._scheme == "http" and self._port != 80) or (self._scheme == "https" and self._port != 443):
+            self._websocket_url = f"{ws_scheme}://{self._host}:{self._port}{ws_path}"
+        else:
+            self._websocket_url = f"{ws_scheme}://{self._host}{ws_path}"
 
     async def list_tools(self) -> list[Mapping[str, Any]]:
         if self.transport is not None:
@@ -62,7 +73,7 @@ class MCPServiceClient:
                 raise MCPServiceError("Unexpected response payload", details=payload)
             return data
 
-        response = await asyncio.to_thread(self._request, "GET", "/v1/tools", None)
+        response = await asyncio.to_thread(self._request, "GET", self._list_tools_path, None)
         payload = self._parse_json(response)
         body = self._ensure_response_format(payload)
         if body.get("status") != Status.SUCCESS.value:
@@ -90,7 +101,7 @@ class MCPServiceClient:
         response = await asyncio.to_thread(
             self._request,
             "POST",
-            f"/v1/tools/{name}:invoke",
+            self._invoke_path_template.format(tool_name=name),
             {"arguments": dict(arguments)},
         )
         payload = self._parse_json(response)
@@ -132,6 +143,12 @@ class MCPServiceClient:
         if "status" not in payload or "message" not in payload:
             raise MCPServiceError("Response payload missing required fields", details=payload)
         return payload
+
+    @property
+    def websocket_url(self) -> str:
+        """Return the WebSocket endpoint derived from the configured base URL."""
+
+        return self._websocket_url
 
 
 __all__ = ["MCPServiceClient", "MCPServiceError"]

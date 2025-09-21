@@ -1,13 +1,11 @@
-"""FastAPI application exposing MCP tools over HTTP and WebSocket."""
+"""FastAPI controller exposing MCP tools over HTTP and WebSocket."""
 
 from __future__ import annotations
 
 import json
 import logging
-import os
 from typing import Any, Mapping
 
-import uvicorn
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 
@@ -19,6 +17,7 @@ from my_mcp.urls import MCP_URLS
 from .service import MCPService
 
 logger = logging.getLogger(__name__)
+
 
 async def _send_ws_response(websocket: WebSocket, status_code: int, body: Mapping[str, Any]) -> None:
     """Send a response envelope back to the WebSocket client."""
@@ -150,17 +149,4 @@ def create_fastapi_app(service: MCPService | None = None) -> FastAPI:
 app = create_fastapi_app()
 
 
-def _load_config() -> tuple[str, int, str]:
-    host = os.environ.get("MCP_SERVICE_HOST", "0.0.0.0")
-    port = int(os.environ.get("MCP_SERVICE_PORT", "8000"))
-    log_level = os.environ.get("LOG_LEVEL", "info").lower()
-    return host, port, log_level
-
-
-def run() -> None:  # pragma: no cover - exercised via deployment
-    host, port, log_level = _load_config()
-    uvicorn.run(app, host=host, port=port, log_level=log_level)
-
-
-if __name__ == "__main__":  # pragma: no cover - CLI entry point
-    run()
+__all__ = ["app", "create_fastapi_app"]

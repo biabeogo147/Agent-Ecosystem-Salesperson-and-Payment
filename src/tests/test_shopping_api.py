@@ -1,6 +1,6 @@
 import asyncio
 
-from a2a.api import create_app as create_session_service
+from a2a.service import create_app as create_session_service
 from merchant_agent.mcp_client import MCPServiceClient
 from my_mcp.service import create_app as create_mcp_service
 from utils.status import Status

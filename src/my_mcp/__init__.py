@@ -4,7 +4,7 @@ from pathlib import Path
 
 from .service import create_app
 
-PATH_TO_MCP_SERVER = Path(__file__).parent.joinpath("controller.py").resolve()
+PATH_TO_MCP_SERVER = Path(__file__).parent.joinpath("run_app.py").resolve()
 
 
 def create_fastapi_app(*args, **kwargs):

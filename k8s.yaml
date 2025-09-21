@@ -34,7 +34,7 @@ spec:
         - name: mcp-service
           image: your-registry/mcp-service:latest
           imagePullPolicy: Always
-          command: ["python", "-m", "my_mcp.server"]
+          command: ["python", "-m", "my_mcp.run_app"]
           ports:
             - containerPort: 8000
           env:
@@ -101,7 +101,7 @@ spec:
         - name: shopping-session-api
           image: your-registry/shopping-session-api:latest
           imagePullPolicy: Always
-          command: ["python", "-m", "a2a.server"]
+          command: ["python", "-m", "a2a.run_app"]
           ports:
             - containerPort: 8080
           envFrom:

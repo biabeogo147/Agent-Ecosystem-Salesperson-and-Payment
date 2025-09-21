@@ -1,31 +1,21 @@
 import json
-import asyncio
 from typing import Any
 
+from fastapi import FastAPI, Request
+from mcp.server.sse import SseServerTransport
+from starlette.routing import Mount
+
+from config import *
+from my_mcp.logging_middleware import LoggingMiddleware
 from my_mcp.tools import *
 
 from mcp import types as mcp_types
-from mcp.server.stdio import stdio_server
 from mcp.server.models import InitializationOptions
 from mcp.server.lowlevel import Server, NotificationOptions
 
-from google.adk.tools import FunctionTool
 from google.adk.tools.mcp_tool import adk_to_mcp_tool_type
 
-
-print("Initializing ADK tool...")
-find_product_tool = FunctionTool(find_product)
-calc_shipping_tool = FunctionTool(calc_shipping)
-reserve_stock_tool = FunctionTool(reserve_stock)
-ADK_TOOLS = {
-    find_product_tool.name: find_product_tool,
-    calc_shipping_tool.name: calc_shipping_tool,
-    reserve_stock_tool.name: reserve_stock_tool,
-}
-for adk_tool in ADK_TOOLS.values():
-    print(f"ADK tool '{adk_tool.name}' initialized and ready to be exposed via MCP.")
-
-my_mcp_server = Server("shop_mcp")
+my_mcp_server = Server("merchant_mcp")
 
 
 @my_mcp_server.list_tools()
@@ -82,12 +72,21 @@ async def call_mcp_tool(name: str, arguments: dict | None) -> list[mcp_types.Con
     print(f"MCP Server: Tool '{name}' executed successfully.")
     return [mcp_types.TextContent(type="text", text=result)]
 
+app = FastAPI(title="Merchant MCP")
+app.add_middleware(LoggingMiddleware)
 
-async def run_mcp_stdio_server():
-    """Runs the MCP server, listening for connections over standard input/output."""
-    # Use the stdio_server context manager from the mcp.server.stdio library
-    async with stdio_server() as (read_stream, write_stream):
-        print("MCP Stdio Server: Starting handshake with client...")
+
+# By default, most MCP clients expect GET /sse and POST /message for SSE transport.
+# SseServerTransport will advertise the /message URL back to the client.
+sse = SseServerTransport("/message")
+
+# POST /message (client -> server JSON-RPC)
+app.routes.append(Mount("/message", app=sse.handle_post_message))
+
+# GET /sse (server -> client event-stream)
+@app.get("/sse")
+async def sse_endpoint(request: Request):
+    async with sse.connect_sse(request.scope, request.receive, request._send) as (read_stream, write_stream):
         await my_mcp_server.run(
             read_stream,
             write_stream,
@@ -100,16 +99,14 @@ async def run_mcp_stdio_server():
                 ),
             ),
         )
-        print("MCP Stdio Server: Run loop finished or client disconnected.")
+    return {"status": "disconnected"}
 
 
 if __name__ == "__main__":
-    print("Launching MCP Server to expose ADK tools via stdio...")
-    try:
-        asyncio.run(run_mcp_stdio_server())
-    except KeyboardInterrupt:
-        print("\nMCP Server (stdio) stopped by user.")
-    except Exception as e:
-        print(f"MCP Server (stdio) encountered an error: {e}")
-    finally:
-        print("MCP Server (stdio) process exiting.")
+    import uvicorn
+    uvicorn.run(
+        "server:app",
+        host="0.0.0.0",
+        port=MCP_SERVER_PORT,
+        reload=False,
+    )

@@ -1,17 +1,19 @@
 import json
+import contextlib
 from typing import Any
+from collections.abc import AsyncIterator
 
-from fastapi import FastAPI, Request
-from mcp.server.sse import SseServerTransport
+from fastapi import FastAPI
 from starlette.routing import Mount
-
-from config import *
-from my_mcp.logging_middleware import LoggingMiddleware
-from my_mcp.tools import *
+from starlette.types import Scope, Receive, Send
 
 from mcp import types as mcp_types
-from mcp.server.models import InitializationOptions
-from mcp.server.lowlevel import Server, NotificationOptions
+from mcp.server.lowlevel import Server
+from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
+
+from config import *
+from my_mcp.tools import *
+from my_mcp.logging_middleware import LoggingMiddleware
 
 from google.adk.tools.mcp_tool import adk_to_mcp_tool_type
 
@@ -72,34 +74,55 @@ async def call_mcp_tool(name: str, arguments: dict | None) -> list[mcp_types.Con
     print(f"MCP Server: Tool '{name}' executed successfully.")
     return [mcp_types.TextContent(type="text", text=result)]
 
-app = FastAPI(title="Merchant MCP")
+
+session_manager = StreamableHTTPSessionManager(
+    app=my_mcp_server,
+    event_store=None,
+    json_response=False,
+    stateless=True,
+)
+
+async def handle_streamable_http(scope: Scope, receive: Receive, send: Send) -> None:
+    await session_manager.handle_request(scope, receive, send)
+
+@contextlib.asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    async with session_manager.run():
+        yield
+
+app = FastAPI(title="Merchant MCP", lifespan=lifespan)
+app.routes.append(Mount("/mcp", app=handle_streamable_http))
 app.add_middleware(LoggingMiddleware)
 
 
-# By default, most MCP clients expect GET /sse and POST /message for SSE transport.
-# SseServerTransport will advertise the /message URL back to the client.
-sse = SseServerTransport("/message")
-
-# POST /message (client -> server JSON-RPC)
-app.routes.append(Mount("/message", app=sse.handle_post_message))
-
-# GET /sse (server -> client event-stream)
-@app.get("/sse")
-async def sse_endpoint(request: Request):
-    async with sse.connect_sse(request.scope, request.receive, request._send) as (read_stream, write_stream):
-        await my_mcp_server.run(
-            read_stream,
-            write_stream,
-            InitializationOptions(
-                server_name=my_mcp_server.name,
-                server_version="0.1.0",
-                capabilities=my_mcp_server.get_capabilities(
-                    notification_options=NotificationOptions(),
-                    experimental_capabilities={},
-                ),
-            ),
-        )
-    return {"status": "disconnected"}
+# Using SSE transport for /sse (GET) and /message (POST) endpoints
+# app = FastAPI(title="Merchant MCP")
+# app.add_middleware(LoggingMiddleware)
+#
+# # By default, most MCP clients expect GET /sse and POST /message for SSE transport.
+# # SseServerTransport will advertise the /message URL back to the client.
+# sse = SseServerTransport("/message")
+#
+# # POST /message (client -> server JSON-RPC)
+# app.routes.append(Mount("/message", app=sse.handle_post_message))
+#
+# # GET /sse (server -> client event-stream)
+# @app.get("/sse")
+# async def sse_endpoint(request: Request):
+#     async with sse.connect_sse(request.scope, request.receive, request._send) as (read_stream, write_stream):
+#         await my_mcp_server.run(
+#             read_stream,
+#             write_stream,
+#             InitializationOptions(
+#                 server_name=my_mcp_server.name,
+#                 server_version="0.1.0",
+#                 capabilities=my_mcp_server.get_capabilities(
+#                     notification_options=NotificationOptions(),
+#                     experimental_capabilities={},
+#                 ),
+#             ),
+#         )
+#     return {"status": "disconnected"}
 
 
 if __name__ == "__main__":

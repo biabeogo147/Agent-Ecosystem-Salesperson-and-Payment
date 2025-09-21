@@ -1,7 +1,7 @@
 from google.adk.tools import MCPToolset
-from google.adk.tools.mcp_tool import SseConnectionParams
 from google.adk.agents import Agent, LlmAgent
 from google.adk.models.lite_llm import LiteLlm
+from google.adk.tools.mcp_tool import StreamableHTTPConnectionParams
 
 from config import *
 
@@ -10,22 +10,32 @@ with open("src/merchant_agent/instruction.txt", "r") as f:
 _DESCRIPTION = "Salesperson who helps Customers to find products, calculate shipping costs and reserve stock."
 
 mcp_sse_url = f"http://{MCP_SERVER_HOST}:{MCP_SERVER_PORT}/sse"
+mcp_streamable_http_url = f"http://{MCP_SERVER_HOST}:{MCP_SERVER_PORT}/mcp"
 
 
 def get_mcp_toolset() -> MCPToolset:
     """Get MCP Toolset"""
-
     headers = {}
     token = os.getenv("MCP_AUTH_TOKEN")
     if token:
         headers["Authorization"] = f"Bearer {token}"
 
+    # Using SseConnectionParams
+    # return MCPToolset(
+    #     connection_params=SseConnectionParams(
+    #         url=mcp_sse_url,
+    #         headers=headers or None,
+    #         timeout=30,
+    #         sse_read_timeout=120,
+    #     )
+    # )
+
+    # Using StreamableHTTPConnectionParams
     return MCPToolset(
-        connection_params=SseConnectionParams(
-            url=mcp_sse_url,
-            headers=headers or None,
+        connection_params=StreamableHTTPConnectionParams(
+            url=mcp_streamable_http_url,
+            headers=headers,
             timeout=30,
-            sse_read_timeout=120,
         )
     )
 

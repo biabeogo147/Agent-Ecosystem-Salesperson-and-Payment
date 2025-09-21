@@ -11,6 +11,10 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 from urllib.parse import urlsplit
 
+from utils.app_string import INVALID_JSON_BODY
+from utils.response_format import ResponseFormat
+from utils.status import Status
+
 from .api import ShoppingService
 
 logger = logging.getLogger(__name__)
@@ -30,7 +34,12 @@ class ShoppingRequestHandler(BaseHTTPRequestHandler):
             try:
                 payload = json.loads(raw_body.decode("utf-8"))
             except json.JSONDecodeError:
-                self._send_response(HTTPStatus.BAD_REQUEST, {"status": "error", "message": "Invalid JSON body."})
+                body = ResponseFormat(
+                    status=Status.INVALID_JSON,
+                    message=INVALID_JSON_BODY,
+                    data=None,
+                )
+                self._send_response(HTTPStatus.BAD_REQUEST, body.to_dict())
                 return
         self._handle("POST", payload)
 

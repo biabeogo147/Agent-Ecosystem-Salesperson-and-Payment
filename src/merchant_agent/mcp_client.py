@@ -11,6 +11,7 @@ from typing import Any, Mapping
 from urllib.parse import urlparse
 
 from my_mcp.api import MCPService
+from utils.status import Status
 
 
 class MCPServiceError(RuntimeError):
@@ -44,27 +45,47 @@ class MCPServiceClient:
     async def list_tools(self) -> list[Mapping[str, Any]]:
         if self.transport is not None:
             status, body = await self.transport.list_tools()
+            payload = self._ensure_response_format(body)
             if status != 200:
-                raise MCPServiceError("Failed to list tools", status_code=status, details=body)
-            if not isinstance(body, list):
-                raise MCPServiceError("Unexpected response payload", details=body)
-            return body
+                raise MCPServiceError(
+                    "Failed to list tools",
+                    status_code=status,
+                    details=payload,
+                )
+            if payload.get("status") != Status.SUCCESS.value:
+                raise MCPServiceError(
+                    message=payload.get("message", "Tool registry request failed."),
+                    details=payload,
+                )
+            data = payload.get("data")
+            if not isinstance(data, list):
+                raise MCPServiceError("Unexpected response payload", details=payload)
+            return data
 
         response = await asyncio.to_thread(self._request, "GET", "/v1/tools", None)
-        return self._parse_json(response)
+        payload = self._parse_json(response)
+        body = self._ensure_response_format(payload)
+        if body.get("status") != Status.SUCCESS.value:
+            raise MCPServiceError(
+                message=body.get("message", "Tool registry request failed."),
+                details=body,
+            )
+        data = body.get("data")
+        if not isinstance(data, list):
+            raise MCPServiceError("Unexpected response payload", details=body)
+        return data
 
     async def call_tool(self, name: str, arguments: Mapping[str, Any]) -> Mapping[str, Any]:
         if self.transport is not None:
             status, body = await self.transport.invoke_tool(name, arguments)
+            payload = self._ensure_response_format(body)
             if status != 200:
                 raise MCPServiceError(
-                    message=body.get("message", f"Tool '{name}' invocation failed.") if isinstance(body, Mapping) else str(body),
+                    message=payload.get("message", f"Tool '{name}' invocation failed."),
                     status_code=status,
-                    details=body if isinstance(body, Mapping) else None,
+                    details=payload,
                 )
-            if not isinstance(body, Mapping):
-                raise MCPServiceError("Unexpected response payload", details=body)
-            return body
+            return payload
 
         response = await asyncio.to_thread(
             self._request,
@@ -73,13 +94,8 @@ class MCPServiceClient:
             {"arguments": dict(arguments)},
         )
         payload = self._parse_json(response)
-        if payload.get("status") != "success":
-            raise MCPServiceError(
-                message=payload.get("message", f"Tool '{name}' invocation failed."),
-                status_code=response.status,
-                details=payload,
-            )
-        return payload
+        body = self._ensure_response_format(payload)
+        return body
 
     def _request(self, method: str, path: str, body: Mapping[str, Any] | None) -> HTTPResponse:
         connection_cls = HTTPSConnection if self._scheme == "https" else HTTPConnection
@@ -109,6 +125,13 @@ class MCPServiceClient:
             return json.loads(raw.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:  # pragma: no cover - defensive safeguard
             raise MCPServiceError("Received invalid JSON from MCP service", details={"raw": raw.decode("utf-8", "ignore")}) from exc
+
+    def _ensure_response_format(self, payload: Any) -> Mapping[str, Any]:
+        if not isinstance(payload, Mapping):
+            raise MCPServiceError("Unexpected response payload", details=payload)
+        if "status" not in payload or "message" not in payload:
+            raise MCPServiceError("Response payload missing required fields", details=payload)
+        return payload
 
 
 __all__ = ["MCPServiceClient", "MCPServiceError"]

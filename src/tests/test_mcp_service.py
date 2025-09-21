@@ -17,9 +17,11 @@ def test_mcp_client_can_list_and_invoke_tools():
     tools, invocation = asyncio.run(_run())
 
     assert any(tool["name"] == "find_product" for tool in tools)
-    assert invocation["status"] == "success"
-    assert invocation["tool"] == "find_product"
-    result = invocation["result"]
+    assert invocation["status"] == Status.SUCCESS.value
+    data = invocation["data"]
+    assert data["tool"] == "find_product"
+    result = data["result"]
+    assert isinstance(result, dict)
     assert result["status"] == Status.SUCCESS.value
     assert result["data"]
 

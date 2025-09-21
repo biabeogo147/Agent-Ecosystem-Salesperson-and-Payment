@@ -8,6 +8,16 @@ from a2a.session import ShoppingA2ASession
 from merchant_agent.mcp_client import MCPServiceClient, MCPServiceError
 from merchant_agent.rule_based import RuleBasedMerchantAgent
 from shopping_agent.rule_based import RuleBasedShoppingAgent
+from utils.app_string import (
+    INVALID_REQUEST_PAYLOAD,
+    SESSION_COMPLETED,
+    SESSION_FAILED,
+    SUCCESS,
+    UNKNOWN_ENDPOINT,
+    UPSTREAM_SERVICE_ERROR,
+)
+from utils.response_format import ResponseFormat
+from utils.status import Status
 
 
 class ShoppingService:
@@ -18,17 +28,27 @@ class ShoppingService:
 
     async def dispatch(self, method: str, path: str, payload: Mapping[str, Any] | None) -> tuple[int, Any]:
         if method == "GET" and path == "/healthz":
-            return 200, {"status": "ok"}
+            body = ResponseFormat(
+                status=Status.SUCCESS,
+                message=SUCCESS,
+                data={"service": "shopping_api"},
+            )
+            return 200, body.to_dict()
         if method == "POST" and path == "/v1/sessions":
             return await self._handle_session(payload or {})
-        return 404, {"status": "error", "message": "Unknown endpoint."}
+        body = ResponseFormat(
+            status=Status.UNKNOWN_ENDPOINT,
+            message=UNKNOWN_ENDPOINT,
+            data={"path": path},
+        )
+        return 404, body.to_dict()
 
     async def _handle_session(self, payload: Mapping[str, Any]) -> tuple[int, Any]:
-        valid, error = self._validate_payload(payload)
+        valid, response = self._validate_payload(payload)
         if not valid:
-            return 400, error
+            return 400, response.to_dict()
 
-        request = error  # error contains the validated payload when valid is True
+        request = response.data or {}
         customer = RuleBasedShoppingAgent(
             desired_sku=request["sku"],
             quantity=request["quantity"],
@@ -42,26 +62,39 @@ class ShoppingService:
         try:
             transcript = await session.start()
         except MCPServiceError as exc:
-            return 502, {"status": "error", "message": str(exc)}
+            body = ResponseFormat(
+                status=Status.UPSTREAM_SERVICE_ERROR,
+                message=f"{UPSTREAM_SERVICE_ERROR}: {exc}",
+                data={
+                    "status_code": exc.status_code,
+                    "details": exc.details,
+                },
+            )
+            return 502, body.to_dict()
 
-        status = "success" if customer.purchase_confirmed else "failed"
-        body = {
-            "status": status,
-            "summary": customer.order_summary,
-            "last_error": customer.last_error,
-            "transcript": [
-                {
-                    "sender": message.sender,
-                    "recipient": message.recipient,
-                    "content": message.content,
-                    "metadata": message.metadata,
-                }
-                for message in transcript
-            ],
-        }
-        return 200, body
+        session_status = customer.purchase_confirmed
+        status = Status.SUCCESS if session_status else Status.FAILURE
+        message = SESSION_COMPLETED if session_status else SESSION_FAILED
+        body = ResponseFormat(
+            status=status,
+            message=message,
+            data={
+                "summary": customer.order_summary,
+                "last_error": customer.last_error,
+                "transcript": [
+                    {
+                        "sender": message.sender,
+                        "recipient": message.recipient,
+                        "content": message.content,
+                        "metadata": message.metadata,
+                    }
+                    for message in transcript
+                ],
+            },
+        )
+        return 200, body.to_dict()
 
-    def _validate_payload(self, payload: Mapping[str, Any]) -> tuple[bool, Mapping[str, Any]]:
+    def _validate_payload(self, payload: Mapping[str, Any]) -> tuple[bool, ResponseFormat]:
         required_fields = {
             "sku": str,
             "quantity": int,
@@ -73,26 +106,42 @@ class ShoppingService:
         for field, expected_type in required_fields.items():
             value = payload.get(field)
             if value is None:
-                return False, {"status": "error", "message": f"Missing field '{field}'."}
+                message = f"{INVALID_REQUEST_PAYLOAD}: missing field '{field}'"
+                return False, ResponseFormat(
+                    status=Status.INVALID_REQUEST,
+                    message=message,
+                    data={"field": field, "issue": "missing"},
+                )
             if not isinstance(value, expected_type):
-                return False, {
-                    "status": "error",
-                    "message": f"Field '{field}' must be of type {expected_type}.",
-                }
+                message = f"{INVALID_REQUEST_PAYLOAD}: field '{field}' must be of type {expected_type}."
+                return False, ResponseFormat(
+                    status=Status.INVALID_REQUEST,
+                    message=message,
+                    data={"field": field, "issue": "invalid_type"},
+                )
             validated[field] = value
 
         if validated["quantity"] <= 0:
-            return False, {"status": "error", "message": "Quantity must be greater than zero."}
+            return False, ResponseFormat(
+                status=Status.INVALID_REQUEST,
+                message=f"{INVALID_REQUEST_PAYLOAD}: quantity must be greater than zero.",
+                data={"field": "quantity", "issue": "out_of_range"},
+            )
         if validated["shipping_weight"] < 0 or validated["shipping_distance"] < 0:
-            return False, {
-                "status": "error",
-                "message": "Shipping weight and distance must be non-negative.",
-            }
+            return False, ResponseFormat(
+                status=Status.INVALID_REQUEST,
+                message=f"{INVALID_REQUEST_PAYLOAD}: shipping weight and distance must be non-negative.",
+                data={"field": "shipping", "issue": "out_of_range"},
+            )
 
         budget = payload.get("budget")
         if budget is not None:
             if not isinstance(budget, (int, float)) or budget < 0:
-                return False, {"status": "error", "message": "Budget must be a non-negative number."}
+                return False, ResponseFormat(
+                    status=Status.INVALID_REQUEST,
+                    message=f"{INVALID_REQUEST_PAYLOAD}: budget must be a non-negative number.",
+                    data={"field": "budget", "issue": "invalid_value"},
+                )
             validated["budget"] = float(budget)
 
         validated["quantity"] = int(validated["quantity"])
@@ -100,7 +149,7 @@ class ShoppingService:
         validated["shipping_distance"] = float(validated["shipping_distance"])
         validated["sku"] = str(validated["sku"])
 
-        return True, validated
+        return True, ResponseFormat(status=Status.SUCCESS, message=SUCCESS, data=validated)
 
 
 def create_app(mcp_client: MCPServiceClient | None = None) -> ShoppingService:

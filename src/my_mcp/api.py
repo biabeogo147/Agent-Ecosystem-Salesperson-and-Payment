@@ -8,6 +8,17 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Awaitable, Callable, Mapping
 
+from utils.app_string import (
+    INVALID_TOOL_ARGUMENT,
+    SUCCESS,
+    TOOL_EXECUTION_ERROR,
+    TOOL_INVOCATION_COMPLETED,
+    TOOL_NOT_FOUND,
+    UNKNOWN_ENDPOINT,
+)
+from utils.response_format import ResponseFormat
+from utils.status import Status
+
 from .tools import calc_shipping, find_product, reserve_stock
 
 logger = logging.getLogger(__name__)
@@ -96,15 +107,18 @@ class MCPService:
             }
             for tool in self._registry.values()
         ]
-        return 200, tools
+        body = ResponseFormat(status=Status.SUCCESS, message=SUCCESS, data=tools)
+        return 200, body.to_dict()
 
     async def invoke_tool(self, tool_name: str, arguments: Mapping[str, Any]) -> tuple[int, Any]:
         tool = self._registry.get(tool_name)
         if tool is None:
-            return 404, {
-                "status": "error",
-                "message": f"Tool '{tool_name}' is not registered.",
-            }
+            body = ResponseFormat(
+                status=Status.TOOL_NOT_FOUND,
+                message=f"{TOOL_NOT_FOUND}: {tool_name}",
+                data={"tool": tool_name},
+            )
+            return 404, body.to_dict()
 
         try:
             result = tool.handler(**arguments)
@@ -112,26 +126,51 @@ class MCPService:
                 result = await result
         except TypeError as exc:
             logger.exception("Invalid arguments for tool '%s': %s", tool_name, exc)
-            return 422, {
-                "status": "error",
-                "message": f"Invalid arguments for tool '{tool_name}': {exc}",
-            }
+            body = ResponseFormat(
+                status=Status.INVALID_TOOL_ARGUMENT,
+                message=f"{INVALID_TOOL_ARGUMENT}: {exc}",
+                data={"tool": tool_name, "arguments": dict(arguments)},
+            )
+            return 422, body.to_dict()
         except Exception as exc:  # pragma: no cover - defensive safeguard
             logger.exception("Tool '%s' failed during execution", tool_name)
-            return 500, {
-                "status": "error",
-                "message": f"Tool '{tool_name}' failed to execute: {exc}",
-            }
+            body = ResponseFormat(
+                status=Status.TOOL_EXECUTION_ERROR,
+                message=f"{TOOL_EXECUTION_ERROR}: {exc}",
+                data={"tool": tool_name},
+            )
+            return 500, body.to_dict()
 
         parsed = _safe_parse_json(result)
-        body = {
-            "status": "success",
-            "tool": tool_name,
-            "result": parsed if parsed is not None else result,
-        }
-        if parsed is not None:
-            body["raw"] = result
-        return 200, body
+        if isinstance(parsed, Mapping) and {"status", "message", "data"}.issubset(parsed):
+            try:
+                tool_status = Status(parsed.get("status", Status.SUCCESS.value))
+            except ValueError:
+                tool_status = Status.SUCCESS
+            response = ResponseFormat(
+                status=tool_status,
+                message=parsed.get("message", SUCCESS),
+                data={
+                    "tool": tool_name,
+                    "result": parsed,
+                    "raw": result if not isinstance(result, (dict, list)) else None,
+                },
+            )
+        else:
+            response = ResponseFormat(
+                status=Status.SUCCESS,
+                message=TOOL_INVOCATION_COMPLETED,
+                data={
+                    "tool": tool_name,
+                    "result": parsed if parsed is not None else result,
+                    "raw": result if parsed is not None else None,
+                },
+            )
+        payload = response.to_dict()
+        data = payload.get("data")
+        if isinstance(data, dict) and data.get("raw") is None:
+            data.pop("raw", None)
+        return 200, payload
 
     async def dispatch(self, method: str, path: str, payload: Any | None) -> tuple[int, Any]:
         """Helper used by HTTP adapters to route requests."""
@@ -143,8 +182,18 @@ class MCPService:
             arguments = payload.get("arguments", {}) if isinstance(payload, Mapping) else {}
             return await self.invoke_tool(tool_name, arguments)
         if method == "GET" and path == "/healthz":
-            return 200, {"status": "ok"}
-        return 404, {"status": "error", "message": "Unknown endpoint."}
+            body = ResponseFormat(
+                status=Status.SUCCESS,
+                message=SUCCESS,
+                data={"service": "mcp"},
+            )
+            return 200, body.to_dict()
+        body = ResponseFormat(
+            status=Status.UNKNOWN_ENDPOINT,
+            message=UNKNOWN_ENDPOINT,
+            data={"path": path},
+        )
+        return 404, body.to_dict()
 
 
 def _safe_parse_json(data: Any) -> Any | None:

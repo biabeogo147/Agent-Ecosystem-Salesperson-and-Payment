@@ -3,6 +3,7 @@ import asyncio
 from a2a.api import create_app as create_session_service
 from merchant_agent.mcp_client import MCPServiceClient
 from my_mcp.api import create_app as create_mcp_service
+from utils.status import Status
 
 
 def _invoke_session(payload: dict):
@@ -26,11 +27,12 @@ def test_shopping_api_success_path():
     )
 
     assert status == 200
-    assert body["status"] == "success"
-    assert body["summary"]["sku"] == "SKU001"
+    assert body["status"] == Status.SUCCESS.value
+    data = body["data"]
+    assert data["summary"]["sku"] == "SKU001"
     assert any(
         isinstance(message["content"], dict) and message["content"].get("intent") == "confirm_order"
-        for message in body["transcript"]
+        for message in data["transcript"]
     )
 
 
@@ -45,6 +47,7 @@ def test_shopping_api_handles_missing_product():
     )
 
     assert status == 200
-    assert body["status"] == "failed"
-    assert body["summary"] is None
-    assert body["last_error"] is not None
+    assert body["status"] == Status.FAILURE.value
+    data = body["data"]
+    assert data["summary"] is None
+    assert data["last_error"] is not None

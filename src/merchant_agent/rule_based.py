@@ -120,7 +120,23 @@ class RuleBasedMerchantAgent:
         arguments: Mapping[str, Any],
     ) -> Mapping[str, Any]:
         try:
-            return await self.mcp_client.call_tool(tool_name, arguments)
+            response = await self.mcp_client.call_tool(tool_name, arguments)
+            data = response.get("data") if isinstance(response, Mapping) else None
+            payload: dict[str, Any] = {
+                "status": response.get("status") if isinstance(response, Mapping) else None,
+                "message": response.get("message") if isinstance(response, Mapping) else None,
+                "tool": tool_name,
+                "result": None,
+            }
+            if isinstance(data, Mapping):
+                payload["tool"] = data.get("tool", tool_name)
+                payload["result"] = data.get("result")
+                raw = data.get("raw")
+                if raw is not None:
+                    payload["raw"] = raw
+            else:
+                payload["result"] = data
+            return payload
         except MCPServiceError as exc:
             error_payload: dict[str, Any] = {
                 "intent": "error",

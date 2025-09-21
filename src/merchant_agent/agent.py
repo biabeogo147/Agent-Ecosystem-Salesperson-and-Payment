@@ -1,41 +1,54 @@
-import sys
-
-from mcp import StdioServerParameters
+from urllib.parse import urlparse
 
 from google.adk.tools import MCPToolset
-from google.adk.tools.mcp_tool import StdioConnectionParams
 from google.adk.agents import Agent, LlmAgent
 from google.adk.models.lite_llm import LiteLlm
 
 from config import *
-from my_mcp import PATH_TO_MCP_SERVER
+from my_mcp.urls import MCP_WEBSOCKET_PATH
+
+try:
+    from google.adk.tools.mcp_tool import WebsocketConnectionParams
+except ImportError:
+    # Some versions expose the class with a capital "S" in "WebSocket".
+    from google.adk.tools.mcp_tool import WebSocketConnectionParams as WebsocketConnectionParams
 
 with open("src/merchant_agent/instruction.txt", "r") as f:
     _INSTRUCTION = f.read().strip()
 _DESCRIPTION = "Salesperson who helps Customers to find products, calculate shipping costs and reserve stock."
 
 
+def _build_mcp_ws_url() -> str:
+    path = MCP_WEBSOCKET_PATH if MCP_WEBSOCKET_PATH.startswith("/") else f"/{MCP_WEBSOCKET_PATH}"
+
+    raw_host = (MCP_SERVER_HOST or "").strip()
+    if not raw_host:
+        raw_host = "127.0.0.1"
+
+    if raw_host.startswith(("ws://", "wss://")):
+        base = raw_host.rstrip("/")
+        return f"{base}{path}"
+
+    parsed = urlparse(raw_host)
+    if parsed.scheme:
+        scheme = parsed.scheme if parsed.scheme in {"ws", "wss"} else "ws"
+        netloc = parsed.netloc or parsed.path
+        return f"{scheme}://{netloc.rstrip('/')}{path}"
+
+    host = raw_host.rstrip("/")
+    if ":" in host:
+        # Host already includes a port component.
+        return f"ws://{host}{path}"
+
+    return f"ws://{host}:{MCP_SERVER_PORT}{path}"
+
+
 def get_mcp_toolset() -> MCPToolset:
-    """Get MCP Toolset"""
-    py_cmd = sys.executable or ("python3" if os.name != "nt" else "python")
-
-    if not PATH_TO_MCP_SERVER.exists():
-        raise FileNotFoundError(f"MCP server script not found: {PATH_TO_MCP_SERVER}")
-
-    # env = os.environ.copy()
-    cwd = str(PATH_TO_MCP_SERVER.parent)
+    """Get MCP Toolset connected to the MCP FastAPI WebSocket server."""
+    ws_url = _build_mcp_ws_url()
 
     return MCPToolset(
-        connection_params=StdioConnectionParams(
-            server_params=StdioServerParameters(
-                command=py_cmd,
-                args=[str(PATH_TO_MCP_SERVER)],
-                # env=env,
-                cwd=cwd,
-                # startup_timeout_seconds=15,
-                # healthcheck_command=None,  # hoặc ["python","-V"] nếu SDK hỗ trợ
-            )
-        )
+        connection_params=WebsocketConnectionParams(url=ws_url)
     )
 
 

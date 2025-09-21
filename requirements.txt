@@ -1,4 +1,7 @@
 python-dotenv~=1.1.1
 protobuf~=6.32.1
 mcp~=1.14.1
+fastapi~=0.115.0
+uvicorn~=0.30.0
 pytest~=8.4.2
+pytest-asyncio~=0.24.0

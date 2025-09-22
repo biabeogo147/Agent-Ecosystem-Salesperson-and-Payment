@@ -5,3 +5,4 @@ pytest~=8.4.2
 uvicorn~=0.36.0
 fastapi~=0.116.2
 starlette~=0.48.0
+google-adk~=1.14.1

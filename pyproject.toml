@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "agent_ecosystem_shopping_and_payment"
+name = "agent_ecosystem_salesperson_and_payment"
 version = "0.1.0"
-description = "Shopping + Merchant Agent"
+description = "Salesperson + Payment Agent"
 authors = [
   { name="biabeogo147", email="biabeogo147@gmail.com" }
 ]

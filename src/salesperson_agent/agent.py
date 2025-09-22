@@ -5,7 +5,7 @@ from google.adk.tools.mcp_tool import StreamableHTTPConnectionParams
 
 from config import *
 
-with open("src/merchant_agent/instruction.txt", "r") as f:
+with open("src/salesperson_agent/instruction.txt", "r") as f:
     _INSTRUCTION = f.read().strip()
 _DESCRIPTION = "Salesperson who helps Customers to find products, calculate shipping costs and reserve stock."
 
@@ -40,9 +40,9 @@ def get_mcp_toolset() -> MCPToolset:
     )
 
 
-def gemini_merchant_agent() -> Agent:
+def gemini_salesperson_agent() -> Agent:
     return Agent(
-        name="merchant_agent",
+        name="salesperson_agent",
         model="gemini-2.0-flash",
         description=_DESCRIPTION,
         instruction=_INSTRUCTION,
@@ -50,9 +50,9 @@ def gemini_merchant_agent() -> Agent:
     )
 
 
-def llm_merchant_agent() -> LlmAgent:
+def llm_salesperson_agent() -> LlmAgent:
     return LlmAgent(
-        name="merchant_agent",
+        name="salesperson_agent",
         model=LiteLlm(
             model=MODEL_NAME,
             api_base=OPENAI_API_KEY,
@@ -64,4 +64,4 @@ def llm_merchant_agent() -> LlmAgent:
     )
 
 
-root_agent = gemini_merchant_agent()
+root_agent = gemini_salesperson_agent()

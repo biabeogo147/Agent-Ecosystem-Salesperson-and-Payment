@@ -2,7 +2,7 @@ import asyncio
 
 
 def test_find_product_by_sku():
-    from my_mcp.tools import find_product
+    from my_mcp.salesperson.tools_for_salesperson_agent import find_product
 
     async def _run():
         t1 = asyncio.create_task(find_product("SKU001"))
@@ -18,7 +18,7 @@ def test_find_product_by_sku():
 
 
 def test_calc_shipping():
-    from my_mcp.tools import calc_shipping
+    from my_mcp.salesperson.tools_for_salesperson_agent import calc_shipping
 
     async def _run():
         t1 = asyncio.create_task(calc_shipping(10, 100))
@@ -36,7 +36,7 @@ def test_calc_shipping():
 
 
 def test_reserve_stock():
-    from my_mcp.tools import reserve_stock
+    from my_mcp.salesperson.tools_for_salesperson_agent import reserve_stock
 
     async def _run():
         t1 = asyncio.create_task(reserve_stock("SKU001", 5))

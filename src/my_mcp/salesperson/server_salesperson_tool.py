@@ -1,6 +1,4 @@
-import json
 import contextlib
-from typing import Any
 from collections.abc import AsyncIterator
 
 from fastapi import FastAPI
@@ -12,67 +10,21 @@ from mcp.server.lowlevel import Server
 from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
 
 from config import *
-from my_mcp.tools import *
+from my_mcp.salesperson.tools_for_salesperson_agent import *
 from my_mcp.logging_middleware import LoggingMiddleware
+from my_mcp.utils import list_mcp_tools_with_dict, call_mcp_tool_with_dict
 
-from google.adk.tools.mcp_tool import adk_to_mcp_tool_type
-
-my_mcp_server = Server("merchant_mcp")
+my_mcp_server = Server("salesperson_mcp")
 
 
 @my_mcp_server.list_tools()
 async def list_mcp_tools() -> list[mcp_types.Tool]:
-    """Expose ADK tools to MCP as mcp_types.Tool list."""
-    print("MCP Server: Received list_tools request.")
-    exposed: list[mcp_types.Tool] = []
-
-    for _, adk_tool in ADK_TOOLS.items():
-        try:
-            mcp_tool = adk_to_mcp_tool_type(adk_tool)
-            print(f"MCP Server: Advertising tool: {mcp_tool.name}")
-            exposed.append(mcp_tool)
-        except Exception as e:
-            import traceback; traceback.print_exc()
-            print(f"[WARN] Failed to convert ADK tool '{getattr(adk_tool,'name',repr(adk_tool))}': {e}")
-
-    return exposed
+    return await list_mcp_tools_with_dict(ADK_TOOLS_FOR_SALESPERSON)
 
 
 @my_mcp_server.call_tool()
 async def call_mcp_tool(name: str, arguments: dict | None) -> list[mcp_types.Content]:
-    """Execute an exposed ADK tool by name and return MCP Content parts."""
-    print(f"MCP Server: Received call_tool request for '{name}' with args: {arguments}")
-
-    arguments = arguments or {}
-
-    adk_tool = ADK_TOOLS.get(name)
-    if not adk_tool:
-        err = {"error": f"Tool '{name}' not implemented by this server."}
-        print(f"MCP Server: {err['error']}")
-        return [mcp_types.TextContent(type="text", text=json.dumps(err))]
-
-    try:
-        if hasattr(adk_tool, "run_async"):
-            result: Any = await adk_tool.run_async(args=arguments, tool_context=None)
-        else:
-            result: Any = adk_tool.run(args=arguments, tool_context=None)
-    except TypeError:
-        try:
-            if hasattr(adk_tool, "run_async"):
-                result: Any = await adk_tool.run_async(**arguments)
-            else:
-                result: Any = adk_tool.run(**arguments)
-        except Exception as e:
-            error_text = json.dumps({"error": f"Failed to execute tool '{name}': {str(e)}"})
-            print(f"MCP Server: {error_text}")
-            return [mcp_types.TextContent(type="text", text=error_text)]
-    except Exception as e:
-        error_text = json.dumps({"error": f"Failed to execute tool '{name}': {str(e)}"})
-        print(f"MCP Server: {error_text}")
-        return [mcp_types.TextContent(type="text", text=error_text)]
-
-    print(f"MCP Server: Tool '{name}' executed successfully.")
-    return [mcp_types.TextContent(type="text", text=result)]
+    return await call_mcp_tool_with_dict(name, arguments, ADK_TOOLS_FOR_SALESPERSON)
 
 
 session_manager = StreamableHTTPSessionManager(
@@ -91,7 +43,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     async with session_manager.run():
         yield
 
-app = FastAPI(title="Merchant MCP", lifespan=lifespan)
+app = FastAPI(title="Salesperson MCP", lifespan=lifespan)
 app.routes.append(Mount("/mcp", app=handle_streamable_http))
 app.add_middleware(LoggingMiddleware)
 
@@ -129,8 +81,8 @@ app.add_middleware(LoggingMiddleware)
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
-        "server:app",
+        "server_salesperson_tool:app",
         host="0.0.0.0",
-        port=MCP_SERVER_PORT,
+        port=MCP_SERVER_PORT_SALESPERSON,
         reload=False,
     )

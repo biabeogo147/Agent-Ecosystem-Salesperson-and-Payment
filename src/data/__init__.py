@@ -9,5 +9,5 @@ with open(DATA_PATH, "r", encoding="utf-8") as file:
     lst_product = json.load(file)
 
 
-def get_product_list() -> list:
+def get_product_list() -> dict:
     return lst_product

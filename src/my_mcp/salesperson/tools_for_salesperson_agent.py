@@ -54,14 +54,14 @@ async def reserve_stock(sku: str, quantity: int) -> str:
     return ResponseFormat(data=True).to_json()
 
 
-print("Initializing ADK tool...")
+print("Initializing ADK tool for salesperson...")
 find_product_tool = FunctionTool(find_product)
 calc_shipping_tool = FunctionTool(calc_shipping)
 reserve_stock_tool = FunctionTool(reserve_stock)
-ADK_TOOLS = {
+ADK_TOOLS_FOR_SALESPERSON = {
     find_product_tool.name: find_product_tool,
     calc_shipping_tool.name: calc_shipping_tool,
     reserve_stock_tool.name: reserve_stock_tool,
 }
-for adk_tool in ADK_TOOLS.values():
+for adk_tool in ADK_TOOLS_FOR_SALESPERSON.values():
     print(f"ADK tool '{adk_tool.name}' initialized and ready to be exposed via MCP.")

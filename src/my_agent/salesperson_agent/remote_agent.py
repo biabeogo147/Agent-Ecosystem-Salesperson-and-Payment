@@ -1,0 +1,36 @@
+import json
+import httpx
+import time
+from typing import Optional
+
+from google.adk.agents.remote_a2a_agent import RemoteA2aAgent, AGENT_CARD_WELL_KNOWN_PATH
+
+from config import *
+
+PAYMENT_BASE_URL = f"http://{PAYMENT_AGENT_SERVER_HOST}:{PAYMENT_AGENT_SERVER_PORT}"
+AGENT_CARD_URL = f"{PAYMENT_BASE_URL}{AGENT_CARD_WELL_KNOWN_PATH}"
+_AGENT_CARD_CACHE: Optional[str] = None
+_AGENT_CARD_TTL = 60  # seconds
+_AGENT_CARD_FETCHED_AT = 0.0
+
+
+def get_payment_remote() -> RemoteA2aAgent:
+    return RemoteA2aAgent(
+        name="payment_agent_remote",
+        description="Remote Payment Agent via A2A",
+        agent_card=AGENT_CARD_URL,
+    )
+
+
+def _get_agent_card() -> str:
+    global _AGENT_CARD_CACHE, _AGENT_CARD_FETCHED_AT, _AGENT_CARD_TTL
+
+    now = time.time()
+    if _AGENT_CARD_CACHE and (now - _AGENT_CARD_FETCHED_AT) < _AGENT_CARD_TTL:
+        return _AGENT_CARD_CACHE
+    with httpx.Client(timeout=10) as client:
+        resp = client.get(AGENT_CARD_URL)
+        resp.raise_for_status()
+        _AGENT_CARD_CACHE = json.dumps(resp.json())
+        _AGENT_CARD_FETCHED_AT = now
+        return _AGENT_CARD_CACHE

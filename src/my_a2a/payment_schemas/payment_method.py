@@ -7,7 +7,6 @@ from my_a2a.payment_schemas.payment_enums import *
 
 class PaymentMethod(BaseModel):
     type: PaymentMethodType = Field(default=PaymentMethodType.PAYGATE)
-    provider: str = Field(..., description="Paygate name")
     channel: PaymentChannel = Field(
         default=PaymentChannel.REDIRECT,
         description="Redirect customer to provider's site or show QR code (if supported by provider)"

@@ -5,7 +5,7 @@ from config import *
 from my_mcp.mcp_toolset import get_mcp_toolset
 
 instruction_path = os.path.join(os.path.dirname(__file__), "instruction.txt")
-with open(instruction_path, "r") as f:
+with open(instruction_path, "r", encoding="utf-8") as f:
     _INSTRUCTION = f.read().strip()
 _DESCRIPTION = "Payment Agent: check data, decide next_action, basic fraud prevention."
 
@@ -28,8 +28,8 @@ def llm_payment_agent() -> LlmAgent:
         name="payment_agent",
         model=LiteLlm(
             model=MODEL_NAME,
-            api_base=OPENAI_API_KEY,
-            api_key=OPENAI_API_BASE,
+            api_base=OPENAI_API_BASE,
+            api_key=OPENAI_API_KEY,
         ),
         description=_DESCRIPTION,
         instruction=_INSTRUCTION,

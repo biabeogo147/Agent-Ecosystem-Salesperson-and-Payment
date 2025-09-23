@@ -7,3 +7,6 @@ fastapi~=0.116.2
 starlette~=0.48.0
 google-adk~=1.14.1
 litellm~=1.77.1
+pydantic~=2.11.9
+a2a-sdk~=0.3.6
+httpx~=0.28.1

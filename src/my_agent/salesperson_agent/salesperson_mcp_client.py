@@ -63,6 +63,31 @@ class SalespersonMcpClient:
             f"MCP tool '{name}' returned no textual content to interpret."
         )
 
+    async def _call_tool_json(
+        self, name: str, arguments: Optional[dict[str, Any]] = None
+    ) -> Any:
+        """Call a tool and interpret its response as JSON-compatible data."""
+
+        result = await self._call_tool(name, arguments)
+        if result.structuredContent is not None:
+            return result.structuredContent
+
+        for part in result.content:
+            if isinstance(part, mcp_types.TextContent):
+                if not part.text.strip():
+                    continue
+                try:
+                    return json.loads(part.text)
+                except json.JSONDecodeError as exc:
+                    snippet = part.text[:200]
+                    raise RuntimeError(
+                        f"MCP tool '{name}' returned non-JSON text: {snippet}"
+                    ) from exc
+
+        raise RuntimeError(
+            f"MCP tool '{name}' returned no JSON content to interpret."
+        )
+
     async def generate_correlation_id(self, *, prefix: str) -> str:
         """Request a new correlation ID from the MCP server."""
 
@@ -83,6 +108,40 @@ class SalespersonMcpClient:
         return await self._call_tool_text(
             "generate_cancel_url", {"correlation_id": correlation_id}
         )
+
+    async def find_product(self, *, query: str) -> dict[str, Any]:
+        """Look up products via the MCP ``find_product`` tool."""
+
+        payload = await self._call_tool_json("find_product", {"query": query})
+        if not isinstance(payload, dict):
+            raise RuntimeError(
+                "MCP tool 'find_product' returned an unexpected payload type"
+            )
+        return payload
+
+    async def calc_shipping(self, *, weight: float, distance: float) -> dict[str, Any]:
+        """Calculate shipping costs using the shared MCP shipping tool."""
+
+        payload = await self._call_tool_json(
+            "calc_shipping", {"weight": weight, "distance": distance}
+        )
+        if not isinstance(payload, dict):
+            raise RuntimeError(
+                "MCP tool 'calc_shipping' returned an unexpected payload type"
+            )
+        return payload
+
+    async def reserve_stock(self, *, sku: str, quantity: int) -> dict[str, Any]:
+        """Reserve inventory using the MCP stock management tool."""
+
+        payload = await self._call_tool_json(
+            "reserve_stock", {"sku": sku, "quantity": quantity}
+        )
+        if not isinstance(payload, dict):
+            raise RuntimeError(
+                "MCP tool 'reserve_stock' returned an unexpected payload type"
+            )
+        return payload
 
 
 _client: SalespersonMcpClient | None = None

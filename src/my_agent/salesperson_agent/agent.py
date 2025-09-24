@@ -1,5 +1,9 @@
+import os
+
 from google.adk.agents import Agent, LlmAgent
 from google.adk.models.lite_llm import LiteLlm
+
+from config import *
 
 from .skills import *
 from my_mcp.mcp_toolset import get_mcp_toolset
@@ -23,8 +27,9 @@ def gemini_salesperson_agent() -> Agent:
         sub_agents=[get_payment_remote()],
         tools=[
             get_mcp_toolset(mcp_streamable_http_url),
-            correlation_id_tool,
-            get_return_cancel_url_for_payment_tool,
+            generate_correlation_id_tool,
+            generate_return_url_tool,
+            generate_cancel_url_tool,
         ],
     )
 
@@ -42,8 +47,9 @@ def llm_salesperson_agent() -> LlmAgent:
         sub_agents=[get_payment_remote()],
         tools=[
             get_mcp_toolset(mcp_streamable_http_url),
-            correlation_id_tool,
-            get_return_cancel_url_for_payment_tool,
+            generate_correlation_id_tool,
+            generate_return_url_tool,
+            generate_cancel_url_tool,
         ],
     )
 

@@ -1,7 +1,10 @@
 import asyncio
 
+import pytest
 
-def test_find_product_by_sku():
+
+@pytest.mark.asyncio
+async def test_find_product_by_sku():
     from my_mcp.salesperson.tools_for_salesperson_agent import find_product
 
     async def _run():
@@ -17,7 +20,8 @@ def test_find_product_by_sku():
     print(r3)
 
 
-def test_calc_shipping():
+@pytest.mark.asyncio
+async def test_calc_shipping():
     from my_mcp.salesperson.tools_for_salesperson_agent import calc_shipping
 
     async def _run():
@@ -35,7 +39,8 @@ def test_calc_shipping():
     print(r4)
 
 
-def test_reserve_stock():
+@pytest.mark.asyncio
+async def test_reserve_stock():
     from my_mcp.salesperson.tools_for_salesperson_agent import reserve_stock
 
     async def _run():

@@ -1,11 +1,10 @@
-import os
-
 from google.adk.agents import Agent, LlmAgent
 from google.adk.models.lite_llm import LiteLlm
 
 from config import *
+from my_mcp.salesperson.tools_for_salesperson_agent import generate_correlation_id_tool, generate_return_url_tool, \
+    generate_cancel_url_tool
 
-from .skills import *
 from my_mcp.mcp_toolset import get_mcp_toolset
 from my_agent.salesperson_agent.remote_agent import get_payment_remote
 

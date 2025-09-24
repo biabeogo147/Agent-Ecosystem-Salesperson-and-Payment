@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, Optional, Sequence, Tuple
+from typing import Any, Dict, Optional, Sequence
 from uuid import uuid4
 
 from a2a.types import Task, TaskState, TaskStatus
@@ -41,12 +41,12 @@ def _base_task_metadata(skill_id: str, correlation_id: str) -> Dict[str, Any]:
     }
 
 
-def build_create_order_task(
+async def build_create_order_task(
     items: Sequence[Any],
     customer: Any,
     channel: PaymentChannel,
-    correlation_id_factory: Callable[[str], str],
-    url_factory: Callable[[str], Tuple[str, str]],
+    correlation_id: str,
+    return_url: str, cancel_url: str,
     *,
     note: Optional[str] = None,
     metadata: Optional[Dict[str, str]] = None,
@@ -57,10 +57,6 @@ def build_create_order_task(
     (correlation ID, return URL and cancel URL) before handing off the work to
     the remote agent.
     """
-
-    correlation_id = correlation_id_factory("payment")
-    return_url, cancel_url = url_factory(correlation_id)
-
     method = PaymentMethod(
         channel=channel,
         return_url=return_url,
@@ -99,9 +95,8 @@ def build_create_order_task(
     )
 
 
-def build_query_status_task(correlation_id: str) -> Task:
+async def build_query_status_task(correlation_id: str) -> Task:
     """Construct a task for querying payment status."""
-
     status_request = QueryStatusRequest(correlation_id=correlation_id)
     message = build_query_status_message(status_request)
 
@@ -125,7 +120,6 @@ def build_query_status_task(correlation_id: str) -> Task:
 
 def extract_payment_request(task: Task) -> PaymentRequest:
     """Retrieve the ``PaymentRequest`` carried inside a task."""
-
     if not task.history:
         raise ValueError("Task contains no messages")
 
@@ -138,7 +132,6 @@ def extract_payment_request(task: Task) -> PaymentRequest:
 
 def extract_status_request(task: Task) -> QueryStatusRequest:
     """Retrieve the status request payload from the task."""
-
     if not task.history:
         raise ValueError("Task contains no messages")
 

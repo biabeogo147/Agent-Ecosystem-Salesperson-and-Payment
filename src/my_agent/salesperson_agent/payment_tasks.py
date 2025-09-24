@@ -17,39 +17,35 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional, Sequence, Tuple
 
+from a2a.types import Task
+
 from my_a2a import build_create_order_task, build_query_status_task
 from my_a2a.payment_schemas.payment_enums import PaymentChannel
 
-from .skills import (
-    generate_cancel_url,
-    generate_correlation_id,
-    generate_return_url,
-)
+import my_mcp.salesperson.tools_for_salesperson_agent as salesperson_tools
 
 
-def _default_correlation_id_factory(prefix: str) -> str:
+async def _default_correlation_id_factory(prefix: str) -> str:
     """Delegate to :func:`generate_correlation_id` for actual ID creation."""
+    return await salesperson_tools.generate_correlation_id(prefix=prefix)
 
-    return generate_correlation_id(prefix=prefix)
 
-
-def _default_url_factory(correlation_id: str) -> Tuple[str, str]:
+async def _default_url_factory(correlation_id: str) -> Tuple[str, str]:
     """Return the pair of return/cancel URLs used by the payment gateway."""
-
     return (
-        generate_return_url(correlation_id),
-        generate_cancel_url(correlation_id),
+        await salesperson_tools.generate_return_url(correlation_id),
+        await salesperson_tools.generate_cancel_url(correlation_id),
     )
 
 
-def build_salesperson_create_order_task(
+async def build_salesperson_create_order_task(
     items: Sequence[Any],
     customer: Any,
     channel: PaymentChannel,
     *,
     note: Optional[str] = None,
     metadata: Optional[Dict[str, str]] = None,
-) -> "Task":
+) -> Task:
     """Create the payment order task with the required system fields injected.
 
     Parameters
@@ -74,21 +70,23 @@ def build_salesperson_create_order_task(
         the remote payment agent.
     """
 
-    return build_create_order_task(
+    correlation_id = await _default_correlation_id_factory("payment")
+    return_url, cancel_url = await _default_url_factory(correlation_id)
+
+    return await build_create_order_task(
         items,
         customer,
         channel,
-        _default_correlation_id_factory,
-        _default_url_factory,
+        correlation_id,
+        return_url, cancel_url,
         note=note,
         metadata=metadata,
     )
 
 
-def build_salesperson_query_status_task(correlation_id: str) -> "Task":
+async def build_salesperson_query_status_task(correlation_id: str) -> Task:
     """Wrapper that exposes query-status functionality alongside create order."""
-
-    return build_query_status_task(correlation_id)
+    return await build_query_status_task(correlation_id)
 
 
 __all__ = [

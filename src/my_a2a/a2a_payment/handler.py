@@ -91,7 +91,7 @@ def validate_payment_response(
         PaymentStatus.CANCELLED,
     }
     if response.status not in allowed_statuses:
-        raise ValueError(f"Unsupported a2a_payment status: {response.status}")
+        raise ValueError(f"Unsupported payment status: {response.status}")
 
     if response.status is PaymentStatus.SUCCESS and not response.order_id:
         raise ValueError("Successful payments must include an order_id")

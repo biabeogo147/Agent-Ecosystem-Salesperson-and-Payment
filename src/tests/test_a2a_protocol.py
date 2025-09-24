@@ -41,13 +41,15 @@ def _dummy_customer() -> dict:
     return {"name": "Alice", "email": "alice@example.com"}
 
 
-def test_build_create_order_task_injects_system_fields() -> None:
-    task = build_create_order_task(
+@pytest.mark.asyncio
+async def test_build_create_order_task_injects_system_fields() -> None:
+    cid = _correlation_id("payment")
+    return_url, cancel_url = _url_factory(cid)
+    task = await build_create_order_task(
         _dummy_items(),
         _dummy_customer(),
         PaymentChannel.REDIRECT,
-        _correlation_id,
-        _url_factory,
+        cid, return_url, cancel_url,
     )
 
     request = extract_payment_request(task)
@@ -63,14 +65,16 @@ def test_build_create_order_task_injects_system_fields() -> None:
     assert task.history[0].role is Role.user
 
 
-def test_build_query_status_task_wraps_payload() -> None:
-    task = build_query_status_task("CID-001")
+@pytest.mark.asyncio
+async def test_build_query_status_task_wraps_payload() -> None:
+    task = await build_query_status_task("CID-001")
     status_request = extract_status_request(task)
     assert status_request.correlation_id == "CID-001"
     assert task.metadata["skill_id"] == QUERY_STATUS_SKILL_ID
 
 
-def test_payment_agent_handler_validates_and_wraps_response() -> None:
+@pytest.mark.asyncio
+async def test_payment_agent_handler_validates_and_wraps_response() -> None:
     def create_order_tool(payload: dict) -> dict:
         assert payload["correlation_id"] == "CID-001"
         return {
@@ -91,12 +95,13 @@ def test_payment_agent_handler_validates_and_wraps_response() -> None:
         query_status_tool=query_status_tool,
     )
 
-    task = build_create_order_task(
+    cid = _correlation_id("payment")
+    return_url, cancel_url = _url_factory(cid)
+    task = await build_create_order_task(
         _dummy_items(),
         _dummy_customer(),
         PaymentChannel.REDIRECT,
-        _correlation_id,
-        _url_factory,
+        cid, return_url, cancel_url,
     )
 
     message = handler.handle_task(task)
@@ -109,7 +114,8 @@ def test_payment_agent_handler_validates_and_wraps_response() -> None:
     assert message.context_id == "CID-001"
 
 
-def test_payment_agent_handler_rejects_invalid_response() -> None:
+@pytest.mark.asyncio
+async def test_payment_agent_handler_rejects_invalid_response() -> None:
     def create_order_tool(_payload: dict) -> dict:
         return {
             "correlation_id": "WRONG",
@@ -122,12 +128,13 @@ def test_payment_agent_handler_rejects_invalid_response() -> None:
         query_status_tool=lambda payload: payload,  # unused
     )
 
-    task = build_create_order_task(
+    cid = _correlation_id("payment")
+    return_url, cancel_url = _url_factory(cid)
+    task = await build_create_order_task(
         _dummy_items(),
         _dummy_customer(),
         PaymentChannel.REDIRECT,
-        _correlation_id,
-        _url_factory,
+        cid, return_url, cancel_url,
     )
 
     with pytest.raises(ValueError):

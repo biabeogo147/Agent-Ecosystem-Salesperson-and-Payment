@@ -1,58 +1,54 @@
+from __future__ import annotations
+
 import asyncio
 
 import pytest
 
 
 @pytest.mark.asyncio
-async def test_find_product_by_sku():
+async def test_find_product_by_sku() -> None:
     from my_mcp.salesperson.tools_for_salesperson_agent import find_product
 
-    async def _run():
-        t1 = asyncio.create_task(find_product("SKU001"))
-        t2 = asyncio.create_task(find_product("INVALID_SKU"))
-        t3 = asyncio.create_task(find_product(""))
-        return await asyncio.gather(t1, t2, t3)
+    results = await asyncio.gather(
+        find_product("SKU001"),
+        find_product("INVALID_SKU"),
+        find_product(""),
+    )
 
-    r1, r2, r3 = asyncio.run(_run())
-
-    print(r1)
-    print(r2)
-    print(r3)
+    print(results[0])
+    print(results[1])
+    print(results[2])
 
 
 @pytest.mark.asyncio
-async def test_calc_shipping():
+async def test_calc_shipping() -> None:
     from my_mcp.salesperson.tools_for_salesperson_agent import calc_shipping
 
-    async def _run():
-        t1 = asyncio.create_task(calc_shipping(10, 100))
-        t2 = asyncio.create_task(calc_shipping(0, 100))
-        t3 = asyncio.create_task(calc_shipping(10, 0))
-        t4 = asyncio.create_task(calc_shipping(0, 0))
-        return await asyncio.gather(t1, t2, t3, t4)
+    results = await asyncio.gather(
+        calc_shipping(10, 100),
+        calc_shipping(0, 100),
+        calc_shipping(10, 0),
+        calc_shipping(0, 0),
+    )
 
-    r1, r2, r3, r4 = asyncio.run(_run())
-
-    print(r1)
-    print(r2)
-    print(r3)
-    print(r4)
+    print(results[0])
+    print(results[1])
+    print(results[2])
+    print(results[3])
 
 
 @pytest.mark.asyncio
-async def test_reserve_stock():
+async def test_reserve_stock() -> None:
     from my_mcp.salesperson.tools_for_salesperson_agent import reserve_stock
 
-    async def _run():
-        t1 = asyncio.create_task(reserve_stock("SKU001", 5))
-        t2 = asyncio.create_task(reserve_stock("SKU001", 90))
-        t3 = asyncio.create_task(reserve_stock("INVALID_SKU", 1))
-        t4 = asyncio.create_task(reserve_stock("SKU002", 100))
-        return await asyncio.gather(t1, t2, t3, t4)
+    results = await asyncio.gather(
+        reserve_stock("SKU001", 5),
+        reserve_stock("SKU001", 90),
+        reserve_stock("INVALID_SKU", 1),
+        reserve_stock("SKU002", 100),
+    )
 
-    r1, r2, r3, r4 = asyncio.run(_run())
-
-    print(r1)
-    print(r2)
-    print(r3)
-    print(r4)
+    print(results[0])
+    print(results[1])
+    print(results[2])
+    print(results[3])

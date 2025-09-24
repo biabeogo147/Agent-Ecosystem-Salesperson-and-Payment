@@ -5,7 +5,6 @@ from config import *
 from google.adk.tools import FunctionTool
 
 
-
 def correlation_id(prefix: str) -> str:
     """Generate a unique correlation ID with the given prefix for A2A interactions."""
     return f"{prefix}-{str(uuid.uuid4())}"

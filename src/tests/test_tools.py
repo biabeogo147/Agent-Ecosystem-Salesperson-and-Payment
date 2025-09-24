@@ -1,52 +1,54 @@
+from __future__ import annotations
+
 import asyncio
 
 import pytest
 
 
 @pytest.mark.asyncio
-async def test_find_product_by_sku():
+async def test_find_product_by_sku() -> None:
     from my_mcp.salesperson.tools_for_salesperson_agent import find_product
 
-    r1, r2, r3 = await asyncio.gather(
+    results = await asyncio.gather(
         find_product("SKU001"),
         find_product("INVALID_SKU"),
         find_product(""),
     )
 
-    print(r1)
-    print(r2)
-    print(r3)
+    print(results[0])
+    print(results[1])
+    print(results[2])
 
 
 @pytest.mark.asyncio
-async def test_calc_shipping():
+async def test_calc_shipping() -> None:
     from my_mcp.salesperson.tools_for_salesperson_agent import calc_shipping
 
-    r1, r2, r3, r4 = await asyncio.gather(
+    results = await asyncio.gather(
         calc_shipping(10, 100),
         calc_shipping(0, 100),
         calc_shipping(10, 0),
         calc_shipping(0, 0),
     )
 
-    print(r1)
-    print(r2)
-    print(r3)
-    print(r4)
+    print(results[0])
+    print(results[1])
+    print(results[2])
+    print(results[3])
 
 
 @pytest.mark.asyncio
-async def test_reserve_stock():
+async def test_reserve_stock() -> None:
     from my_mcp.salesperson.tools_for_salesperson_agent import reserve_stock
 
-    r1, r2, r3, r4 = await asyncio.gather(
+    results = await asyncio.gather(
         reserve_stock("SKU001", 5),
         reserve_stock("SKU001", 90),
         reserve_stock("INVALID_SKU", 1),
         reserve_stock("SKU002", 100),
     )
 
-    print(r1)
-    print(r2)
-    print(r3)
-    print(r4)
+    print(results[0])
+    print(results[1])
+    print(results[2])
+    print(results[3])

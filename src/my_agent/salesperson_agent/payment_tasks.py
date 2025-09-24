@@ -3,7 +3,9 @@
 This module keeps the orchestration logic in one place so new developers can
 read through the step-by-step flow:
 
-1. Create a correlation ID that uniquely identifies the payment request.
+1. Create a correlation ID that uniquely identifies the payment request.  The
+   ID now comes from the MCP server so we can share the generator across
+   multiple salesperson deployments.
 2. Generate the return and cancel URLs bound to that correlation ID.
 3. Use the shared :mod:`my_a2a` helpers to build the task payload that will be
    sent to the remote payment agent.
@@ -22,19 +24,30 @@ from a2a.types import Task
 from my_a2a import build_create_order_task, build_query_status_task
 from my_a2a.payment_schemas.payment_enums import PaymentChannel
 
-import my_mcp.salesperson.tools_for_salesperson_agent as salesperson_tools
+from .salesperson_mcp_client import (
+    SalespersonMcpClient,
+    get_salesperson_mcp_client,
+)
 
 
-async def _default_correlation_id_factory(prefix: str) -> str:
-    """Delegate to :func:`generate_correlation_id` for actual ID creation."""
-    return await salesperson_tools.generate_correlation_id(prefix=prefix)
+async def _default_correlation_id_factory(
+    prefix: str, *, client: SalespersonMcpClient | None = None
+) -> str:
+    """Fetch a correlation ID by delegating to the MCP server."""
+
+    client = client or get_salesperson_mcp_client()
+    return await client.generate_correlation_id(prefix=prefix)
 
 
-async def _default_url_factory(correlation_id: str) -> Tuple[str, str]:
+async def _default_url_factory(
+    correlation_id: str, *, client: SalespersonMcpClient | None = None
+) -> Tuple[str, str]:
     """Return the pair of return/cancel URLs used by the payment gateway."""
+
+    client = client or get_salesperson_mcp_client()
     return (
-        await salesperson_tools.generate_return_url(correlation_id),
-        await salesperson_tools.generate_cancel_url(correlation_id),
+        await client.generate_return_url(correlation_id),
+        await client.generate_cancel_url(correlation_id),
     )
 
 
@@ -45,6 +58,7 @@ async def build_salesperson_create_order_task(
     *,
     note: Optional[str] = None,
     metadata: Optional[Dict[str, str]] = None,
+    mcp_client: SalespersonMcpClient | None = None,
 ) -> Task:
     """Create the payment order task with the required system fields injected.
 
@@ -62,6 +76,9 @@ async def build_salesperson_create_order_task(
         Which payment channel to use (``REDIRECT`` or ``QR``).
     note, metadata:
         Optional fields that are passed straight through to the payment agent.
+    mcp_client:
+        Optional override used by tests to inject a fake MCP client. When not
+        provided the module-level singleton is used.
 
     Returns
     -------
@@ -70,15 +87,17 @@ async def build_salesperson_create_order_task(
         the remote payment agent.
     """
 
-    correlation_id = await _default_correlation_id_factory("payment")
-    return_url, cancel_url = await _default_url_factory(correlation_id)
+    client = mcp_client or get_salesperson_mcp_client()
+    correlation_id = await _default_correlation_id_factory("payment", client=client)
+    return_url, cancel_url = await _default_url_factory(correlation_id, client=client)
 
     return await build_create_order_task(
         items,
         customer,
         channel,
         correlation_id,
-        return_url, cancel_url,
+        return_url,
+        cancel_url,
         note=note,
         metadata=metadata,
     )
@@ -86,6 +105,7 @@ async def build_salesperson_create_order_task(
 
 async def build_salesperson_query_status_task(correlation_id: str) -> Task:
     """Wrapper that exposes query-status functionality alongside create order."""
+
     return await build_query_status_task(correlation_id)
 
 

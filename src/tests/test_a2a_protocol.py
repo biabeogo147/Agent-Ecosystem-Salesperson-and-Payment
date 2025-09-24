@@ -8,6 +8,7 @@ from my_a2a import (
     PaymentAgentHandler,
     QUERY_STATUS_SKILL_ID,
     build_create_order_task,
+    build_payment_agent_card,
     build_query_status_task,
     extract_payment_request,
     extract_payment_response,
@@ -139,3 +140,16 @@ async def test_payment_agent_handler_rejects_invalid_response() -> None:
 
     with pytest.raises(ValueError):
         handler.handle_task(task)
+
+
+def test_build_payment_agent_card_includes_payment_skills() -> None:
+    card = build_payment_agent_card("https://payments.example/rpc/")
+
+    assert str(card.url) == "https://payments.example/rpc/"
+    skill_ids = {skill.id for skill in card.skills}
+    assert skill_ids == {
+        "payment.create-order",
+        "payment.query-status",
+    }
+    assert card.default_input_modes == ["application/json"]
+    assert card.default_output_modes == ["application/json"]

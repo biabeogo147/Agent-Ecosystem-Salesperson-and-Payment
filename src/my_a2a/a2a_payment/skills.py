@@ -18,17 +18,11 @@ COMMON_MODES = [JSON_MEDIA_TYPE]
 # them. The comments explain why each field matters in this particular flow.
 CREATE_ORDER_SKILL = AgentSkill(
     id=CREATE_ORDER_SKILL_ID,
-    # Human friendly name for UIs.
     name="Create payment order",
-    # A quick primer for other developers about what the skill does.
     description="Accepts checkout details and opens a payment order with the gateway.",
-    # Tags help discovery and filtering in agent directories.
     tags=["payment", "order"],
-    # Only JSON requests are supported in this tutorial.
     input_modes=COMMON_MODES,
-    # Responses also come back as JSON documents.
     output_modes=COMMON_MODES,
-    # Example prompt illustrating how a client would use the skill.
     examples=["Create a payment for the cart currently in checkout."],
 )
 

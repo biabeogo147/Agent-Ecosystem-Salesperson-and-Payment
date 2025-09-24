@@ -29,7 +29,7 @@ def _text_part(text: str, *, speaker: str) -> Part:
     """Create a short summary ``TextPart`` that names the speaker."""
 
     return Part(
-        TextPart(
+        root=TextPart(
             text=text,
             metadata={"speaker": speaker, **_DEF_SUMMARY_METADATA},
         )

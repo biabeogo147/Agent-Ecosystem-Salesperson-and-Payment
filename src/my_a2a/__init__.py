@@ -14,7 +14,7 @@ from a2a.types import (
     TaskStatus,
 )
 
-from .payment import (
+from .a2a_payment import (
     CREATE_ORDER_SKILL,
     CREATE_ORDER_SKILL_ID,
     PaymentAgentHandler,

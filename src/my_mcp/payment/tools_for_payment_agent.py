@@ -20,7 +20,7 @@ async def _stub_paygate_create(channel: PaymentChannel, total: float, return_url
 
 async def create_order(payload: dict[str, Any]) -> dict[str, Any]:
     """
-    Create a payment order on a payment paygate and return next_action for the customer.
+    Create a a2a_payment order on a a2a_payment paygate and return next_action for the customer.
     Args:
       payload: {
         "correlation_id": "...",
@@ -76,7 +76,7 @@ async def query_order_status(payload: dict[str, Any]) -> dict[str, Any]:
     return PaymentResponse(correlation_id=cid, status=PaymentStatus.FAILED).model_dump()
 
 
-print("Initializing ADK tool for payment...")
+print("Initializing ADK tool for a2a_payment...")
 create_order_tool = FunctionTool(create_order)
 query_order_status_tool = FunctionTool(query_order_status)
 ADK_TOOLS_FOR_PAYMENT = {

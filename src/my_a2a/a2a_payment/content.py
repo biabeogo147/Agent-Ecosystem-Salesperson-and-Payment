@@ -20,7 +20,7 @@ def build_data_part(kind: str, payload: dict) -> Part:
             "media_type": JSON_MEDIA_TYPE,
         },
     )
-    return Part(data_part)
+    return Part(root=data_part)
 
 
 def build_artifact(kind: str, payload: dict, *, description: str) -> Artifact:

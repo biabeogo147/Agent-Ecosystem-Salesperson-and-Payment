@@ -22,7 +22,7 @@ def _correlation_id(prefix: str) -> str:
 
 
 def _url_factory(correlation_id: str) -> tuple[str, str]:
-    return (f"https://return/{correlation_id}", f"https://cancel/{correlation_id}")
+    return f"https://return/{correlation_id}", f"https://cancel/{correlation_id}"
 
 
 def _dummy_items() -> list[dict]:

@@ -27,7 +27,6 @@ _DEF_SUMMARY_METADATA = {"media_type": "text/plain"}
 
 def _text_part(text: str, *, speaker: str) -> Part:
     """Create a short summary ``TextPart`` that names the speaker."""
-
     return Part(
         root=TextPart(
             text=text,
@@ -43,7 +42,6 @@ def build_create_order_message(payment_request: PaymentRequest) -> Message:
     initiates the task. We re-use the correlation ID as the message ``context_id``
     to make it easier for the server to group related updates.
     """
-
     payload = payment_request.model_dump(mode="json")
     return Message(
         message_id=str(uuid4()),
@@ -61,7 +59,6 @@ def build_create_order_message(payment_request: PaymentRequest) -> Message:
 
 def build_query_status_message(status_request: QueryStatusRequest) -> Message:
     """Construct a follow-up message asking for the payment status."""
-
     payload = status_request.model_dump(mode="json")
     return Message(
         message_id=str(uuid4()),
@@ -79,7 +76,6 @@ def build_query_status_message(status_request: QueryStatusRequest) -> Message:
 
 def build_payment_response_message(response: PaymentResponse) -> Message:
     """Return the gateway's answer as an agent message."""
-
     payload = response.model_dump(mode="json")
     summary = f"Payment agent replies with status {response.status.value}."
     return Message(
@@ -95,9 +91,9 @@ def build_payment_response_message(response: PaymentResponse) -> Message:
 
 def extract_payment_response(message: Message) -> PaymentResponse:
     """Convert the structured data ``Part`` back into a ``PaymentResponse``."""
-
     payload = extract_payload_from_parts(message.parts, expected_kind=PAYMENT_RESPONSE_KIND)
     return PaymentResponse.model_validate(payload)
+
 
 __all__ = [
     "build_create_order_message",

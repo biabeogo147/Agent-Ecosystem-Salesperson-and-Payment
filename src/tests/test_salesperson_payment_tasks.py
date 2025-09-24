@@ -7,13 +7,9 @@ import pytest
 from my_a2a import extract_payment_request
 from my_a2a.payment_schemas.payment_enums import PaymentChannel
 
-from my_agent.salesperson_agent.payment_tasks import (
+from my_agent.salesperson_agent.salesperson_a2a.payment_tasks import (
     build_salesperson_create_order_task,
-    build_salesperson_query_status_task,
-)
-from my_agent.salesperson_agent.payment_workflow import (
-    prepare_create_order_payload,
-    prepare_query_status_payload,
+    build_salesperson_query_status_task, prepare_create_order_payload, prepare_query_status_payload,
 )
 from my_agent.salesperson_agent.salesperson_mcp_client import SalespersonMcpClient
 

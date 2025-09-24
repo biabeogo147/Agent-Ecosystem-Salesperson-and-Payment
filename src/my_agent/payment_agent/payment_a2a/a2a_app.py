@@ -1,9 +1,11 @@
-"""Functions that publish the payment agent's ``AgentCard``."""
+from a2a.types import AgentCard, AgentCapabilities
+from google.adk.a2a.utils.agent_to_a2a import to_a2a
 
-from a2a.types import AgentCapabilities, AgentCard
+from my_a2a import CREATE_ORDER_SKILL, QUERY_STATUS_SKILL
+from my_a2a.a2a_payment.constants import JSON_MEDIA_TYPE
 
-from .constants import JSON_MEDIA_TYPE
-from .skills import CREATE_ORDER_SKILL, QUERY_STATUS_SKILL
+from my_agent.payment_agent.agent import root_agent
+from config import PAYMENT_AGENT_SERVER_HOST, PAYMENT_AGENT_SERVER_PORT
 
 
 def build_payment_agent_card(base_url: str) -> AgentCard:
@@ -30,7 +32,7 @@ def build_payment_agent_card(base_url: str) -> AgentCard:
         publishes state transition history. We disable the advanced features to
         keep the tutorial simple.
     ``skills``
-        Lists the :class:`AgentSkill` objects declared in :mod:`my_a2a.payment.skills`.
+        Lists the :class:`AgentSkill` objects declared in :mod:`my_a2a_common.payment.skills`.
     """
 
     capabilities = AgentCapabilities(
@@ -50,4 +52,23 @@ def build_payment_agent_card(base_url: str) -> AgentCard:
         skills=[CREATE_ORDER_SKILL, QUERY_STATUS_SKILL],
     )
 
-__all__ = ["build_payment_agent_card"]
+
+_CARD_BASE_URL = f"http://{PAYMENT_AGENT_SERVER_HOST}:{PAYMENT_AGENT_SERVER_PORT}/"
+_PAYMENT_AGENT_CARD = build_payment_agent_card(_CARD_BASE_URL)
+
+
+a2a_app = to_a2a(
+    root_agent,
+    host=PAYMENT_AGENT_SERVER_HOST,
+    port=PAYMENT_AGENT_SERVER_PORT,
+    agent_card=_PAYMENT_AGENT_CARD,
+)
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "my_agent.payment_agent.a2a_app:a2a_app",
+        host="0.0.0.0",
+        port=PAYMENT_AGENT_SERVER_PORT,
+    )

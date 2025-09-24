@@ -26,7 +26,7 @@ async def create_order(payload: dict[str, Any]) -> dict[str, Any]:
         "correlation_id": "...",
         "items": [{sku,name,quantity,unit_price,currency}],
         "customer": {...},
-        "method": {"channel": "redirect|qr", "return_url"?, "cancel_url"?}
+        "method": {"channel": "redirect|qr", "return_url", "cancel_url"}
       }
     Returns: PaymentResponse dict (status=PENDING + next_action=REDIRECT|SHOW_QR)
     """

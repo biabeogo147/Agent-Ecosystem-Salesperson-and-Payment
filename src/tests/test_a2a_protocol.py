@@ -8,12 +8,12 @@ from my_a2a import (
     PaymentAgentHandler,
     QUERY_STATUS_SKILL_ID,
     build_create_order_task,
-    build_payment_agent_card,
     build_query_status_task,
     extract_payment_request,
     extract_payment_response,
     extract_status_request,
 )
+from my_agent.payment_agent.payment_a2a.a2a_app import build_payment_agent_card
 from my_a2a.payment_schemas.payment_enums import NextActionType, PaymentChannel
 
 

@@ -67,7 +67,6 @@ class SalespersonMcpClient:
         self, name: str, arguments: Optional[dict[str, Any]] = None
     ) -> Any:
         """Call a tool and interpret its response as JSON-compatible data."""
-
         result = await self._call_tool(name, arguments)
         if result.structuredContent is not None:
             return result.structuredContent
@@ -90,28 +89,24 @@ class SalespersonMcpClient:
 
     async def generate_correlation_id(self, *, prefix: str) -> str:
         """Request a new correlation ID from the MCP server."""
-
         return await self._call_tool_text(
             "generate_correlation_id", {"prefix": prefix}
         )
 
     async def generate_return_url(self, correlation_id: str) -> str:
         """Request the return URL bound to ``correlation_id`` from MCP."""
-
         return await self._call_tool_text(
             "generate_return_url", {"correlation_id": correlation_id}
         )
 
     async def generate_cancel_url(self, correlation_id: str) -> str:
         """Request the cancel URL bound to ``correlation_id`` from MCP."""
-
         return await self._call_tool_text(
             "generate_cancel_url", {"correlation_id": correlation_id}
         )
 
     async def find_product(self, *, query: str) -> dict[str, Any]:
         """Look up products via the MCP ``find_product`` tool."""
-
         payload = await self._call_tool_json("find_product", {"query": query})
         if not isinstance(payload, dict):
             raise RuntimeError(
@@ -121,7 +116,6 @@ class SalespersonMcpClient:
 
     async def calc_shipping(self, *, weight: float, distance: float) -> dict[str, Any]:
         """Calculate shipping costs using the shared MCP shipping tool."""
-
         payload = await self._call_tool_json(
             "calc_shipping", {"weight": weight, "distance": distance}
         )
@@ -133,7 +127,6 @@ class SalespersonMcpClient:
 
     async def reserve_stock(self, *, sku: str, quantity: int) -> dict[str, Any]:
         """Reserve inventory using the MCP stock management tool."""
-
         payload = await self._call_tool_json(
             "reserve_stock", {"sku": sku, "quantity": quantity}
         )
@@ -149,7 +142,6 @@ _client: SalespersonMcpClient | None = None
 
 def get_salesperson_mcp_client() -> SalespersonMcpClient:
     """Return a process-wide :class:`SalespersonMcpClient` singleton."""
-
     global _client
     if _client is None:
         _client = SalespersonMcpClient()

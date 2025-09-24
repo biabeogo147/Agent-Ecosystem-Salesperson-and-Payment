@@ -19,7 +19,7 @@ from my_a2a.payment_schemas.payment_enums import PaymentChannel
 from .constants import PAYMENT_REQUEST_KIND, PAYMENT_STATUS_KIND
 from .content import build_artifact, extract_payload_from_parts
 from .messages import build_create_order_message, build_query_status_message
-from .skills import CREATE_ORDER_SKILL_ID, QUERY_STATUS_SKILL_ID
+from my_agent.payment_agent.payment_a2a.skills import CREATE_ORDER_SKILL_ID, QUERY_STATUS_SKILL_ID
 
 
 def _ensure_payment_item(item: Any) -> PaymentItem:

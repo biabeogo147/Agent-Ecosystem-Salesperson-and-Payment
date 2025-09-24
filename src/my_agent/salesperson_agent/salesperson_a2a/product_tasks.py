@@ -12,7 +12,7 @@ from typing import Any, Dict
 
 from google.adk.tools import FunctionTool
 
-from .salesperson_mcp_client import (
+from my_agent.salesperson_agent.salesperson_mcp_client import (
     SalespersonMcpClient,
     get_salesperson_mcp_client,
 )
@@ -24,7 +24,6 @@ async def find_product(
     query: str, *, mcp_client: SalespersonMcpClient | None = None
 ) -> ResponseDict:
     """Look up products via the salesperson MCP server."""
-
     client = mcp_client or get_salesperson_mcp_client()
     return await client.find_product(query=query)
 
@@ -36,7 +35,6 @@ async def calc_shipping(
     mcp_client: SalespersonMcpClient | None = None,
 ) -> ResponseDict:
     """Calculate shipping costs through the MCP shipping helper."""
-
     client = mcp_client or get_salesperson_mcp_client()
     return await client.calc_shipping(weight=weight, distance=distance)
 
@@ -48,7 +46,6 @@ async def reserve_stock(
     mcp_client: SalespersonMcpClient | None = None,
 ) -> ResponseDict:
     """Reserve inventory through the MCP stock tool."""
-
     client = mcp_client or get_salesperson_mcp_client()
     return await client.reserve_stock(sku=sku, quantity=quantity)
 

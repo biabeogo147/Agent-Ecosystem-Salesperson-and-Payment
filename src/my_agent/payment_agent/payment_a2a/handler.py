@@ -14,9 +14,9 @@ from my_a2a.payment_schemas.payment_enums import (
 )
 from my_a2a.payment_schemas.next_action import NextAction
 
-from .messages import build_payment_response_message
-from .skills import CREATE_ORDER_SKILL_ID, QUERY_STATUS_SKILL_ID
-from .tasks import extract_payment_request, extract_status_request
+from my_a2a.a2a_payment.messages import build_payment_response_message
+from my_agent.payment_agent.payment_a2a.skills import CREATE_ORDER_SKILL_ID, QUERY_STATUS_SKILL_ID
+from my_a2a.a2a_payment.tasks import extract_payment_request, extract_status_request
 
 
 class PaymentAgentHandler:

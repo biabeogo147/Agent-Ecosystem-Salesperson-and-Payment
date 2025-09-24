@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from my_agent.salesperson_agent import product_tasks
+from my_agent.salesperson_agent.salesperson_a2a import product_tasks
 from my_agent.salesperson_agent.salesperson_mcp_client import SalespersonMcpClient
 
 

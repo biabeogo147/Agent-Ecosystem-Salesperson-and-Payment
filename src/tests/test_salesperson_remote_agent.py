@@ -6,8 +6,8 @@ from unittest.mock import patch
 
 from a2a.types import AgentCard
 
-from my_a2a.a2a_payment.cards import build_payment_agent_card
-from my_agent.salesperson_agent import remote_agent
+from my_agent.payment_agent.payment_a2a.a2a_app import build_payment_agent_card
+from my_agent.salesperson_agent.salesperson_a2a import remote_agent
 
 
 @dataclass

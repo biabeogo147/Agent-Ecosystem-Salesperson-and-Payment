@@ -12,7 +12,6 @@ from .constants import JSON_MEDIA_TYPE
 
 def build_data_part(kind: str, payload: dict) -> Part:
     """Wrap a JSON payload in a :class:`DataPart` with helpful metadata."""
-
     data_part = DataPart(
         data=payload,
         metadata={
@@ -30,7 +29,6 @@ def build_artifact(kind: str, payload: dict, *, description: str) -> Artifact:
     serialization format and semantic meaning through the metadata we attach to
     the contained :class:`DataPart`.
     """
-
     return Artifact(
         artifact_id=str(uuid4()),
         name=kind,
@@ -41,13 +39,13 @@ def build_artifact(kind: str, payload: dict, *, description: str) -> Artifact:
 
 def extract_payload_from_parts(parts: Iterable[Part], *, expected_kind: str) -> dict:
     """Look for a ``DataPart`` with the desired ``data_type`` metadata."""
-
     for part in parts:
         if isinstance(part.root, DataPart):
             metadata = part.root.metadata or {}
             if metadata.get("data_type") == expected_kind:
                 return part.root.data
     raise ValueError(f"No part with data_type '{expected_kind}' found")
+
 
 __all__ = [
     "build_data_part",

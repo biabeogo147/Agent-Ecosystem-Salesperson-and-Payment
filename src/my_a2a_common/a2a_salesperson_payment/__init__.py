@@ -1,14 +1,13 @@
 """Convenience imports for the payment A2A tutorial."""
 
-from .cards import build_payment_agent_card
-from .handler import PaymentAgentHandler, validate_payment_response
+from my_agent.payment_agent.payment_a2a.handler import PaymentAgentHandler, validate_payment_response
 from .messages import (
     build_create_order_message,
     build_payment_response_message,
     build_query_status_message,
     extract_payment_response,
 )
-from .skills import (
+from my_agent.payment_agent.payment_a2a.skills import (
     CREATE_ORDER_SKILL,
     CREATE_ORDER_SKILL_ID,
     QUERY_STATUS_SKILL,
@@ -22,7 +21,6 @@ from .tasks import (
 )
 
 __all__ = [
-    "build_payment_agent_card",
     "PaymentAgentHandler",
     "validate_payment_response",
     "build_create_order_message",

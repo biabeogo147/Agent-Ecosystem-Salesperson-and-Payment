@@ -6,7 +6,7 @@ from uuid import uuid4
 
 from a2a.types import Message, Part, Role, TextPart
 
-from my_a2a.payment_schemas import (
+from my_a2a_common.payment_schemas import (
     PaymentRequest,
     PaymentResponse,
     QueryStatusRequest,

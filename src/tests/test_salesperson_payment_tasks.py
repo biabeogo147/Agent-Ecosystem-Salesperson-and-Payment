@@ -4,8 +4,8 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from my_a2a import extract_payment_request
-from my_a2a.payment_schemas.payment_enums import PaymentChannel
+from my_a2a_common import extract_payment_request
+from my_a2a_common.payment_schemas.payment_enums import PaymentChannel
 
 from my_agent.salesperson_agent.salesperson_a2a.payment_tasks import (
     build_salesperson_create_order_task,
@@ -38,7 +38,7 @@ async def test_build_salesperson_create_order_task_generates_system_fields() -> 
     fake_client.generate_cancel_url.return_value = "https://cancel.example/CID-123"
 
     with patch(
-        "my_agent.salesperson_agent.payment_tasks.get_salesperson_mcp_client",
+        "my_agent.salesperson_agent.salesperson_a2a.payment_tasks.get_salesperson_mcp_client",
         return_value=fake_client,
     ):
         task = await build_salesperson_create_order_task(

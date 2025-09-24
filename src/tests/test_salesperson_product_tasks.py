@@ -11,7 +11,7 @@ from my_agent.salesperson_agent.salesperson_mcp_client import SalespersonMcpClie
 @pytest.mark.asyncio
 async def test_salesperson_client_find_product_delegates_to_json_call() -> None:
     client = SalespersonMcpClient(base_url="http://example.com")
-    client._call_tool_json = AsyncMock(  # type: ignore[attr-defined]
+    client._call_tool_json = AsyncMock(
         return_value={"status": "SUCCESS", "data": []}
     )
 
@@ -26,7 +26,7 @@ async def test_salesperson_client_find_product_delegates_to_json_call() -> None:
 @pytest.mark.asyncio
 async def test_salesperson_client_find_product_rejects_non_dict_payload() -> None:
     client = SalespersonMcpClient(base_url="http://example.com")
-    client._call_tool_json = AsyncMock(  # type: ignore[attr-defined]
+    client._call_tool_json = AsyncMock(
         return_value=["unexpected"]
     )
 
@@ -37,7 +37,7 @@ async def test_salesperson_client_find_product_rejects_non_dict_payload() -> Non
 @pytest.mark.asyncio
 async def test_salesperson_client_calc_shipping_delegates_to_json_call() -> None:
     client = SalespersonMcpClient(base_url="http://example.com")
-    client._call_tool_json = AsyncMock(  # type: ignore[attr-defined]
+    client._call_tool_json = AsyncMock(
         return_value={"status": "SUCCESS", "data": 15.5}
     )
 
@@ -52,7 +52,7 @@ async def test_salesperson_client_calc_shipping_delegates_to_json_call() -> None
 @pytest.mark.asyncio
 async def test_salesperson_client_reserve_stock_delegates_to_json_call() -> None:
     client = SalespersonMcpClient(base_url="http://example.com")
-    client._call_tool_json = AsyncMock(  # type: ignore[attr-defined]
+    client._call_tool_json = AsyncMock(
         return_value={"status": "SUCCESS", "data": True}
     )
 
@@ -81,7 +81,7 @@ async def test_calc_shipping_wrapper_defaults_to_singleton() -> None:
     fake_client.calc_shipping.return_value = {"status": "SUCCESS", "data": 9.0}
 
     with patch(
-        "my_agent.salesperson_agent.product_tasks.get_salesperson_mcp_client",
+        "my_agent.salesperson_agent.salesperson_a2a.product_tasks.get_salesperson_mcp_client",
         return_value=fake_client,
     ):
         result = await product_tasks.calc_shipping(1.0, 5.0)
@@ -96,7 +96,7 @@ async def test_reserve_stock_wrapper_defaults_to_singleton() -> None:
     fake_client.reserve_stock.return_value = {"status": "SUCCESS", "data": True}
 
     with patch(
-        "my_agent.salesperson_agent.product_tasks.get_salesperson_mcp_client",
+        "my_agent.salesperson_agent.salesperson_a2a.product_tasks.get_salesperson_mcp_client",
         return_value=fake_client,
     ):
         result = await product_tasks.reserve_stock("SKU1", 2)

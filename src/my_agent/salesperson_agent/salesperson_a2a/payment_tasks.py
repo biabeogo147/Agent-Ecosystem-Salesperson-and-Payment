@@ -22,8 +22,8 @@ from typing import Any, Dict, Optional, Sequence, Tuple
 from a2a.types import Task
 from google.adk.tools import FunctionTool
 
-from my_a2a import build_create_order_task, build_query_status_task, extract_payment_request, extract_status_request
-from my_a2a.payment_schemas.payment_enums import PaymentChannel
+from my_a2a_common import build_create_order_task, build_query_status_task, extract_payment_request, extract_status_request
+from my_a2a_common.payment_schemas.payment_enums import PaymentChannel
 
 from my_agent.salesperson_agent.salesperson_mcp_client import (
     SalespersonMcpClient,
@@ -161,4 +161,6 @@ __all__ = [
     "build_salesperson_query_status_task",
     "prepare_create_order_payload",
     "prepare_query_status_payload",
+    "prepare_create_order_payload_tool",
+    "prepare_query_status_payload_tool",
 ]

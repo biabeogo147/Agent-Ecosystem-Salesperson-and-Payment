@@ -3,10 +3,10 @@ from typing import Optional, Any
 from google.adk.tools import FunctionTool
 
 from config import *
-from my_a2a.payment_schemas.payment_enums import *
-from my_a2a.payment_schemas.next_action import NextAction
-from my_a2a.payment_schemas.payment_request import PaymentRequest
-from my_a2a.payment_schemas.payment_response import PaymentResponse
+from my_a2a_common.payment_schemas.payment_enums import *
+from my_a2a_common.payment_schemas.next_action import NextAction
+from my_a2a_common.payment_schemas.payment_request import PaymentRequest
+from my_a2a_common.payment_schemas.payment_response import PaymentResponse
 
 
 async def _stub_paygate_create(channel: PaymentChannel, total: float, return_url: Optional[str], cancel_url: Optional[str]):

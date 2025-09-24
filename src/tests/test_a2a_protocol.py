@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from a2a.types import Role, TaskState
 
-from my_a2a import (
+from my_a2a_common import (
     CREATE_ORDER_SKILL_ID,
     PaymentAgentHandler,
     QUERY_STATUS_SKILL_ID,
@@ -14,7 +14,7 @@ from my_a2a import (
     extract_status_request,
 )
 from my_agent.payment_agent.payment_a2a.a2a_app import build_payment_agent_card
-from my_a2a.payment_schemas.payment_enums import NextActionType, PaymentChannel
+from my_a2a_common.payment_schemas.payment_enums import NextActionType, PaymentChannel
 
 
 def _correlation_id(prefix: str) -> str:

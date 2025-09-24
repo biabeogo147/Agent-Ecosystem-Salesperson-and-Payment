@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Optional
 from pydantic import BaseModel, Field
 
-from my_a2a.payment_schemas.payment_enums.next_action_type import NextActionType
+from my_a2a_common.payment_schemas.payment_enums.next_action_type import NextActionType
 
 
 class NextAction(BaseModel):

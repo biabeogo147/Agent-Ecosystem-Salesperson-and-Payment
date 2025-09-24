@@ -2,7 +2,7 @@
 
 from a2a.types import AgentSkill
 
-from my_a2a.a2a_payment.constants import JSON_MEDIA_TYPE
+from my_a2a_common.a2a_salesperson_payment.constants import JSON_MEDIA_TYPE
 
 # Each skill gets a stable identifier. This is what tasks will reference in their
 # metadata when they ask the payment agent to execute a capability.

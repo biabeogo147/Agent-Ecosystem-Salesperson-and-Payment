@@ -7,14 +7,14 @@ from uuid import uuid4
 
 from a2a.types import Task, TaskState, TaskStatus
 
-from my_a2a.payment_schemas import (
+from my_a2a_common.payment_schemas import (
     CustomerInfo,
     PaymentItem,
     PaymentMethod,
     PaymentRequest,
     QueryStatusRequest,
 )
-from my_a2a.payment_schemas.payment_enums import PaymentChannel
+from my_a2a_common.payment_schemas.payment_enums import PaymentChannel
 
 from .constants import PAYMENT_REQUEST_KIND, PAYMENT_STATUS_KIND
 from .content import build_artifact, extract_payload_from_parts

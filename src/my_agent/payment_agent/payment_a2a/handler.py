@@ -6,17 +6,17 @@ from typing import Any, Callable, Dict
 
 from a2a.types import Message, Task
 
-from my_a2a.payment_schemas import PaymentRequest, PaymentResponse
-from my_a2a.payment_schemas.payment_enums import (
+from my_a2a_common.payment_schemas import PaymentRequest, PaymentResponse
+from my_a2a_common.payment_schemas.payment_enums import (
     NextActionType,
     PaymentAction,
     PaymentStatus,
 )
-from my_a2a.payment_schemas.next_action import NextAction
+from my_a2a_common.payment_schemas.next_action import NextAction
 
-from my_a2a.a2a_payment.messages import build_payment_response_message
+from my_a2a_common.a2a_salesperson_payment.messages import build_payment_response_message
 from my_agent.payment_agent.payment_a2a.skills import CREATE_ORDER_SKILL_ID, QUERY_STATUS_SKILL_ID
-from my_a2a.a2a_payment.tasks import extract_payment_request, extract_status_request
+from my_a2a_common.a2a_salesperson_payment.tasks import extract_payment_request, extract_status_request
 
 
 class PaymentAgentHandler:

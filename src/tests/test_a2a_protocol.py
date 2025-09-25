@@ -22,9 +22,6 @@ from my_agent.salesperson_agent.salesperson_a2a.payment_tasks import build_sales
 
 def _fake_client(
     correlation_id: str,
-    *,
-    return_url_factory: Callable[[str], str] | None = None,
-    cancel_url_factory: Callable[[str], str] | None = None,
 ) -> SalespersonMcpClient:
     fake_client = AsyncMock(spec=SalespersonMcpClient)
 
@@ -34,13 +31,11 @@ def _fake_client(
 
     async def _generate_return_url(value: str) -> str:
         assert value == correlation_id
-        factory = return_url_factory or (lambda cid: f"https://return/{cid}")
-        return factory(value)
+        return f"https://return/{value}"
 
     async def _generate_cancel_url(value: str) -> str:
         assert value == correlation_id
-        factory = cancel_url_factory or (lambda cid: f"https://cancel/{cid}")
-        return factory(value)
+        return f"https://cancel/{value}"
 
     fake_client.generate_correlation_id.side_effect = _generate_correlation_id
     fake_client.generate_return_url.side_effect = _generate_return_url

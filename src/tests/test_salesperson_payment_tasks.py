@@ -28,6 +28,15 @@ def _dummy_items() -> list[dict[str, object]]:
     ]
 
 
+def _minimal_items() -> list[dict[str, object]]:
+    return [
+        {
+            "name": "Sample Product",
+            "quantity": 1,
+        }
+    ]
+
+
 def _dummy_customer() -> dict[str, str]:
     return {"name": "Bob", "email": "bob@example.com"}
 
@@ -47,9 +56,25 @@ def _fake_client(correlation_id: str) -> SalespersonMcpClient:
         assert value == correlation_id
         return f"https://cancel.example/{value}"
 
+    async def _find_product(*, query: str) -> dict[str, object]:
+        assert query == "Sample Product"
+        return {
+            "status": "00",
+            "message": "SUCCESS",
+            "data": [
+                {
+                    "sku": "ABC",
+                    "name": "Sample Product",
+                    "price": 42.0,
+                    "currency": "USD",
+                }
+            ],
+        }
+
     fake_client.generate_correlation_id.side_effect = _generate_correlation_id
     fake_client.generate_return_url.side_effect = _generate_return_url
     fake_client.generate_cancel_url.side_effect = _generate_cancel_url
+    fake_client.find_product.side_effect = _find_product
     return fake_client
 
 
@@ -85,7 +110,7 @@ async def test_prepare_create_order_payload_wraps_task_and_request() -> None:
     fake_client = _fake_client("CID-777")
 
     result = await prepare_create_order_payload_with_client(
-        _dummy_items(),
+        _minimal_items(),
         _dummy_customer(),
         "qr",
         client=fake_client,
@@ -95,6 +120,9 @@ async def test_prepare_create_order_payload_wraps_task_and_request() -> None:
     assert result["payment_request"]["correlation_id"] == "CID-777"
     assert result["payment_request"]["method"]["channel"] == "qr"
     assert result["task"]["contextId"] == "CID-777"
+    fake_client.find_product.assert_awaited_once_with(query="Sample Product")
+    assert result["payment_request"]["items"][0]["unit_price"] == 42.0
+    assert result["payment_request"]["items"][0]["sku"] == "ABC"
 
 
 @pytest.mark.asyncio

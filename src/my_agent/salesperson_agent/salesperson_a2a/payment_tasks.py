@@ -206,6 +206,65 @@ async def build_salesperson_query_status_task(correlation_id: str) -> Task:
     )
 
 
+async def _resolve_items_via_product_tool(
+    items: Sequence[Any],
+    *,
+    client: SalespersonMcpClient | None = None,
+) -> List[PaymentItem]:
+    """Normalise item payloads by looking up product metadata via the product tool."""
+
+    from my_agent.salesperson_agent.salesperson_a2a.product_tasks import (
+        prepare_find_product_tool,
+        prepare_find_product_with_client,
+    )
+
+    resolved_items: List[PaymentItem] = []
+    for raw_item in items:
+        if not isinstance(raw_item, dict):
+            raise TypeError("Each item must be provided as a mapping with 'name' and 'quantity'.")
+
+        name = raw_item.get("name")
+        quantity = raw_item.get("quantity")
+        if not name or quantity is None:
+            raise ValueError("Each item must include both 'name' and 'quantity' fields.")
+
+        try:
+            quantity_int = int(quantity)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("Item 'quantity' must be an integer value.") from exc
+
+        if quantity_int <= 0:
+            raise ValueError("Item 'quantity' must be greater than zero.")
+
+        if client is None:
+            product_payload = await prepare_find_product_tool.func(query=name)
+        else:
+            product_payload = await prepare_find_product_with_client(query=name, client=client)
+
+        products = (product_payload or {}).get("data") or []
+        if not products:
+            raise ValueError(f"No product information returned for item '{name}'.")
+
+        product = products[0]
+        try:
+            resolved_items.append(
+                PaymentItem(
+                    sku=str(product["sku"]),
+                    name=str(product["name"]),
+                    quantity=quantity_int,
+                    unit_price=float(product["price"]),
+                    currency=str(product.get("currency", "USD")),
+                )
+            )
+        except KeyError as exc:
+            missing_key = exc.args[0]
+            raise ValueError(
+                f"Product information for '{name}' is missing the required '{missing_key}' field."
+            ) from exc
+
+    return resolved_items
+
+
 async def prepare_create_order_payload(
     items: List[Any],
     customer: Any,
@@ -223,8 +282,10 @@ async def prepare_create_order_payload(
     """
     client = get_salesperson_mcp_client()
     channel_enum = PaymentChannel(channel)
+    resolved_items = await _resolve_items_via_product_tool(items)
+
     task = await build_salesperson_create_order_task(
-        items,
+        resolved_items,
         customer,
         channel_enum,
         note=note,
@@ -269,8 +330,10 @@ async def prepare_create_order_payload_with_client(
     remote skill directly.
     """
     channel_enum = PaymentChannel(channel)
+    resolved_items = await _resolve_items_via_product_tool(items, client=client)
+
     task = await build_salesperson_create_order_task(
-        items,
+        resolved_items,
         customer,
         channel_enum,
         note=note,

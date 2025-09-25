@@ -49,7 +49,7 @@ def test_get_agent_card_fetches_and_caches() -> None:
         remote_agent._AGENT_CARD_FETCHED_AT = 0.0
 
         with patch(
-            "my_agent.salesperson_agent.remote_agent.httpx.Client",
+            "my_agent.salesperson_agent.salesperson_a2a.remote_agent.httpx.Client",
             return_value=dummy_client,
         ):
             card_first = remote_agent._get_agent_card()

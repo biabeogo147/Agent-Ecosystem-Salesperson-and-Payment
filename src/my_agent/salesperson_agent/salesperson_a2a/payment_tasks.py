@@ -152,6 +152,39 @@ async def prepare_query_status_payload(
     }
 
 
+async def prepare_create_order_payload_with_client(
+    items: List[Any],
+    customer: Any,
+    channel: Literal["redirect", "qr"],
+    *,
+    note: Optional[str] = None,
+    metadata: Optional[Dict[str, str]] = None,
+    client: SalespersonMcpClient,
+) -> Dict[str, Any]:
+    """Build the full payload required to call the payment agent's order skill.
+
+    The helper returns both the structured :class:`~a2a.types.Task` and the
+    flattened payment request payload so the salesperson agent can either pass
+    the task wholesale to the A2A client or extract the JSON body to call the
+    remote skill directly.
+    """
+    channel_enum = PaymentChannel(channel)
+    task = await build_salesperson_create_order_task(
+        items,
+        customer,
+        channel_enum,
+        note=note,
+        metadata=metadata,
+        mcp_client=client,
+    )
+    payment_request = extract_payment_request(task)
+    return {
+        "correlation_id": payment_request.correlation_id,
+        "payment_request": payment_request.model_dump(mode="json"),
+        "task": task.model_dump(mode="json"),
+    }
+
+
 prepare_create_order_payload_tool = FunctionTool(prepare_create_order_payload)
 prepare_query_status_payload_tool = FunctionTool(prepare_query_status_payload)
 
@@ -163,4 +196,5 @@ __all__ = [
     "prepare_query_status_payload",
     "prepare_create_order_payload_tool",
     "prepare_query_status_payload_tool",
+    "prepare_create_order_payload_with_client",
 ]

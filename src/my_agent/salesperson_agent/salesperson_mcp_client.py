@@ -12,17 +12,15 @@ from __future__ import annotations
 import json
 from typing import Any, Optional
 
-from google.adk.tools.mcp_tool.mcp_session_manager import (
-    MCPSessionManager,
-    StreamableHTTPConnectionParams,
-)
 from mcp import types as mcp_types
+from google.adk.tools.mcp_tool.mcp_session_manager import MCPSessionManager
 
-from config import MCP_SERVER_HOST_SALESPERSON, MCP_SERVER_PORT_SALESPERSON
+from my_mcp.mcp_connect_params import get_mcp_streamable_http_connect_params
+from config import MCP_SERVER_HOST_SALESPERSON, MCP_SERVER_PORT_SALESPERSON, MCP_SALESPERSON_TOKEN, \
+    MCP_SERVER_HOST_PAYMENT, MCP_SERVER_PORT_PAYMENT
 
-_DEFAULT_STREAMABLE_HTTP_URL = (
-    f"http://{MCP_SERVER_HOST_SALESPERSON}:{MCP_SERVER_PORT_SALESPERSON}/mcp"
-)
+mcp_sse_url = f"http://{MCP_SERVER_HOST_PAYMENT}:{MCP_SERVER_PORT_PAYMENT}/sse"
+mcp_streamable_http_url = f"http://{MCP_SERVER_HOST_SALESPERSON}:{MCP_SERVER_PORT_SALESPERSON}/mcp"
 
 
 class SalespersonMcpClient:
@@ -34,9 +32,9 @@ class SalespersonMcpClient:
         base_url: str | None = None,
         session_manager: MCPSessionManager | None = None,
     ) -> None:
-        self._base_url = base_url or _DEFAULT_STREAMABLE_HTTP_URL
+        self._base_url = base_url or mcp_streamable_http_url
         self._session_manager = session_manager or MCPSessionManager(
-            StreamableHTTPConnectionParams(url=self._base_url)
+            get_mcp_streamable_http_connect_params(self._base_url, MCP_SALESPERSON_TOKEN)
         )
 
     async def _call_tool(

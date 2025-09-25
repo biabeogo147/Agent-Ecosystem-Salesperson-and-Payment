@@ -17,50 +17,50 @@ from my_agent.salesperson_agent.salesperson_mcp_client import (
     get_salesperson_mcp_client,
 )
 
-ResponseDict = Dict[str, Any]
 
-
-async def find_product(
-    query: str, *, mcp_client: SalespersonMcpClient | None = None
-) -> ResponseDict:
+async def prepare_find_product(query: str) -> Dict[str, Any]:
     """Look up products via the salesperson MCP server."""
-    client = mcp_client or get_salesperson_mcp_client()
+    client = get_salesperson_mcp_client()
+    return await prepare_find_product_with_client(query=query, client=client)
+
+
+async def prepare_calc_shipping(weight: float, distance: float) -> Dict[str, Any]:
+    """Calculate shipping costs through the MCP shipping helper."""
+    client = get_salesperson_mcp_client()
+    return await prepare_calc_shipping_with_client(weight=weight, distance=distance, client=client)
+
+
+async def prepare_reserve_stock(sku: str, quantity: int) -> Dict[str, Any]:
+    """Reserve inventory through the MCP stock tool."""
+    client = get_salesperson_mcp_client()
+    return await prepare_reserve_stock_with_client(sku=sku, quantity=quantity, client=client)
+
+
+async def prepare_find_product_with_client(query: str, client: SalespersonMcpClient) -> Dict[str, Any]:
+    """Look up products via the salesperson MCP server."""
     return await client.find_product(query=query)
 
 
-async def calc_shipping(
-    weight: float,
-    distance: float,
-    *,
-    mcp_client: SalespersonMcpClient | None = None,
-) -> ResponseDict:
+async def prepare_calc_shipping_with_client(weight: float, distance: float, client: SalespersonMcpClient) -> Dict[str, Any]:
     """Calculate shipping costs through the MCP shipping helper."""
-    client = mcp_client or get_salesperson_mcp_client()
     return await client.calc_shipping(weight=weight, distance=distance)
 
 
-async def reserve_stock(
-    sku: str,
-    quantity: int,
-    *,
-    mcp_client: SalespersonMcpClient | None = None,
-) -> ResponseDict:
+async def prepare_reserve_stock_with_client(sku: str, quantity: int, client: SalespersonMcpClient) -> Dict[str, Any]:
     """Reserve inventory through the MCP stock tool."""
-    client = mcp_client or get_salesperson_mcp_client()
     return await client.reserve_stock(sku=sku, quantity=quantity)
 
 
-find_product_tool = FunctionTool(find_product)
-calc_shipping_tool = FunctionTool(calc_shipping)
-reserve_stock_tool = FunctionTool(reserve_stock)
+prepare_find_product_tool = FunctionTool(prepare_find_product)
+prepare_calc_shipping_tool = FunctionTool(prepare_calc_shipping)
+prepare_reserve_stock_tool = FunctionTool(prepare_reserve_stock)
 
 
 __all__ = [
-    "ResponseDict",
-    "find_product",
-    "calc_shipping",
-    "reserve_stock",
-    "find_product_tool",
-    "calc_shipping_tool",
-    "reserve_stock_tool",
+    "prepare_find_product",
+    "prepare_calc_shipping",
+    "prepare_reserve_stock",
+    "prepare_find_product_tool",
+    "prepare_calc_shipping_tool",
+    "prepare_reserve_stock_tool",
 ]

@@ -9,7 +9,9 @@ from my_a2a_common.payment_schemas.payment_enums import PaymentChannel
 
 from my_agent.salesperson_agent.salesperson_a2a.payment_tasks import (
     build_salesperson_create_order_task,
-    build_salesperson_query_status_task, prepare_create_order_payload, prepare_query_status_payload,
+    build_salesperson_query_status_task,
+    prepare_query_status_payload,
+    prepare_create_order_payload_with_client,
 )
 from my_agent.salesperson_agent.salesperson_mcp_client import SalespersonMcpClient
 
@@ -45,6 +47,7 @@ async def test_build_salesperson_create_order_task_generates_system_fields() -> 
             _dummy_items(),
             _dummy_customer(),
             PaymentChannel.REDIRECT,
+            mcp_client=fake_client,
         )
 
     fake_client.generate_correlation_id.assert_awaited_once_with(prefix="payment")
@@ -70,16 +73,16 @@ async def test_prepare_create_order_payload_wraps_task_and_request() -> None:
     fake_client.generate_return_url.return_value = "https://return.example/CID-777"
     fake_client.generate_cancel_url.return_value = "https://cancel.example/CID-777"
 
-    result = await prepare_create_order_payload(
+    result = await prepare_create_order_payload_with_client(
         _dummy_items(),
         _dummy_customer(),
-        PaymentChannel.QR,
-        mcp_client=fake_client,
+        "qr",
+        client=fake_client,
     )
 
     assert result["correlation_id"] == "CID-777"
     assert result["payment_request"]["correlation_id"] == "CID-777"
-    assert result["payment_request"]["method"]["channel"] == PaymentChannel.QR.value
+    assert result["payment_request"]["method"]["channel"] == "qr"
     assert result["task"]["contextId"] == "CID-777"
 
 

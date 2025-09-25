@@ -18,6 +18,7 @@ from google.adk.tools.mcp_tool.mcp_session_manager import MCPSessionManager
 
 from my_mcp.mcp_connect_params import get_mcp_streamable_http_connect_params
 from config import MCP_PAYMENT_TOKEN, MCP_SERVER_HOST_PAYMENT, MCP_SERVER_PORT_PAYMENT
+from utils.status import Status
 
 mcp_sse_url = f"http://{MCP_SERVER_HOST_PAYMENT}:{MCP_SERVER_PORT_PAYMENT}/sse"
 mcp_streamable_http_url = f"http://{MCP_SERVER_HOST_PAYMENT}:{MCP_SERVER_PORT_PAYMENT}/mcp"
@@ -85,6 +86,32 @@ class PaymentMcpClient:
             f"MCP tool '{name}' returned no JSON content to interpret."
         )
 
+    @staticmethod
+    def _ensure_response_format(payload: Any, *, tool: str) -> dict[str, Any]:
+        if not isinstance(payload, dict):
+            raise RuntimeError(
+                f"MCP tool '{tool}' returned an unexpected payload type: {type(payload)!r}"
+            )
+
+        missing_keys = [key for key in ("status", "message", "data") if key not in payload]
+        if missing_keys:
+            raise RuntimeError(
+                f"MCP tool '{tool}' returned a malformed response missing keys: {missing_keys}"
+            )
+
+        return payload
+
+    @classmethod
+    def _extract_success_data(cls, payload: Any, *, tool: str) -> Any:
+        response = cls._ensure_response_format(payload, tool=tool)
+        status = response.get("status")
+        if status != Status.SUCCESS.value:
+            message = response.get("message", "")
+            raise RuntimeError(
+                f"MCP tool '{tool}' returned status '{status}': {message}"
+            )
+        return response.get("data")
+
     async def create_order(self, *, payload: dict[str, Any] | str) -> dict[str, Any]:
         """Create an order using the shared MCP payment tool."""
         if isinstance(payload, str):
@@ -93,12 +120,13 @@ class PaymentMcpClient:
         if not isinstance(payload, dict):
             raise TypeError("create_order(payload=...) expects a dict or JSON string")
 
-        payload = await self._call_tool_json("create_order", {"payload": payload})
-        if not isinstance(payload, dict):
+        response = await self._call_tool_json("create_order", {"payload": payload})
+        data = self._extract_success_data(response, tool="create_order")
+        if not isinstance(data, dict):
             raise RuntimeError(
-                "MCP tool 'create_order' returned an unexpected payload type"
+                "MCP tool 'create_order' returned non-dict data payload"
             )
-        return payload
+        return data
 
     async def query_order_status(self, *, payload: dict[str, Any] | str) -> dict[str, Any]:
         """Query order status using the shared MCP payment tool."""
@@ -108,12 +136,13 @@ class PaymentMcpClient:
         if not isinstance(payload, dict):
             raise TypeError("create_order(payload=...) expects a dict or JSON string")
 
-        payload = await self._call_tool_json("query_order_status", {"payload": payload})
-        if not isinstance(payload, dict):
+        response = await self._call_tool_json("query_order_status", {"payload": payload})
+        data = self._extract_success_data(response, tool="query_order_status")
+        if not isinstance(data, dict):
             raise RuntimeError(
-                "MCP tool 'query_order_status' returned an unexpected payload type"
+                "MCP tool 'query_order_status' returned non-dict data payload"
             )
-        return payload
+        return data
 
 
 _client: PaymentMcpClient | None = None

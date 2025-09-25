@@ -18,6 +18,7 @@ from google.adk.tools.mcp_tool.mcp_session_manager import MCPSessionManager
 
 from my_mcp.mcp_connect_params import get_mcp_streamable_http_connect_params
 from config import MCP_SERVER_HOST_SALESPERSON, MCP_SERVER_PORT_SALESPERSON, MCP_SALESPERSON_TOKEN
+from utils.status import Status
 
 mcp_sse_url = f"http://{MCP_SERVER_HOST_SALESPERSON}:{MCP_SERVER_HOST_SALESPERSON}/sse"
 mcp_streamable_http_url = f"http://{MCP_SERVER_HOST_SALESPERSON}:{MCP_SERVER_PORT_SALESPERSON}/mcp"
@@ -85,54 +86,89 @@ class SalespersonMcpClient:
             f"MCP tool '{name}' returned no JSON content to interpret."
         )
 
+    @staticmethod
+    def _ensure_response_format(payload: Any, *, tool: str) -> dict[str, Any]:
+        """Validate that ``payload`` conforms to the ResponseFormat contract."""
+        if not isinstance(payload, dict):
+            raise RuntimeError(
+                f"MCP tool '{tool}' returned an unexpected payload type: {type(payload)!r}"
+            )
+
+        missing_keys = [key for key in ("status", "message", "data") if key not in payload]
+        if missing_keys:
+            raise RuntimeError(
+                f"MCP tool '{tool}' returned a malformed response missing keys: {missing_keys}"
+            )
+
+        return payload
+
+    @classmethod
+    def _extract_success_data(cls, payload: Any, *, tool: str) -> Any:
+        """Return the ``data`` field when the ResponseFormat indicates success."""
+        response = cls._ensure_response_format(payload, tool=tool)
+        status = response.get("status")
+        if status != Status.SUCCESS.value:
+            message = response.get("message", "")
+            raise RuntimeError(
+                f"MCP tool '{tool}' returned status '{status}': {message}"
+            )
+
+        return response.get("data")
+
     async def generate_correlation_id(self, *, prefix: str) -> str:
         """Request a new correlation ID from the MCP server."""
-        return await self._call_tool_text(
+        payload = await self._call_tool_json(
             "generate_correlation_id", {"prefix": prefix}
         )
+        data = self._extract_success_data(payload, tool="generate_correlation_id")
+        if not isinstance(data, str):
+            raise RuntimeError(
+                "MCP tool 'generate_correlation_id' returned non-string data"
+            )
+        return data
 
     async def generate_return_url(self, correlation_id: str) -> str:
         """Request the return URL bound to ``correlation_id`` from MCP."""
-        return await self._call_tool_text(
+        payload = await self._call_tool_json(
             "generate_return_url", {"correlation_id": correlation_id}
         )
+        data = self._extract_success_data(payload, tool="generate_return_url")
+        if not isinstance(data, str):
+            raise RuntimeError(
+                "MCP tool 'generate_return_url' returned non-string data"
+            )
+        return data
 
     async def generate_cancel_url(self, correlation_id: str) -> str:
         """Request the cancel URL bound to ``correlation_id`` from MCP."""
-        return await self._call_tool_text(
+        payload = await self._call_tool_json(
             "generate_cancel_url", {"correlation_id": correlation_id}
         )
+        data = self._extract_success_data(payload, tool="generate_cancel_url")
+        if not isinstance(data, str):
+            raise RuntimeError(
+                "MCP tool 'generate_cancel_url' returned non-string data"
+            )
+        return data
 
     async def find_product(self, *, query: str) -> dict[str, Any]:
         """Look up products via the MCP ``find_product`` tool."""
         payload = await self._call_tool_json("find_product", {"query": query})
-        if not isinstance(payload, dict):
-            raise RuntimeError(
-                "MCP tool 'find_product' returned an unexpected payload type"
-            )
-        return payload
+        return self._ensure_response_format(payload, tool="find_product")
 
     async def calc_shipping(self, *, weight: float, distance: float) -> dict[str, Any]:
         """Calculate shipping costs using the shared MCP shipping tool."""
         payload = await self._call_tool_json(
             "calc_shipping", {"weight": weight, "distance": distance}
         )
-        if not isinstance(payload, dict):
-            raise RuntimeError(
-                "MCP tool 'calc_shipping' returned an unexpected payload type"
-            )
-        return payload
+        return self._ensure_response_format(payload, tool="calc_shipping")
 
     async def reserve_stock(self, *, sku: str, quantity: int) -> dict[str, Any]:
         """Reserve inventory using the MCP stock management tool."""
         payload = await self._call_tool_json(
             "reserve_stock", {"sku": sku, "quantity": quantity}
         )
-        if not isinstance(payload, dict):
-            raise RuntimeError(
-                "MCP tool 'reserve_stock' returned an unexpected payload type"
-            )
-        return payload
+        return self._ensure_response_format(payload, tool="reserve_stock")
 
 
 _client: SalespersonMcpClient | None = None

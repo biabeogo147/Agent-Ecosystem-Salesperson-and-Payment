@@ -63,7 +63,6 @@ class BaseMcpClient:
         self, name: str, arguments: Optional[dict[str, Any]] = None
     ) -> Any:
         """Call a tool and interpret its response as JSON-compatible data."""
-
         result = await self._call_tool(name, arguments)
         if result.structuredContent is not None:
             return result.structuredContent
@@ -87,7 +86,6 @@ class BaseMcpClient:
     @staticmethod
     def _ensure_response_format(payload: Any, *, tool: str) -> dict[str, Any]:
         """Validate that ``payload`` conforms to the ResponseFormat contract."""
-
         if not isinstance(payload, dict):
             raise RuntimeError(
                 f"MCP tool '{tool}' returned an unexpected payload type: {type(payload)!r}"
@@ -104,7 +102,6 @@ class BaseMcpClient:
     @classmethod
     def _extract_success_data(cls, payload: Any, *, tool: str) -> Any:
         """Return the ``data`` field when the ResponseFormat indicates success."""
-
         response = cls._ensure_response_format(payload, tool=tool)
         status = response.get("status")
         if status != Status.SUCCESS.value:

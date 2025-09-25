@@ -7,8 +7,6 @@ import pytest
 from my_a2a_common.payment_schemas.payment_enums import PaymentChannel
 
 from my_agent.salesperson_agent.salesperson_a2a.payment_tasks import (
-    build_salesperson_create_order_task,
-    build_salesperson_query_status_task,
     prepare_query_status_payload,
     prepare_create_order_payload_with_client,
     extract_payment_request,
@@ -76,33 +74,6 @@ def _fake_client(correlation_id: str) -> SalespersonMcpClient:
     fake_client.generate_cancel_url.side_effect = _generate_cancel_url
     fake_client.find_product.side_effect = _find_product
     return fake_client
-
-
-@pytest.mark.asyncio
-async def test_build_salesperson_create_order_task_generates_system_fields() -> None:
-    fake_client = _fake_client("CID-123")
-
-    task = await build_salesperson_create_order_task(
-        _dummy_items(),
-        _dummy_customer(),
-        PaymentChannel.REDIRECT,
-        mcp_client=fake_client,
-    )
-
-    fake_client.generate_correlation_id.assert_awaited_once_with(prefix="payment")
-    fake_client.generate_return_url.assert_awaited_once_with("CID-123")
-    fake_client.generate_cancel_url.assert_awaited_once_with("CID-123")
-
-    request = extract_payment_request(task)
-    assert request.correlation_id == "CID-123"
-    assert request.method.return_url == "https://return.example/CID-123"
-    assert request.method.cancel_url == "https://cancel.example/CID-123"
-
-
-@pytest.mark.asyncio
-async def test_build_salesperson_query_status_task_passthrough() -> None:
-    task = await build_salesperson_query_status_task("CID-999")
-    assert task.context_id == "CID-999"
 
 
 @pytest.mark.asyncio

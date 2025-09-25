@@ -21,13 +21,9 @@ from .a2a_salesperson_payment import (
     QUERY_STATUS_SKILL,
     QUERY_STATUS_SKILL_ID,
     build_create_order_message,
-    build_create_order_task,
     build_payment_response_message,
     build_query_status_message,
-    build_query_status_task,
-    extract_payment_request,
     extract_payment_response,
-    extract_status_request,
     validate_payment_response,
 )
 
@@ -49,12 +45,8 @@ __all__ = [
     "QUERY_STATUS_SKILL",
     "QUERY_STATUS_SKILL_ID",
     "build_create_order_message",
-    "build_create_order_task",
     "build_payment_response_message",
     "build_query_status_message",
-    "build_query_status_task",
-    "extract_payment_request",
     "extract_payment_response",
-    "extract_status_request",
     "validate_payment_response",
 ]

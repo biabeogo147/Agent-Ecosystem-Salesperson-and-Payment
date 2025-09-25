@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from unittest.mock import AsyncMock
+
 import pytest
 from a2a.types import Role, TaskState
 
@@ -7,14 +9,14 @@ from my_a2a_common import (
     CREATE_ORDER_SKILL_ID,
     PaymentAgentHandler,
     QUERY_STATUS_SKILL_ID,
-    build_create_order_task,
-    build_query_status_task,
-    extract_payment_request,
     extract_payment_response,
-    extract_status_request,
 )
-from my_agent.payment_agent.payment_a2a.a2a_app import build_payment_agent_card
 from my_a2a_common.payment_schemas.payment_enums import NextActionType, PaymentChannel
+
+from my_agent.payment_agent.payment_a2a.a2a_app import build_payment_agent_card
+from my_agent.salesperson_agent.salesperson_mcp_client import SalespersonMcpClient
+from my_agent.salesperson_agent.salesperson_a2a.payment_tasks import build_salesperson_create_order_task, \
+    build_salesperson_query_status_task, extract_payment_request, extract_status_request
 
 
 def _correlation_id(prefix: str) -> str:
@@ -44,13 +46,15 @@ def _dummy_customer() -> dict:
 
 @pytest.mark.asyncio
 async def test_build_create_order_task_injects_system_fields() -> None:
-    cid = _correlation_id("payment")
-    return_url, cancel_url = _url_factory(cid)
-    task = await build_create_order_task(
+    fake_client = AsyncMock(spec=SalespersonMcpClient)
+    fake_client.generate_correlation_id.return_value = _correlation_id
+    fake_client.generate_return_url.return_value = "https://return/CID-001"
+    fake_client.generate_cancel_url.return_value = "https://cancel/CID-001"
+    task = await build_salesperson_create_order_task(
         _dummy_items(),
         _dummy_customer(),
         PaymentChannel.REDIRECT,
-        cid, return_url, cancel_url,
+        mcp_client=fake_client,
     )
 
     request = extract_payment_request(task)
@@ -68,7 +72,7 @@ async def test_build_create_order_task_injects_system_fields() -> None:
 
 @pytest.mark.asyncio
 async def test_build_query_status_task_wraps_payload() -> None:
-    task = await build_query_status_task("CID-001")
+    task = await build_salesperson_query_status_task("CID-001")
     status_request = extract_status_request(task)
     assert status_request.correlation_id == "CID-001"
     assert task.metadata["skill_id"] == QUERY_STATUS_SKILL_ID
@@ -96,13 +100,10 @@ async def test_payment_agent_handler_validates_and_wraps_response() -> None:
         query_status_tool=query_status_tool,
     )
 
-    cid = _correlation_id("payment")
-    return_url, cancel_url = _url_factory(cid)
-    task = await build_create_order_task(
+    task = await build_salesperson_create_order_task(
         _dummy_items(),
         _dummy_customer(),
         PaymentChannel.REDIRECT,
-        cid, return_url, cancel_url,
     )
 
     message = handler.handle_task(task)
@@ -126,16 +127,13 @@ async def test_payment_agent_handler_rejects_invalid_response() -> None:
 
     handler = PaymentAgentHandler(
         create_order_tool=create_order_tool,
-        query_status_tool=lambda payload: payload,  # unused
+        query_status_tool=lambda payload: payload,
     )
 
-    cid = _correlation_id("payment")
-    return_url, cancel_url = _url_factory(cid)
-    task = await build_create_order_task(
+    task = await build_salesperson_create_order_task(
         _dummy_items(),
         _dummy_customer(),
         PaymentChannel.REDIRECT,
-        cid, return_url, cancel_url,
     )
 
     with pytest.raises(ValueError):

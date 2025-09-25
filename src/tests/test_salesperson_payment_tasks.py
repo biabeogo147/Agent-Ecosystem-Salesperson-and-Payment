@@ -4,14 +4,13 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from my_a2a_common import extract_payment_request
 from my_a2a_common.payment_schemas.payment_enums import PaymentChannel
 
 from my_agent.salesperson_agent.salesperson_a2a.payment_tasks import (
     build_salesperson_create_order_task,
     build_salesperson_query_status_task,
     prepare_query_status_payload,
-    prepare_create_order_payload_with_client,
+    prepare_create_order_payload_with_client, extract_payment_request,
 )
 from my_agent.salesperson_agent.salesperson_mcp_client import SalespersonMcpClient
 

@@ -18,13 +18,18 @@ following the protocol requirements from the payment team.
 from __future__ import annotations
 
 from typing import Any, Dict, Optional, Sequence, Tuple, List, Literal
+from uuid import uuid4
 
-from a2a.types import Task
+from a2a.types import Task, TaskStatus, TaskState
 from google.adk.tools import FunctionTool
 
-from my_a2a_common import build_create_order_task, build_query_status_task, extract_payment_request, extract_status_request
+from my_a2a_common.payment_schemas import *
+from my_a2a_common.payment_schemas import PaymentRequest, QueryStatusRequest
 from my_a2a_common.payment_schemas.payment_enums import PaymentChannel
+from my_a2a_common.a2a_salesperson_payment.content import build_artifact, extract_payload_from_parts
+from my_a2a_common.a2a_salesperson_payment.constants import PAYMENT_REQUEST_KIND, PAYMENT_STATUS_KIND
 
+from my_agent.payment_agent.payment_a2a.payment_agent_skills import CREATE_ORDER_SKILL_ID, QUERY_STATUS_SKILL_ID
 from my_agent.salesperson_agent.salesperson_mcp_client import (
     SalespersonMcpClient,
     get_salesperson_mcp_client,
@@ -50,6 +55,49 @@ async def _default_url_factory(
     )
 
 
+def _ensure_payment_item(item: Any) -> PaymentItem:
+    if isinstance(item, PaymentItem):
+        return item
+    return PaymentItem.model_validate(item)
+
+
+def _ensure_customer(customer: Any) -> CustomerInfo:
+    if isinstance(customer, CustomerInfo):
+        return customer
+    return CustomerInfo.model_validate(customer)
+
+
+def _base_task_metadata(skill_id: str, correlation_id: str) -> Dict[str, Any]:
+    return {
+        "skill_id": skill_id,
+        "correlation_id": correlation_id,
+    }
+
+
+def extract_payment_request(task: Task) -> PaymentRequest:
+    """Retrieve the ``PaymentRequest`` carried inside a task."""
+    if not task.history:
+        raise ValueError("Task contains no messages")
+
+    payload = extract_payload_from_parts(
+        task.history[-1].parts,
+        expected_kind=PAYMENT_REQUEST_KIND,
+    )
+    return PaymentRequest.model_validate(payload)
+
+
+def extract_status_request(task: Task) -> QueryStatusRequest:
+    """Retrieve the status request payload from the task."""
+    if not task.history:
+        raise ValueError("Task contains no messages")
+
+    payload = extract_payload_from_parts(
+        task.history[-1].parts,
+        expected_kind=PAYMENT_STATUS_KIND,
+    )
+    return QueryStatusRequest.model_validate(payload)
+
+
 async def build_salesperson_create_order_task(
     items: Sequence[Any],
     customer: Any,
@@ -59,7 +107,11 @@ async def build_salesperson_create_order_task(
     metadata: Optional[Dict[str, str]] = None,
     mcp_client: SalespersonMcpClient | None = None,
 ) -> Task:
-    """Create the payment order task with the required system fields injected.
+    """Create the payment order task with the required system fields injected to be sent to the payment agent.
+
+    The helper ensures the salesperson injects the required system fields
+    (correlation ID, return URL and cancel URL) before handing off the work to
+    the remote agent.
 
     Parameters
     ----------
@@ -85,25 +137,73 @@ async def build_salesperson_create_order_task(
         A fully-prepared :class:`~a2a.types.Task` instance ready to be sent to
         the remote payment agent.
     """
+    from my_a2a_common import build_create_order_message
+
     client = mcp_client or get_salesperson_mcp_client()
     correlation_id = await _default_correlation_id_factory("payment", client=client)
     return_url, cancel_url = await _default_url_factory(correlation_id, client=client)
 
-    return await build_create_order_task(
-        items,
-        customer,
-        channel,
-        correlation_id,
-        return_url,
-        cancel_url,
+    method = PaymentMethod(
+        channel=channel,
+        return_url=return_url,
+        cancel_url=cancel_url,
+    )
+
+    payment_request = PaymentRequest(
+        correlation_id=correlation_id,
+        items=[_ensure_payment_item(item) for item in items],
+        customer=_ensure_customer(customer),
+        method=method,
         note=note,
         metadata=metadata,
+    )
+
+    message = build_create_order_message(payment_request)
+
+    request_payload = payment_request.model_dump(mode="json")
+    artifact = build_artifact(
+        PAYMENT_REQUEST_KIND,
+        request_payload,
+        description="Structured payment order request sent by the salesperson agent.",
+    )
+
+    task_metadata = _base_task_metadata(CREATE_ORDER_SKILL_ID, correlation_id)
+    if metadata:
+        task_metadata["client_metadata"] = metadata
+
+    return Task(
+        id=str(uuid4()),
+        context_id=correlation_id,
+        history=[message],
+        artifacts=[artifact],
+        status=TaskStatus(state=TaskState.submitted),
+        metadata=task_metadata,
     )
 
 
 async def build_salesperson_query_status_task(correlation_id: str) -> Task:
     """Wrapper that exposes query-status functionality alongside create order."""
-    return await build_query_status_task(correlation_id)
+    from my_a2a_common import build_query_status_message
+
+    status_request = QueryStatusRequest(correlation_id=correlation_id)
+    message = build_query_status_message(status_request)
+
+    artifact = build_artifact(
+        PAYMENT_STATUS_KIND,
+        status_request.model_dump(mode="json"),
+        description="Status lookup request for an existing payment correlation.",
+    )
+
+    task_metadata = _base_task_metadata(QUERY_STATUS_SKILL_ID, correlation_id)
+
+    return Task(
+        id=str(uuid4()),
+        context_id=correlation_id,
+        history=[message],
+        artifacts=[artifact],
+        status=TaskStatus(state=TaskState.submitted),
+        metadata=task_metadata,
+    )
 
 
 async def prepare_create_order_payload(
@@ -197,4 +297,6 @@ __all__ = [
     "prepare_create_order_payload_tool",
     "prepare_query_status_payload_tool",
     "prepare_create_order_payload_with_client",
+    "extract_payment_request",
+    "extract_status_request",
 ]

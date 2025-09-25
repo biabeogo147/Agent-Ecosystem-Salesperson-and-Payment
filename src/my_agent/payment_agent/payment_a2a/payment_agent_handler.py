@@ -15,8 +15,7 @@ from my_a2a_common.payment_schemas.payment_enums import (
 from my_a2a_common.payment_schemas.next_action import NextAction
 
 from my_a2a_common.a2a_salesperson_payment.messages import build_payment_response_message
-from my_agent.payment_agent.payment_a2a.skills import CREATE_ORDER_SKILL_ID, QUERY_STATUS_SKILL_ID
-from my_a2a_common.a2a_salesperson_payment.tasks import extract_payment_request, extract_status_request
+from my_agent.payment_agent.payment_a2a.payment_agent_skills import CREATE_ORDER_SKILL_ID, QUERY_STATUS_SKILL_ID
 
 
 class PaymentAgentHandler:
@@ -33,6 +32,8 @@ class PaymentAgentHandler:
 
     def handle_task(self, task: Task) -> Message:
         """Inspect the task metadata to decide which skill to execute."""
+        from my_agent.salesperson_agent.salesperson_a2a.payment_tasks import extract_payment_request, \
+            extract_status_request
 
         skill_id = (task.metadata or {}).get("skill_id")
         if skill_id == CREATE_ORDER_SKILL_ID:

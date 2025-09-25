@@ -56,7 +56,7 @@ async def create_order(payload: dict[str, Any]) -> dict[str, Any]:
     res = PaymentResponse(
         correlation_id=req.correlation_id,
         status=PaymentStatus.PENDING,
-        paygate=req.method.provider,
+        provider_name=PAYGATE_PROVIDER,
         order_id=paygate_response["order_id"],
         pay_url=paygate_response.get("pay_url"),
         qr_code_url=paygate_response.get("qr_code_url"),

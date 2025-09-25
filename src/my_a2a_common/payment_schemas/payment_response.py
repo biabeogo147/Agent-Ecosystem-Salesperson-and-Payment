@@ -9,8 +9,8 @@ class PaymentResponse(BaseModel):
     correlation_id: str = Field(..., description="The same ID as in the request")
     status: PaymentStatus = Field(default=PaymentStatus.PENDING)
 
-    paygate: Optional[str] = Field(default=None, description="Paygate name")
-    order_id: Optional[str] = Field(default=None, description="Order ID on paygate")
+    provider_name: Optional[str] = Field(default=None, description="Provider name")
+    order_id: Optional[str] = Field(default=None, description="Order ID on provider")
     pay_url: Optional[str] = Field(default=None, description="URL to redirect customer (if any)")
     qr_code_url: Optional[str] = Field(default=None, description="QR code image URL (if any)")
     expires_at: Optional[str] = Field(default=None, description="ISO8601 expiration time of pay_url or qr_code_url")

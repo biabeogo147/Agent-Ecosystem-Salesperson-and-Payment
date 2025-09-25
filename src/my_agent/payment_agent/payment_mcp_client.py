@@ -85,8 +85,14 @@ class PaymentMcpClient:
             f"MCP tool '{name}' returned no JSON content to interpret."
         )
 
-    async def create_order(self, *, payload: dict[str, Any]) -> dict[str, Any]:
+    async def create_order(self, *, payload: dict[str, Any] | str) -> dict[str, Any]:
         """Create an order using the shared MCP payment tool."""
+        if isinstance(payload, str):
+            payload = json.loads(payload)
+
+        if not isinstance(payload, dict):
+            raise TypeError("create_order(payload=...) expects a dict or JSON string")
+
         payload = await self._call_tool_json("create_order", {"payload": payload})
         if not isinstance(payload, dict):
             raise RuntimeError(
@@ -94,8 +100,14 @@ class PaymentMcpClient:
             )
         return payload
 
-    async def query_order_status(self, *, payload: dict[str, Any]) -> dict[str, Any]:
+    async def query_order_status(self, *, payload: dict[str, Any] | str) -> dict[str, Any]:
         """Query order status using the shared MCP payment tool."""
+        if isinstance(payload, str):
+            payload = json.loads(payload)
+
+        if not isinstance(payload, dict):
+            raise TypeError("create_order(payload=...) expects a dict or JSON string")
+
         payload = await self._call_tool_json("query_order_status", {"payload": payload})
         if not isinstance(payload, dict):
             raise RuntimeError(

@@ -13,5 +13,5 @@ Core duties
 - To check an existing order, call `query_status({"correlation_id": str})` and return the tool result.
 
 Operational guidelines
-- Stay within your tools; do not fabricate payment results or talk to customers.
+- Each time completing create_order or query_status, return only the tool's JSON response.
 - Logically explain any validation failures so the requesting agent can fix the input.

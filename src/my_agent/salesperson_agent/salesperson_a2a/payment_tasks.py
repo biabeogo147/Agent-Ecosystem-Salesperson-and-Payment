@@ -32,7 +32,7 @@ from my_a2a_common.a2a_salesperson_payment.constants import PAYMENT_REQUEST_KIND
 from my_agent.payment_agent.payment_a2a.payment_agent_skills import CREATE_ORDER_SKILL_ID, QUERY_STATUS_SKILL_ID
 from my_agent.salesperson_agent.salesperson_mcp_client import (
     SalespersonMcpClient,
-    get_salesperson_mcp_client,
+    get_salesperson_mcp_client, prepare_find_product_with_client, prepare_find_product_tool,
 )
 
 
@@ -212,11 +212,6 @@ async def _resolve_items_via_product_tool(
     client: SalespersonMcpClient | None = None,
 ) -> List[PaymentItem]:
     """Normalise item payloads by looking up product metadata via the product tool."""
-
-    from my_agent.salesperson_agent.salesperson_a2a.product_tasks import (
-        prepare_find_product_tool,
-        prepare_find_product_with_client,
-    )
 
     resolved_items: List[PaymentItem] = []
     for raw_item in items:

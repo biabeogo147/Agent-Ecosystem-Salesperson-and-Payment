@@ -5,8 +5,8 @@ from config import *
 from my_agent.salesperson_agent.salesperson_a2a.remote_agent import get_payment_remote
 from my_agent.salesperson_agent.salesperson_a2a.payment_tasks import prepare_create_order_payload_tool, \
     prepare_query_status_payload_tool
-from my_agent.salesperson_agent.salesperson_a2a.product_tasks import prepare_reserve_stock_tool, prepare_calc_shipping_tool, \
-    prepare_find_product_tool
+from my_agent.salesperson_agent.salesperson_mcp_client import prepare_find_product_tool, prepare_calc_shipping_tool, \
+    prepare_reserve_stock_tool
 
 instruction_path = os.path.join(os.path.dirname(__file__), "instruction.txt")
 with open(instruction_path, "r", encoding="utf-8") as f:

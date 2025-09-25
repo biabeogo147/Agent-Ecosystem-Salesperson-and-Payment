@@ -10,21 +10,17 @@ for unit tests.
 from __future__ import annotations
 
 import json
-from typing import Any, Optional
+from typing import Any
 
 from google.adk.tools import FunctionTool
-from mcp import types as mcp_types
 from google.adk.tools.mcp_tool.mcp_session_manager import MCPSessionManager
 
-from my_mcp.mcp_connect_params import get_mcp_streamable_http_connect_params
 from config import MCP_PAYMENT_TOKEN, MCP_SERVER_HOST_PAYMENT, MCP_SERVER_PORT_PAYMENT
-from utils.status import Status
+from my_agent.base_mcp_client import BaseMcpClient
 
 mcp_sse_url = f"http://{MCP_SERVER_HOST_PAYMENT}:{MCP_SERVER_PORT_PAYMENT}/sse"
 mcp_streamable_http_url = f"http://{MCP_SERVER_HOST_PAYMENT}:{MCP_SERVER_PORT_PAYMENT}/mcp"
-
-
-class PaymentMcpClient:
+class PaymentMcpClient(BaseMcpClient):
     """Small wrapper around :class:`MCPSessionManager` for payment tools."""
 
     def __init__(
@@ -33,84 +29,12 @@ class PaymentMcpClient:
         base_url: str | None = None,
         session_manager: MCPSessionManager | None = None,
     ) -> None:
-        self._base_url = base_url or mcp_streamable_http_url
-        self._session_manager = session_manager or MCPSessionManager(
-            get_mcp_streamable_http_connect_params(self._base_url, MCP_PAYMENT_TOKEN)
+        super().__init__(
+            base_url=base_url,
+            session_manager=session_manager,
+            default_base_url=mcp_streamable_http_url,
+            token=MCP_PAYMENT_TOKEN,
         )
-
-    async def _call_tool(
-        self, name: str, arguments: Optional[dict[str, Any]] = None
-    ) -> mcp_types.CallToolResult:
-        session = await self._session_manager.create_session()
-        result = await session.call_tool(name, arguments)
-        if result.isError:
-            raise RuntimeError(
-                f"MCP tool '{name}' returned an error payload: {result}"
-            )
-        return result
-
-    async def _call_tool_text(
-        self, name: str, arguments: Optional[dict[str, Any]] = None
-    ) -> str:
-        result = await self._call_tool(name, arguments)
-        for part in result.content:
-            if isinstance(part, mcp_types.TextContent):
-                return part.text
-        if result.structuredContent is not None:
-            return json.dumps(result.structuredContent)
-        raise RuntimeError(
-            f"MCP tool '{name}' returned no textual content to interpret."
-        )
-
-    async def _call_tool_json(
-        self, name: str, arguments: Optional[dict[str, Any]] = None
-    ) -> Any:
-        """Call a tool and interpret its response as JSON-compatible data."""
-        result = await self._call_tool(name, arguments)
-        if result.structuredContent is not None:
-            return result.structuredContent
-
-        for part in result.content:
-            if isinstance(part, mcp_types.TextContent):
-                if not part.text.strip():
-                    continue
-                try:
-                    return json.loads(part.text)
-                except json.JSONDecodeError as exc:
-                    snippet = part.text[:200]
-                    raise RuntimeError(
-                        f"MCP tool '{name}' returned non-JSON text: {snippet}"
-                    ) from exc
-
-        raise RuntimeError(
-            f"MCP tool '{name}' returned no JSON content to interpret."
-        )
-
-    @staticmethod
-    def _ensure_response_format(payload: Any, *, tool: str) -> dict[str, Any]:
-        if not isinstance(payload, dict):
-            raise RuntimeError(
-                f"MCP tool '{tool}' returned an unexpected payload type: {type(payload)!r}"
-            )
-
-        missing_keys = [key for key in ("status", "message", "data") if key not in payload]
-        if missing_keys:
-            raise RuntimeError(
-                f"MCP tool '{tool}' returned a malformed response missing keys: {missing_keys}"
-            )
-
-        return payload
-
-    @classmethod
-    def _extract_success_data(cls, payload: Any, *, tool: str) -> Any:
-        response = cls._ensure_response_format(payload, tool=tool)
-        status = response.get("status")
-        if status != Status.SUCCESS.value:
-            message = response.get("message", "")
-            raise RuntimeError(
-                f"MCP tool '{tool}' returned status '{status}': {message}"
-            )
-        return response.get("data")
 
     async def create_order(self, *, payload: dict[str, Any] | str) -> dict[str, Any]:
         """Create an order using the shared MCP payment tool."""

@@ -7,6 +7,7 @@ from my_a2a_common.payment_schemas.payment_enums import *
 from my_a2a_common.payment_schemas.next_action import NextAction
 from my_a2a_common.payment_schemas.payment_request import PaymentRequest
 from my_a2a_common.payment_schemas.payment_response import PaymentResponse
+from utils.response_format import ResponseFormat
 
 
 async def _stub_paygate_create(channel: PaymentChannel, total: float, return_url: Optional[str], cancel_url: Optional[str]):
@@ -18,7 +19,7 @@ async def _stub_paygate_create(channel: PaymentChannel, total: float, return_url
     return {"order_id": oid, "qr_code_url": f"{QR_URL}/{oid}.png", "expires_at": exp}
 
 
-async def create_order(payload: dict[str, Any]) -> dict[str, Any]:
+async def create_order(payload: dict[str, Any]) -> str:
     """
     Create a payment order on a payment paygate and return next_action for the customer.
     Args:
@@ -63,17 +64,18 @@ async def create_order(payload: dict[str, Any]) -> dict[str, Any]:
         expires_at=paygate_response["expires_at"],
         next_action=next_action,
     )
-    return res.model_dump()
+    return ResponseFormat(data=res.model_dump()).to_json()
 
 
-async def query_order_status(payload: dict[str, Any]) -> dict[str, Any]:
+async def query_order_status(payload: dict[str, Any]) -> str:
     """
     Query order status by correlation_id
     Args:
       payload: {"correlation_id": "..."}
     """
     cid = payload["correlation_id"]
-    return PaymentResponse(correlation_id=cid, status=PaymentStatus.FAILED).model_dump()
+    res = PaymentResponse(correlation_id=cid, status=PaymentStatus.FAILED)
+    return ResponseFormat(data=res.model_dump()).to_json()
 
 
 print("Initializing ADK tool for payment...")

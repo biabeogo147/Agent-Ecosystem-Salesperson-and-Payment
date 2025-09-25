@@ -61,17 +61,20 @@ async def reserve_stock(sku: str, quantity: int) -> str:
 
 async def generate_correlation_id(prefix: str) -> str:
     """Create a unique correlation identifier used to track payment requests."""
-    return f"{prefix}-{uuid.uuid4()}"
+    correlation_id = f"{prefix}-{uuid.uuid4()}"
+    return ResponseFormat(data=correlation_id).to_json()
 
 
 async def generate_return_url(correlation_id: str) -> str:
     """Build the return URL that the payment gateway should redirect to."""
-    return f"{RETURN_URL}?cid={correlation_id}"
+    return_url = f"{RETURN_URL}?cid={correlation_id}"
+    return ResponseFormat(data=return_url).to_json()
 
 
 async def generate_cancel_url(correlation_id: str) -> str:
     """Build the cancel URL that the payment gateway should redirect to."""
-    return f"{CANCEL_URL}?cid={correlation_id}"
+    cancel_url = f"{CANCEL_URL}?cid={correlation_id}"
+    return ResponseFormat(data=cancel_url).to_json()
 
 
 print("Initializing ADK tool for salesperson...")

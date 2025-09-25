@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -10,7 +10,8 @@ from my_agent.salesperson_agent.salesperson_a2a.payment_tasks import (
     build_salesperson_create_order_task,
     build_salesperson_query_status_task,
     prepare_query_status_payload,
-    prepare_create_order_payload_with_client, extract_payment_request,
+    prepare_create_order_payload_with_client,
+    extract_payment_request,
 )
 from my_agent.salesperson_agent.salesperson_mcp_client import SalespersonMcpClient
 
@@ -31,23 +32,37 @@ def _dummy_customer() -> dict[str, str]:
     return {"name": "Bob", "email": "bob@example.com"}
 
 
+def _fake_client(correlation_id: str) -> SalespersonMcpClient:
+    fake_client = AsyncMock(spec=SalespersonMcpClient)
+
+    async def _generate_correlation_id(*, prefix: str) -> str:
+        assert prefix == "payment"
+        return correlation_id
+
+    async def _generate_return_url(value: str) -> str:
+        assert value == correlation_id
+        return f"https://return.example/{value}"
+
+    async def _generate_cancel_url(value: str) -> str:
+        assert value == correlation_id
+        return f"https://cancel.example/{value}"
+
+    fake_client.generate_correlation_id.side_effect = _generate_correlation_id
+    fake_client.generate_return_url.side_effect = _generate_return_url
+    fake_client.generate_cancel_url.side_effect = _generate_cancel_url
+    return fake_client
+
+
 @pytest.mark.asyncio
 async def test_build_salesperson_create_order_task_generates_system_fields() -> None:
-    fake_client = AsyncMock(spec=SalespersonMcpClient)
-    fake_client.generate_correlation_id.return_value = "CID-123"
-    fake_client.generate_return_url.return_value = "https://return.example/CID-123"
-    fake_client.generate_cancel_url.return_value = "https://cancel.example/CID-123"
+    fake_client = _fake_client("CID-123")
 
-    with patch(
-        "my_agent.salesperson_agent.salesperson_a2a.payment_tasks.get_salesperson_mcp_client",
-        return_value=fake_client,
-    ):
-        task = await build_salesperson_create_order_task(
-            _dummy_items(),
-            _dummy_customer(),
-            PaymentChannel.REDIRECT,
-            mcp_client=fake_client,
-        )
+    task = await build_salesperson_create_order_task(
+        _dummy_items(),
+        _dummy_customer(),
+        PaymentChannel.REDIRECT,
+        mcp_client=fake_client,
+    )
 
     fake_client.generate_correlation_id.assert_awaited_once_with(prefix="payment")
     fake_client.generate_return_url.assert_awaited_once_with("CID-123")
@@ -67,10 +82,7 @@ async def test_build_salesperson_query_status_task_passthrough() -> None:
 
 @pytest.mark.asyncio
 async def test_prepare_create_order_payload_wraps_task_and_request() -> None:
-    fake_client = AsyncMock(spec=SalespersonMcpClient)
-    fake_client.generate_correlation_id.return_value = "CID-777"
-    fake_client.generate_return_url.return_value = "https://return.example/CID-777"
-    fake_client.generate_cancel_url.return_value = "https://cancel.example/CID-777"
+    fake_client = _fake_client("CID-777")
 
     result = await prepare_create_order_payload_with_client(
         _dummy_items(),

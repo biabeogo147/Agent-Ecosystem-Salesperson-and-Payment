@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from unittest.mock import AsyncMock
 
 import pytest
@@ -19,13 +20,32 @@ from my_agent.salesperson_agent.salesperson_a2a.payment_tasks import build_sales
     build_salesperson_query_status_task, extract_payment_request, extract_status_request
 
 
-def _correlation_id(prefix: str) -> str:
-    assert prefix == "payment"
-    return "CID-001"
+def _fake_client(
+    correlation_id: str,
+    *,
+    return_url_factory: Callable[[str], str] | None = None,
+    cancel_url_factory: Callable[[str], str] | None = None,
+) -> SalespersonMcpClient:
+    fake_client = AsyncMock(spec=SalespersonMcpClient)
 
+    async def _generate_correlation_id(*, prefix: str) -> str:
+        assert prefix == "payment"
+        return correlation_id
 
-def _url_factory(correlation_id: str) -> tuple[str, str]:
-    return f"https://return/{correlation_id}", f"https://cancel/{correlation_id}"
+    async def _generate_return_url(value: str) -> str:
+        assert value == correlation_id
+        factory = return_url_factory or (lambda cid: f"https://return/{cid}")
+        return factory(value)
+
+    async def _generate_cancel_url(value: str) -> str:
+        assert value == correlation_id
+        factory = cancel_url_factory or (lambda cid: f"https://cancel/{cid}")
+        return factory(value)
+
+    fake_client.generate_correlation_id.side_effect = _generate_correlation_id
+    fake_client.generate_return_url.side_effect = _generate_return_url
+    fake_client.generate_cancel_url.side_effect = _generate_cancel_url
+    return fake_client
 
 
 def _dummy_items() -> list[dict]:
@@ -46,10 +66,7 @@ def _dummy_customer() -> dict:
 
 @pytest.mark.asyncio
 async def test_build_create_order_task_injects_system_fields() -> None:
-    fake_client = AsyncMock(spec=SalespersonMcpClient)
-    fake_client.generate_correlation_id.return_value = _correlation_id
-    fake_client.generate_return_url.return_value = "https://return/CID-001"
-    fake_client.generate_cancel_url.return_value = "https://cancel/CID-001"
+    fake_client = _fake_client("CID-001")
     task = await build_salesperson_create_order_task(
         _dummy_items(),
         _dummy_customer(),
@@ -100,10 +117,13 @@ async def test_payment_agent_handler_validates_and_wraps_response() -> None:
         query_status_tool=query_status_tool,
     )
 
+    fake_client = _fake_client("CID-001")
+
     task = await build_salesperson_create_order_task(
         _dummy_items(),
         _dummy_customer(),
         PaymentChannel.REDIRECT,
+        mcp_client=fake_client,
     )
 
     message = handler.handle_task(task)
@@ -130,10 +150,13 @@ async def test_payment_agent_handler_rejects_invalid_response() -> None:
         query_status_tool=lambda payload: payload,
     )
 
+    fake_client = _fake_client("CID-001")
+
     task = await build_salesperson_create_order_task(
         _dummy_items(),
         _dummy_customer(),
         PaymentChannel.REDIRECT,
+        mcp_client=fake_client,
     )
 
     with pytest.raises(ValueError):

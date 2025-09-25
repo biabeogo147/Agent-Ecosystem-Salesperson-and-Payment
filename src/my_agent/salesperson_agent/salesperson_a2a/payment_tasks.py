@@ -17,7 +17,7 @@ following the protocol requirements from the payment team.
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Sequence, Tuple
+from typing import Any, Dict, Optional, Sequence, Tuple, List, Literal
 
 from a2a.types import Task
 from google.adk.tools import FunctionTool
@@ -107,13 +107,12 @@ async def build_salesperson_query_status_task(correlation_id: str) -> Task:
 
 
 async def prepare_create_order_payload(
-    items: Sequence[Any],
+    items: List[Any],
     customer: Any,
-    channel: PaymentChannel,
+    channel: Literal["redirect", "qr"],
     *,
     note: Optional[str] = None,
     metadata: Optional[Dict[str, str]] = None,
-    mcp_client: SalespersonMcpClient | None = None,
 ) -> Dict[str, Any]:
     """Build the full payload required to call the payment agent's order skill.
 
@@ -122,11 +121,12 @@ async def prepare_create_order_payload(
     the task wholesale to the A2A client or extract the JSON body to call the
     remote skill directly.
     """
-    client = mcp_client or get_salesperson_mcp_client()
+    client = get_salesperson_mcp_client()
+    channel_enum = PaymentChannel(channel)
     task = await build_salesperson_create_order_task(
         items,
         customer,
-        channel,
+        channel_enum,
         note=note,
         metadata=metadata,
         mcp_client=client,

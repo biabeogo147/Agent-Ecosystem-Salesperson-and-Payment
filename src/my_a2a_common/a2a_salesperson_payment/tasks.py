@@ -141,6 +141,7 @@ def extract_status_request(task: Task) -> QueryStatusRequest:
     )
     return QueryStatusRequest.model_validate(payload)
 
+
 __all__ = [
     "build_create_order_task",
     "build_query_status_task",

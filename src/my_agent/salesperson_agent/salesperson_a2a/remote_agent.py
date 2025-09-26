@@ -37,3 +37,12 @@ def _get_payment_agent_card() -> AgentCard:
         _AGENT_CARD_CACHE = AgentCard.model_validate(resp.json())
         _AGENT_CARD_FETCHED_AT = now
         return _AGENT_CARD_CACHE
+
+
+def get_payment_agent_card() -> AgentCard:
+    """Expose the cached :class:`AgentCard` for non-agent helpers."""
+
+    return _get_payment_agent_card()
+
+
+__all__ = ["get_remote_payment_agent", "get_payment_agent_card"]

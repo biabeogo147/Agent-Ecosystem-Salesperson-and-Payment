@@ -17,7 +17,7 @@ from google.adk.tools.mcp_tool.mcp_session_manager import MCPSessionManager
 from config import MCP_SERVER_HOST_SALESPERSON, MCP_SERVER_PORT_SALESPERSON, MCP_SALESPERSON_TOKEN
 from my_agent.base_mcp_client import BaseMcpClient
 
-mcp_sse_url = f"http://{MCP_SERVER_HOST_SALESPERSON}:{MCP_SERVER_HOST_SALESPERSON}/sse"
+mcp_sse_url = f"http://{MCP_SERVER_HOST_SALESPERSON}:{MCP_SERVER_PORT_SALESPERSON}/sse"
 mcp_streamable_http_url = f"http://{MCP_SERVER_HOST_SALESPERSON}:{MCP_SERVER_PORT_SALESPERSON}/mcp"
 
 

@@ -17,7 +17,7 @@ _AGENT_CARD_TTL = 60  # seconds
 _AGENT_CARD_FETCHED_AT = 0.0
 
 
-def get_payment_remote() -> RemoteA2aAgent:
+def get_remote_payment_agent() -> RemoteA2aAgent:
     return RemoteA2aAgent(
         name="payment_agent_remote",
         description="Remote Payment Agent via A2A",
@@ -25,7 +25,7 @@ def get_payment_remote() -> RemoteA2aAgent:
     )
 
 
-def _get_agent_card() -> AgentCard:
+def _get_payment_agent_card() -> AgentCard:
     global _AGENT_CARD_CACHE, _AGENT_CARD_FETCHED_AT, _AGENT_CARD_TTL
 
     now = time.time()

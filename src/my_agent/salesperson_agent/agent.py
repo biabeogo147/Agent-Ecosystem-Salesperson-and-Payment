@@ -2,7 +2,7 @@ from google.adk.agents import Agent, LlmAgent
 from google.adk.models.lite_llm import LiteLlm
 
 from config import *
-from my_agent.salesperson_agent.salesperson_a2a.remote_agent import get_payment_remote
+from my_agent.salesperson_agent.salesperson_a2a.remote_agent import get_remote_payment_agent
 from my_agent.salesperson_agent.salesperson_a2a.payment_tasks import prepare_create_order_payload_tool, \
     prepare_query_status_payload_tool
 from my_agent.salesperson_agent.salesperson_mcp_client import prepare_find_product_tool, prepare_calc_shipping_tool, \
@@ -20,7 +20,7 @@ def gemini_salesperson_agent() -> Agent:
         model="gemini-2.0-flash",
         description=_DESCRIPTION,
         instruction=_INSTRUCTION,
-        sub_agents=[get_payment_remote()],
+        sub_agents=[get_remote_payment_agent()],
         tools=[
             prepare_find_product_tool,
             prepare_calc_shipping_tool,
@@ -41,7 +41,7 @@ def llm_salesperson_agent() -> LlmAgent:
         ),
         description=_DESCRIPTION,
         instruction=_INSTRUCTION,
-        sub_agents=[get_payment_remote()],
+        sub_agents=[get_remote_payment_agent()],
         tools=[
             prepare_find_product_tool,
             prepare_calc_shipping_tool,

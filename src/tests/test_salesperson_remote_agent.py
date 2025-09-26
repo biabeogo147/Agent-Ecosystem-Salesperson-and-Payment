@@ -52,8 +52,8 @@ def test_get_agent_card_fetches_and_caches() -> None:
             "my_agent.salesperson_agent.salesperson_a2a.remote_agent.httpx.Client",
             return_value=dummy_client,
         ):
-            card_first = remote_agent._get_agent_card()
-            card_second = remote_agent._get_agent_card()
+            card_first = remote_agent._get_payment_agent_card()
+            card_second = remote_agent._get_payment_agent_card()
 
         assert isinstance(card_first, AgentCard)
         assert card_second is card_first

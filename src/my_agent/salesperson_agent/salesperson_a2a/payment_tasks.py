@@ -24,7 +24,6 @@ from a2a.types import Task, TaskStatus, TaskState
 from google.adk.tools import FunctionTool
 
 from my_a2a_common.payment_schemas import *
-from my_a2a_common.payment_schemas import PaymentRequest, QueryStatusRequest
 from my_a2a_common.payment_schemas.payment_enums import PaymentChannel
 from my_a2a_common.a2a_salesperson_payment.content import build_artifact, extract_payload_from_parts
 from my_a2a_common.a2a_salesperson_payment.constants import PAYMENT_REQUEST_KIND, PAYMENT_STATUS_KIND

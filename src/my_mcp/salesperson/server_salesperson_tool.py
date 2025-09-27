@@ -81,7 +81,7 @@ app.add_middleware(LoggingMiddleware)
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
-        "server_salesperson_tool:app",
+        app,
         host="0.0.0.0",
         port=MCP_SERVER_PORT_SALESPERSON,
         reload=False,

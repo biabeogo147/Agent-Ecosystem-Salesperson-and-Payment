@@ -159,16 +159,16 @@ class BaseA2AClient:
         }
 
     @staticmethod
-    def _ensure_response_format(payload: Any) -> dict[str, Any]:
+    def _ensure_response_format(payload: Any, logger: logging.Logger) -> dict[str, Any]:
         if not isinstance(payload, dict):
-            self._logger.warning("Malformed JSON-RPC result payload (not an object)")
+            logger.warning("Malformed JSON-RPC result payload (not an object)")
             raise RuntimeError(
                 "Remote A2A agent returned a malformed JSON-RPC result payload",
             )
 
         missing = [key for key in ("status", "message", "data") if key not in payload]
         if missing:
-            self._logger.warning("ResponseFormat missing keys: %s", ", ".join(missing))
+            logger.warning("ResponseFormat missing keys: %s", ", ".join(missing))
             raise RuntimeError(
                 "Remote A2A agent returned ResponseFormat missing keys: " + ", ".join(missing)
             )
@@ -177,7 +177,7 @@ class BaseA2AClient:
 
     @classmethod
     def _extract_success_data(cls, payload: Any, logger: logging.Logger) -> Any:
-        response = cls._ensure_response_format(payload)
+        response = cls._ensure_response_format(payload, logger)
         status = response.get("status")
         if status != Status.SUCCESS.value:
             message = response.get("message", "")

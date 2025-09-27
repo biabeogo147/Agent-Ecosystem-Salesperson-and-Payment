@@ -2,34 +2,20 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Mapping
-
-from a2a.types import Message, Task
+from typing import Any, Dict, Mapping, Sequence
 
 from config import PAYMENT_AGENT_SERVER_HOST, PAYMENT_AGENT_SERVER_PORT
 from my_a2a_common import extract_payment_response
-from my_a2a_common.payment_schemas import PaymentResponse
 
 from my_agent.base_a2a_client import BaseA2AClient
+from my_agent.salesperson_agent.salesperson_a2a.payment_tasks import (
+    prepare_create_order_payload,
+    prepare_query_status_payload,
+)
+from utils.response_format_a2a import ResponseFormatA2A
 
 
 PAYMENT_AGENT_BASE_URL = f"http://{PAYMENT_AGENT_SERVER_HOST}:{PAYMENT_AGENT_SERVER_PORT}"
-
-
-@dataclass
-class PaymentAgentResult:
-    """Structured representation of the payment agent's reply."""
-
-    message: Message
-    response: PaymentResponse
-
-    def to_dict(self) -> dict[str, Any]:
-        """Return a JSON-serialisable view of the result for logging or tests."""
-        return {
-            "message": self.message.model_dump(mode="json"),
-            "response": self.response.model_dump(mode="json"),
-        }
 
 
 class SalespersonA2AClient(BaseA2AClient):
@@ -42,26 +28,48 @@ class SalespersonA2AClient(BaseA2AClient):
             **kwargs,
         )
 
-    @staticmethod
-    def _task_from_payload(payload: Mapping[str, Any]) -> Task:
-        task_payload = payload.get("task")
-        if task_payload is None:
-            raise ValueError("Expected payload to contain 'task' entry")
-        return Task.model_validate(task_payload)
+    async def create_order(
+        self,
+        items: Sequence[Mapping[str, Any]] | Sequence[Any],
+        customer: Mapping[str, Any] | Any,
+        channel: str,
+        *,
+        note: str | None = None,
+        metadata: Dict[str, str] | None = None,
+    ) -> ResponseFormatA2A:
+        """Create an order by preparing the payload and forwarding it to A2A."""
 
-    async def create_order(self, payload: Mapping[str, Any]) -> PaymentAgentResult:
-        """Send the create-order task to the payment agent and parse the reply."""
-        task = self._task_from_payload(payload)
-        message = await self.send_task(task)
+        metadata_payload = dict(metadata) if metadata is not None else None
+        payload = await prepare_create_order_payload(
+            list(items),
+            customer,
+            channel,
+            note=note,
+            metadata=metadata_payload,
+        )
+        message = await self.send_task_payload(payload)
         response = extract_payment_response(message)
-        return PaymentAgentResult(message=message, response=response)
 
-    async def query_status(self, payload: Mapping[str, Any]) -> PaymentAgentResult:
-        """Send the status lookup task to the payment agent and parse the reply."""
-        task = self._task_from_payload(payload)
-        message = await self.send_task(task)
+        return ResponseFormatA2A(
+            data={
+                "message": message.model_dump(mode="json"),
+                "response": response.model_dump(mode="json"),
+            }
+        )
+
+    async def query_status(self, correlation_id: str) -> ResponseFormatA2A:
+        """Query the payment agent for the status of a previously created order."""
+
+        payload = await prepare_query_status_payload(correlation_id)
+        message = await self.send_task_payload(payload)
         response = extract_payment_response(message)
-        return PaymentAgentResult(message=message, response=response)
+
+        return ResponseFormatA2A(
+            data={
+                "message": message.model_dump(mode="json"),
+                "response": response.model_dump(mode="json"),
+            }
+        )
 
 
-__all__ = ["PaymentAgentResult", "SalespersonA2AClient", "PAYMENT_AGENT_BASE_URL"]
+__all__ = ["SalespersonA2AClient", "PAYMENT_AGENT_BASE_URL"]

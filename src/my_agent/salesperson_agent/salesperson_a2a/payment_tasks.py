@@ -21,8 +21,6 @@ from typing import Any, Dict, Optional, Sequence, Tuple, List, Literal
 from uuid import uuid4
 
 from a2a.types import Task, TaskStatus, TaskState
-from google.adk.tools import FunctionTool
-
 from my_a2a_common.payment_schemas import *
 from my_a2a_common.payment_schemas.payment_enums import PaymentChannel
 from my_a2a_common.a2a_salesperson_payment.content import build_artifact, extract_payment_request, \
@@ -246,14 +244,8 @@ async def prepare_create_order_payload_with_client(
     }
 
 
-prepare_create_order_payload_tool = FunctionTool(prepare_create_order_payload)
-prepare_query_status_payload_tool = FunctionTool(prepare_query_status_payload)
-
-
 __all__ = [
     "prepare_create_order_payload",
     "prepare_query_status_payload",
-    "prepare_create_order_payload_tool",
-    "prepare_query_status_payload_tool",
     "prepare_create_order_payload_with_client",
 ]

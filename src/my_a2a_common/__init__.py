@@ -17,7 +17,6 @@ from a2a.types import (
 from .a2a_salesperson_payment import (
     CREATE_ORDER_SKILL,
     CREATE_ORDER_SKILL_ID,
-    PaymentAgentHandler,
     QUERY_STATUS_SKILL,
     QUERY_STATUS_SKILL_ID,
     build_create_order_message,
@@ -41,7 +40,6 @@ __all__ = [
     "TaskStatus",
     "CREATE_ORDER_SKILL",
     "CREATE_ORDER_SKILL_ID",
-    "PaymentAgentHandler",
     "QUERY_STATUS_SKILL",
     "QUERY_STATUS_SKILL_ID",
     "build_create_order_message",

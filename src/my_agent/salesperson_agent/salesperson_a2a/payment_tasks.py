@@ -176,7 +176,7 @@ async def prepare_query_status_payload(
     correlation_id: str,
 ) -> Dict[str, Any]:
     """Build the task and payload needed for the payment status skill."""
-    from my_a2a_common import build_query_status_message
+    from my_a2a_common.a2a_salesperson_payment.messages import build_query_status_message
 
     status_request = QueryStatusRequest(correlation_id=correlation_id)
     message = build_query_status_message(status_request)
@@ -222,7 +222,7 @@ async def prepare_create_order_payload_with_client(
     the task wholesale to the A2A client or extract the JSON body to call the
     remote skill directly.
     """
-    from my_a2a_common import build_create_order_message
+    from my_a2a_common.a2a_salesperson_payment.messages import build_create_order_message
 
     channel_enum = PaymentChannel(channel)
     resolved_items = await _resolve_items_via_product_tool(items, client=client)

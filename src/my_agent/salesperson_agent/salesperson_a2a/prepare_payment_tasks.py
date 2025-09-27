@@ -68,7 +68,6 @@ async def _resolve_items_via_product_tool(
     client: SalespersonMcpClient,
 ) -> List[PaymentItem]:
     """Normalise item payloads by looking up product metadata via the product tool."""
-
     resolved_items: List[PaymentItem] = []
     for raw_item in items:
         if not isinstance(raw_item, dict):
@@ -118,9 +117,9 @@ async def _resolve_items_via_product_tool(
 
 
 async def prepare_create_order_payload(
-    items: List[Any],
+    items: Sequence[Any],
     customer: Any,
-    channel: Literal["redirect", "qr"],
+    channel: PaymentChannel,
     *,
     note: Optional[str] = None,
     metadata: Optional[Dict[str, str]] = None,
@@ -176,9 +175,9 @@ async def prepare_query_status_payload(correlation_id: str) -> Dict[str, Any]:
 
 
 async def prepare_create_order_payload_with_client(
-    items: List[Any],
+    items: Sequence[Any],
     customer: Any,
-    channel: Literal["redirect", "qr"],
+    channel: PaymentChannel,
     *,
     note: Optional[str] = None,
     metadata: Optional[Dict[str, str]] = None,
@@ -193,14 +192,13 @@ async def prepare_create_order_payload_with_client(
     """
     from my_a2a_common.a2a_salesperson_payment.messages import build_create_order_message
 
-    channel_enum = PaymentChannel(channel)
     resolved_items = await _resolve_items_via_product_tool(items, client=client)
 
     correlation_id = await _default_correlation_id_factory("payment", client=client)
     return_url, cancel_url = await _default_url_factory(correlation_id, client=client)
 
     method = PaymentMethod(
-        channel=channel_enum,
+        channel=channel,
         return_url=return_url,
         cancel_url=cancel_url,
     )

@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Mapping, Sequence
+from typing import Any, Dict, Mapping, Sequence, Literal
+
+from google.adk.tools import FunctionTool
 
 from config import PAYMENT_AGENT_SERVER_HOST, PAYMENT_AGENT_SERVER_PORT
 from my_a2a_common import extract_payment_response
+from my_a2a_common.payment_schemas.payment_enums import PaymentChannel
 
 from my_agent.base_a2a_client import BaseA2AClient
-from my_agent.salesperson_agent.salesperson_a2a.payment_tasks import (
+from my_agent.salesperson_agent.salesperson_a2a.prepare_payment_tasks import (
     prepare_create_order_payload,
     prepare_query_status_payload,
 )
@@ -32,16 +35,15 @@ class SalespersonA2AClient(BaseA2AClient):
         self,
         items: Sequence[Mapping[str, Any]] | Sequence[Any],
         customer: Mapping[str, Any] | Any,
-        channel: str,
+        channel: PaymentChannel,
         *,
         note: str | None = None,
         metadata: Dict[str, str] | None = None,
     ) -> ResponseFormatA2A:
         """Create an order by preparing the payload and forwarding it to A2A."""
-
         metadata_payload = dict(metadata) if metadata is not None else None
         payload = await prepare_create_order_payload(
-            list(items),
+            items,
             customer,
             channel,
             note=note,
@@ -59,7 +61,6 @@ class SalespersonA2AClient(BaseA2AClient):
 
     async def query_status(self, correlation_id: str) -> ResponseFormatA2A:
         """Query the payment agent for the status of a previously created order."""
-
         payload = await prepare_query_status_payload(correlation_id)
         message = await self.send_task_payload(payload)
         response = extract_payment_response(message)
@@ -72,4 +73,37 @@ class SalespersonA2AClient(BaseA2AClient):
         )
 
 
-__all__ = ["SalespersonA2AClient", "PAYMENT_AGENT_BASE_URL"]
+async def _create_payment_order(
+    items: Sequence[Any],
+    customer: Any,
+    channel: Literal["redirect", "qr"],
+    *,
+    note: str | None = None,
+    metadata: Mapping[str, str] | None = None,
+) -> dict[str, Any]:
+    async with SalespersonA2AClient() as client:
+        response = await client.create_order(
+            items=items,
+            customer=customer,
+            channel=PaymentChannel(channel),
+            note=note,
+            metadata=dict(metadata) if metadata is not None else None,
+        )
+    return response.to_dict()
+
+
+async def _query_payment_order_status(correlation_id: str) -> dict[str, Any]:
+    async with SalespersonA2AClient() as client:
+        response = await client.query_status(correlation_id)
+    return response.to_dict()
+
+
+create_payment_order_tool = FunctionTool(_create_payment_order)
+query_payment_order_status_tool = FunctionTool(_query_payment_order_status)
+
+__all__ = [
+    "SalespersonA2AClient",
+    "PAYMENT_AGENT_BASE_URL",
+    "create_payment_order_tool",
+    "query_payment_order_status_tool",
+]

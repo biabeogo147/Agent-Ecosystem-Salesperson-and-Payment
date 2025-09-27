@@ -17,7 +17,7 @@ class _DummyResponse:
     def json(self) -> Any:
         return self.payload
 
-    def raise_for_status(self) -> None:  # pragma: no cover - no errors in tests
+    def raise_for_status(self) -> None:
         return None
 
 
@@ -29,7 +29,7 @@ class _DummyClient:
     def __enter__(self) -> "_DummyClient":
         return self
 
-    def __exit__(self, exc_type, exc, tb) -> None:  # pragma: no cover - nothing to clean up
+    def __exit__(self, exc_type, exc, tb) -> None:
         return None
 
     def get(self, url: str) -> _DummyResponse:
@@ -38,7 +38,7 @@ class _DummyClient:
         return self._response
 
 
-def test_get_agent_card_fetches_and_caches() -> None:
+def test_get_payment_agent_card() -> None:
     card_payload = build_payment_agent_card("http://payment").model_dump(mode="json")
     dummy_client = _DummyClient(_DummyResponse(card_payload))
 

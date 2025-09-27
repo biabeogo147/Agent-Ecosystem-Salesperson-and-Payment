@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import logging
 from typing import Any, Dict, Literal, List
 
@@ -16,18 +17,22 @@ from my_agent.salesperson_agent.salesperson_a2a.prepare_payment_tasks import (
     prepare_create_order_payload,
     prepare_query_status_payload,
 )
-from utils.response_format_a2a import ResponseFormatA2A
+from utils.response_format_jsonrpc import ResponseFormatJSONRPC
 
 
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler("salesperson_a2a_client.log")
-    ]
-)
-logger = logging.getLogger("salesperson_a2a_client")
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+LOG_DIR = os.path.join(PROJECT_ROOT, "log")
+os.makedirs(LOG_DIR, exist_ok=True)
+
+log_file_path = os.path.join(LOG_DIR, "salesperson_a2a_client.log")
+
+logger = logging.getLogger(__name__)
+file_handler = logging.FileHandler(log_file_path)
+file_handler.setLevel(logging.DEBUG)
+formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+file_handler.setFormatter(formatter)
+if not logger.handlers:
+    logger.addHandler(file_handler)
 
 PAYMENT_AGENT_BASE_URL = f"http://{PAYMENT_AGENT_SERVER_HOST}:{PAYMENT_AGENT_SERVER_PORT}"
 
@@ -52,7 +57,7 @@ class SalespersonA2AClient(BaseA2AClient):
         *,
         note: str | None = None,
         metadata: Dict[str, str] | None = None,
-    ) -> ResponseFormatA2A:
+    ) -> ResponseFormatJSONRPC:
         """Create an order by preparing the payload and forwarding it to A2A."""
         try:
             self._logger.debug(
@@ -73,7 +78,7 @@ class SalespersonA2AClient(BaseA2AClient):
                 response.correlation_id, response.status.value, channel.value, len(items),
             )
 
-            return ResponseFormatA2A(
+            return ResponseFormatJSONRPC(
                 data={
                     "message": message.model_dump(mode="json"),
                     "response": response.model_dump(mode="json"),
@@ -83,7 +88,7 @@ class SalespersonA2AClient(BaseA2AClient):
             self._logger.exception("create_order failed")
             raise
 
-    async def query_status(self, correlation_id: str) -> ResponseFormatA2A:
+    async def query_status(self, correlation_id: str) -> ResponseFormatJSONRPC:
         """Query the payment agent for the status of a previously created order."""
         try:
             self._logger.info("query_status start (correlation_id=%s)", correlation_id)
@@ -95,7 +100,7 @@ class SalespersonA2AClient(BaseA2AClient):
                 response.correlation_id, response.status.value,
             )
 
-            return ResponseFormatA2A(
+            return ResponseFormatJSONRPC(
                 data={
                     "message": message.model_dump(mode="json"),
                     "response": response.model_dump(mode="json"),

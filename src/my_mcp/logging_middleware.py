@@ -1,3 +1,4 @@
+import os
 import json
 import logging
 from typing import Optional
@@ -6,20 +7,37 @@ from starlette.responses import Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import Message
 
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler("mcp_server.log")
-    ]
-)
-logger = logging.getLogger("mcp_server")
+
+def get_logger(name: str, filename: str) -> logging.Logger:
+    PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    LOG_DIR = os.path.join(PROJECT_ROOT, "log")
+    os.makedirs(LOG_DIR, exist_ok=True)
+
+    log_file_path = os.path.join(LOG_DIR, filename)
+    logger = logging.getLogger(name)
+
+    if not logger.handlers:
+        file_handler = logging.FileHandler(log_file_path)
+        file_handler.setLevel(logging.DEBUG)
+        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+        file_handler.setFormatter(formatter)
+        logger.addHandler(file_handler)
+
+    logger.setLevel(logging.DEBUG)
+    return logger
+
 
 MAX_LOG_BYTES = 4096
 
+
 class LoggingMiddleware(BaseHTTPMiddleware):
+    def __init__(self, app, logger: logging.Logger):
+        super().__init__(app)
+        self.logger = logger
+
     async def dispatch(self, request: Request, call_next):
+        logger = self.logger
+
         client_ip = request.client.host if request.client else "unknown"
         client_port = request.client.port if request.client else "unknown"
         method = request.method
@@ -36,6 +54,7 @@ class LoggingMiddleware(BaseHTTPMiddleware):
             req_body_bytes = b""
 
         sent_once = False
+
         async def receive_with_body() -> Message:
             nonlocal sent_once, req_body_bytes
             if not sent_once:

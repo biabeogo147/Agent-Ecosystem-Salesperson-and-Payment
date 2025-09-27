@@ -9,9 +9,8 @@ from mcp import types as mcp_types
 from mcp.server.lowlevel import Server
 from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
 
-from config import *
 from my_mcp.payment.tools_for_payment_agent import *
-from my_mcp.logging_middleware import LoggingMiddleware
+from my_mcp.logging_middleware import LoggingMiddleware, get_logger
 from my_mcp.utils import list_mcp_tools_with_dict, call_mcp_tool_with_dict
 
 my_mcp_server = Server("payment_mcp")
@@ -45,7 +44,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(title="Payment MCP", lifespan=lifespan)
 app.routes.append(Mount("/mcp", app=handle_streamable_http))
-app.add_middleware(LoggingMiddleware)
+app.add_middleware(LoggingMiddleware, logger=get_logger("payment_agent", "payment_mcp_tool.log"))
 
 
 # Using SSE transport for /sse (GET) and /message (POST) endpoints

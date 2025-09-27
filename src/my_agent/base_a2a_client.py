@@ -21,8 +21,6 @@ import logging
 from typing import Any, Mapping
 from a2a.types import Message, MessageSendParams, Task
 
-from utils.status import Status
-
 
 class BaseA2AClient:
     """Lightweight client for sending JSON-RPC ``message.send`` requests."""
@@ -39,12 +37,14 @@ class BaseA2AClient:
         self._base_url = base_url
         self._endpoint_path = endpoint_path
         self._logger = logger or logging.getLogger(__name__)
+
         if client is None:
             self._client = httpx.AsyncClient(base_url=base_url, timeout=timeout)
             self._owns_client = True
         else:
             self._client = client
             self._owns_client = False
+
         self._logger.info("A2A client initialised (base_url=%s, path=%s, owns_client=%s)",
                     self._base_url, self._endpoint_path, self._owns_client)
 
@@ -88,8 +88,7 @@ class BaseA2AClient:
             raise RuntimeError("Remote A2A agent returned non-JSON response") from exc
 
         message_payload = self._extract_message_from_response(body, self._logger)
-        # Validate into Message object
-        message = Message.model_validate(message_payload)
+        message = Message.model_validate(message_payload) # Validate into Message object
         self._logger.info("Parsed Message successfully (id=%s, role=%s, parts=%d)",
                     rid, getattr(message, "role", None), len(getattr(message, "content", []) or []))
         return message
@@ -109,7 +108,6 @@ class BaseA2AClient:
                 raise ValueError("Task does not contain any messages to send")
             message = task.history[-1]
 
-        # Best-effort: log skill_id if present
         skill_id = (task.metadata or {}).get("skill_id")
         if skill_id:
             self._logger.info("send_task dispatch (skill_id=%s)", skill_id)
@@ -158,35 +156,6 @@ class BaseA2AClient:
             "params": params.model_dump(mode="json"),
         }
 
-    @staticmethod
-    def _ensure_response_format(payload: Any, logger: logging.Logger) -> dict[str, Any]:
-        if not isinstance(payload, dict):
-            logger.warning("Malformed JSON-RPC result payload (not an object)")
-            raise RuntimeError(
-                "Remote A2A agent returned a malformed JSON-RPC result payload",
-            )
-
-        missing = [key for key in ("status", "message", "data") if key not in payload]
-        if missing:
-            logger.warning("ResponseFormat missing keys: %s", ", ".join(missing))
-            raise RuntimeError(
-                "Remote A2A agent returned ResponseFormat missing keys: " + ", ".join(missing)
-            )
-
-        return payload
-
-    @classmethod
-    def _extract_success_data(cls, payload: Any, logger: logging.Logger) -> Any:
-        response = cls._ensure_response_format(payload, logger)
-        status = response.get("status")
-        if status != Status.SUCCESS.value:
-            message = response.get("message", "")
-            logger.warning("ResponseFormat not SUCCESS (status=%s, message=%s)", status, message)
-            raise RuntimeError(
-                f"Remote A2A agent returned status '{status}': {message}"
-            )
-        return response.get("data")
-
     @classmethod
     def _extract_message_from_response(cls, payload: Any, logger: logging.Logger) -> Any:
         if not isinstance(payload, dict):
@@ -212,14 +181,7 @@ class BaseA2AClient:
             logger.warning("JSON-RPC response missing 'result'")
             raise RuntimeError("Remote A2A agent response does not contain 'result'")
 
-        data = cls._extract_success_data(result, logger)
-        if not isinstance(data, dict):
-            logger.warning("ResponseFormat 'data' is not a mapping")
-            raise RuntimeError(
-                "Remote A2A agent ResponseFormat 'data' entry must be a mapping"
-            )
-        logger.info("ResponseFormat SUCCESS parsed")
-        return data
+        return result
 
 
 __all__ = ["BaseA2AClient"]

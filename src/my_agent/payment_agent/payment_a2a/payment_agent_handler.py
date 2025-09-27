@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import json
 import logging
 from typing import Any, Callable, Dict, Awaitable
@@ -24,19 +25,23 @@ from my_a2a_common.payment_schemas.payment_enums import (
 from my_agent.payment_agent.payment_a2a.payment_agent_skills import CREATE_ORDER_SKILL_ID, QUERY_STATUS_SKILL_ID, \
     CREATE_ORDER_SKILL, QUERY_STATUS_SKILL
 from my_agent.payment_agent.payment_mcp_client import create_order, query_order_status
-from utils.response_format_a2a import ResponseFormatA2A
+from utils.response_format_jsonrpc import ResponseFormatJSONRPC
 from utils.status import Status
 
 
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler("payment_agent_handler.log")
-    ]
-)
-logger = logging.getLogger("payment_agent_handler")
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+LOG_DIR = os.path.join(PROJECT_ROOT, "log")
+os.makedirs(LOG_DIR, exist_ok=True)
+
+log_file_path = os.path.join(LOG_DIR, "payment_agent_handler.log")
+
+logger = logging.getLogger(__name__)
+file_handler = logging.FileHandler(log_file_path)
+file_handler.setLevel(logging.DEBUG)
+formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+file_handler.setFormatter(formatter)
+if not logger.handlers:
+    logger.addHandler(file_handler)
 
 
 class PaymentAgentHandler:
@@ -59,26 +64,27 @@ class PaymentAgentHandler:
             payload = await request.json()
         except (json.JSONDecodeError, ValueError):
             logger.warning("message.send: invalid JSON body")
-            return ResponseFormatA2A(
+            return ResponseFormatJSONRPC(
                 status=Status.JSON_INVALID,
                 message="Invalid JSON payload"
             ).to_response()
 
         request_id = payload.get("id")
         logger.info("message.send received (id=%s)", request_id)
+        logger.debug("Payload: %s", payload)
 
         if payload.get("jsonrpc") != "2.0":
             logger.warning("message.send: invalid JSON-RPC version: %s", payload.get("jsonrpc"))
-            return ResponseFormatA2A(
-                request_id=request_id,
+            return ResponseFormatJSONRPC(
+                id=request_id,
                 status=Status.JSON_RPC_VERSION_INVALID,
                 message="Invalid JSON-RPC version"
             ).to_response()
 
         if payload.get("method") != "message.send":
             logger.warning("message.send: unsupported method: %s", payload.get("method"))
-            return ResponseFormatA2A(
-                request_id=request_id,
+            return ResponseFormatJSONRPC(
+                id=request_id,
                 status=Status.METHOD_NOT_FOUND,
                 message="Unsupported method"
             ).to_response()
@@ -86,8 +92,8 @@ class PaymentAgentHandler:
         params_payload = payload.get("params")
         if params_payload is None:
             logger.warning("message.send: missing params")
-            return ResponseFormatA2A(
-                request_id=request_id,
+            return ResponseFormatJSONRPC(
+                id=request_id,
                 status=Status.MISSING_PARAMS,
                 message="Missing params"
             ).to_response()
@@ -96,8 +102,8 @@ class PaymentAgentHandler:
             params = MessageSendParams.model_validate(params_payload)
         except ValidationError as exc:
             logger.warning("message.send: invalid params (errors=%d)", len(exc.errors()))
-            return ResponseFormatA2A(
-                request_id=request_id,
+            return ResponseFormatJSONRPC(
+                id=request_id,
                 status=Status.INVALID_PARAMS,
                 message="Invalid params",
                 data=exc.errors()
@@ -107,8 +113,8 @@ class PaymentAgentHandler:
         task_payload = metadata.get("task")
         if task_payload is None:
             logger.warning("message.send: missing task metadata")
-            return ResponseFormatA2A(
-                request_id=request_id,
+            return ResponseFormatJSONRPC(
+                id=request_id,
                 status=Status.MISSING_TASK_METADATA,
                 message="Missing task metadata"
             ).to_response()
@@ -121,8 +127,8 @@ class PaymentAgentHandler:
             task = Task.model_validate(task_payload)
         except ValidationError as exc:
             logger.warning("message.send: invalid task payload (errors=%d)", len(exc.errors()))
-            return ResponseFormatA2A(
-                request_id=request_id,
+            return ResponseFormatJSONRPC(
+                id=request_id,
                 status=Status.INVALID_TASK_PAYLOAD,
                 message="Invalid task payload",
                 data=exc.errors(),
@@ -132,15 +138,15 @@ class PaymentAgentHandler:
             message = await self.handle_task(task)
         except Exception as exc:
             logger.exception("Error while handling task")
-            return ResponseFormatA2A(
-                request_id=request_id,
+            return ResponseFormatJSONRPC(
+                id=request_id,
                 status=Status.UNKNOWN_ERROR,
                 message="Internal error",
                 data=str(exc),
             ).to_response()
 
         logger.info("message.send handled successfully (id=%s)", request_id)
-        response_format = ResponseFormatA2A(data=message.model_dump(mode="json")).to_response()
+        response_format = ResponseFormatJSONRPC(data=message.model_dump(mode="json")).to_response()
         return response_format
 
     async def handle_agent_card(self, _: Request) -> Response:

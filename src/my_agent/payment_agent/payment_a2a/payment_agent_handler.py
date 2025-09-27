@@ -6,11 +6,13 @@ import json
 import logging
 from typing import Any, Callable, Dict, Awaitable
 
-from a2a.types import Message, Task, AgentCard, MessageSendParams
+from a2a.types import Message, Task, AgentCard, MessageSendParams, AgentCapabilities
 from pydantic import ValidationError
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
+from config import PAYMENT_AGENT_SERVER_HOST, PAYMENT_AGENT_SERVER_PORT
+from my_a2a_common.a2a_salesperson_payment.constants import JSON_MEDIA_TYPE
 from my_a2a_common.a2a_salesperson_payment.messages import build_payment_response_message
 from my_a2a_common.payment_schemas import PaymentRequest, PaymentResponse, NextAction
 from my_a2a_common.payment_schemas.payment_enums import (
@@ -19,7 +21,9 @@ from my_a2a_common.payment_schemas.payment_enums import (
     PaymentStatus,
 )
 
-from my_agent.payment_agent.payment_a2a.payment_agent_skills import CREATE_ORDER_SKILL_ID, QUERY_STATUS_SKILL_ID
+from my_agent.payment_agent.payment_a2a.payment_agent_skills import CREATE_ORDER_SKILL_ID, QUERY_STATUS_SKILL_ID, \
+    CREATE_ORDER_SKILL, QUERY_STATUS_SKILL
+from my_agent.payment_agent.payment_mcp_client import create_order, query_order_status
 from utils.response_format_a2a import ResponseFormatA2A
 from utils.status import Status
 
@@ -184,6 +188,34 @@ def validate_payment_response(
 
     if response.status is PaymentStatus.SUCCESS and not response.order_id:
         raise ValueError("Successful payments must include an order_id")
+
+
+def build_payment_agent_card(base_url: str) -> AgentCard:
+    """Describe the payment agent using the official SDK models."""
+    capabilities = AgentCapabilities(
+        streaming=False,
+        push_notifications=False,
+        state_transition_history=False,
+    )
+
+    return AgentCard(
+        name="Payment Agent",
+        description="Processes checkout requests coming from the salesperson agent.",
+        version="1.0.0",
+        url=base_url,
+        default_input_modes=[JSON_MEDIA_TYPE],
+        default_output_modes=[JSON_MEDIA_TYPE],
+        capabilities=capabilities,
+        skills=[CREATE_ORDER_SKILL, QUERY_STATUS_SKILL],
+    )
+
+
+_CARD_BASE_URL = f"http://{PAYMENT_AGENT_SERVER_HOST}:{PAYMENT_AGENT_SERVER_PORT}/"
+_PAYMENT_HANDLER = PaymentAgentHandler(
+    create_order_tool=create_order,
+    query_status_tool=query_order_status,
+    agent_card=build_payment_agent_card(_CARD_BASE_URL),
+)
 
 
 __all__ = [

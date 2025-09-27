@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import json
 from typing import Any, Mapping
+from uuid import uuid4
 
-from a2a.types import Task
+from a2a.types import MessageSendParams, SendMessageRequest, Task
+from pydantic import ValidationError
 
 from my_agent.base_a2a_client import BaseA2AClient
 from my_agent.salesperson_agent.salesperson_a2a.remote_agent import (
@@ -29,7 +31,8 @@ class SalespersonA2AClient(BaseA2AClient):
         """Send the ``create_order`` task to the payment agent."""
 
         envelope = self._normalise_task_envelope(payload, operation="create_order")
-        response = await self._post_json("/tasks/create-order", envelope)
+        request = self._build_send_message_request(envelope, operation="create_order")
+        response = await self._post_json("/", request)
         data = self._extract_success_data(response, operation="create_order")
         if not isinstance(data, Mapping):
             raise RuntimeError(
@@ -41,7 +44,8 @@ class SalespersonA2AClient(BaseA2AClient):
         """Send the ``query_status`` task to the payment agent."""
 
         envelope = self._normalise_task_envelope(payload, operation="query_status")
-        response = await self._post_json("/tasks/query-status", envelope)
+        request = self._build_send_message_request(envelope, operation="query_status")
+        response = await self._post_json("/", request)
         data = self._extract_success_data(response, operation="query_status")
         if not isinstance(data, Mapping):
             raise RuntimeError(
@@ -96,6 +100,41 @@ class SalespersonA2AClient(BaseA2AClient):
 
         envelope_obj["task"] = dict(task_value)
         return envelope_obj
+
+    def _build_send_message_request(
+        self,
+        envelope: Mapping[str, Any],
+        *,
+        operation: str,
+    ) -> dict[str, Any]:
+        """Convert a task envelope into a JSON-RPC ``message/send`` request."""
+
+        task_payload = envelope.get("task")
+        try:
+            task = Task.model_validate(task_payload)
+        except ValidationError as exc:
+            raise ValueError(
+                f"A2A operation '{operation}' received an invalid task payload"
+            ) from exc
+
+        if not task.history:
+            raise ValueError(
+                f"A2A operation '{operation}' requires the task to include at least one message"
+            )
+
+        message = task.history[-1]
+        params = MessageSendParams(
+            message=message,
+            metadata={"task": task.model_dump(mode="json")},
+        )
+        request = SendMessageRequest(id=self._request_id_factory(), params=params)
+        return request.model_dump(mode="json")
+
+    @staticmethod
+    def _request_id_factory() -> str:
+        """Generate a JSON-RPC request identifier."""
+
+        return uuid4().hex
 
 
 _CLIENT_SINGLETON: SalespersonA2AClient | None = None

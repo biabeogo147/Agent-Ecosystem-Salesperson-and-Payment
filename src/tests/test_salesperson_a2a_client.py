@@ -3,6 +3,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from a2a.types import SendMessageRequest
 from my_agent.base_a2a_client import BaseA2AClient
 from my_agent.salesperson_agent.salesperson_a2a.client import SalespersonA2AClient
 from utils.status import Status
@@ -32,11 +33,24 @@ async def test_salesperson_a2a_create_order_posts_task(monkeypatch: pytest.Monke
     )
     monkeypatch.setattr(client, "_post_json", mock_post)
 
-    payload = {"task": {"id": "task-1"}}
+    payload = {
+        "task": {
+            "id": "task-1",
+            "context_id": "ctx-1",
+            "status": {"state": "submitted"},
+            "history": [
+                {"kind": "message", "role": "user", "message_id": "mid-1", "parts": [], "context_id": "ctx-1"}
+            ],
+        }
+    }
     result = await client.create_order(payload)
 
     assert result == {"order_id": "ORD-1"}
-    mock_post.assert_awaited_once_with("/tasks/create-order", {"task": {"id": "task-1"}})
+    mock_post.assert_awaited_once()
+    assert mock_post.await_args[0][0] == "/"
+    request_payload = SendMessageRequest.model_validate(mock_post.await_args[0][1])
+    assert request_payload.params.metadata is not None
+    assert request_payload.params.metadata["task"]["id"] == "task-1"
 
 
 @pytest.mark.asyncio
@@ -51,12 +65,32 @@ async def test_salesperson_a2a_query_status_accepts_json_strings(monkeypatch: py
     )
     monkeypatch.setattr(client, "_post_json", mock_post)
 
-    raw_payload = json.dumps({"task": json.dumps({"id": "task-42"})})
+    raw_payload = json.dumps(
+        {
+            "task": json.dumps(
+                {
+                    "id": "task-42",
+                    "context_id": "ctx-42",
+                    "status": {"state": "submitted"},
+                    "history": [
+                        {
+                            "kind": "message",
+                            "role": "user",
+                            "message_id": "mid-42",
+                            "parts": [],
+                            "context_id": "ctx-42",
+                        }
+                    ],
+                }
+            )
+        }
+    )
     result = await client.query_status(raw_payload)
 
     assert result == {"status": "pending"}
-    submitted_payload = mock_post.await_args[0][1]
-    assert submitted_payload["task"] == {"id": "task-42"}
+    submitted_payload = SendMessageRequest.model_validate(mock_post.await_args[0][1])
+    assert submitted_payload.params.metadata is not None
+    assert submitted_payload.params.metadata["task"]["id"] == "task-42"
 
 
 def test_salesperson_a2a_requires_task_entry() -> None:

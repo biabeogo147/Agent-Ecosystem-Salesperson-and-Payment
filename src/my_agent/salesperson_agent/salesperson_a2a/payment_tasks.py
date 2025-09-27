@@ -25,7 +25,8 @@ from google.adk.tools import FunctionTool
 
 from my_a2a_common.payment_schemas import *
 from my_a2a_common.payment_schemas.payment_enums import PaymentChannel
-from my_a2a_common.a2a_salesperson_payment.content import build_artifact, extract_payload_from_parts
+from my_a2a_common.a2a_salesperson_payment.content import build_artifact, extract_payment_request, \
+    extract_status_request
 from my_a2a_common.a2a_salesperson_payment.constants import PAYMENT_REQUEST_KIND, PAYMENT_STATUS_KIND
 
 from my_agent.payment_agent.payment_a2a.payment_agent_skills import CREATE_ORDER_SKILL_ID, QUERY_STATUS_SKILL_ID
@@ -35,17 +36,13 @@ from my_agent.salesperson_agent.salesperson_mcp_client import (
 )
 
 
-async def _default_correlation_id_factory(
-    prefix: str, *, client: SalespersonMcpClient | None = None
-) -> str:
+async def _default_correlation_id_factory(prefix: str, *, client: SalespersonMcpClient | None = None) -> str:
     """Fetch a correlation ID by delegating to the MCP server."""
     client = client or get_salesperson_mcp_client()
     return await client.generate_correlation_id(prefix=prefix)
 
 
-async def _default_url_factory(
-    correlation_id: str, *, client: SalespersonMcpClient | None = None
-) -> Tuple[str, str]:
+async def _default_url_factory(correlation_id: str, *, client: SalespersonMcpClient | None = None) -> Tuple[str, str]:
     """Return the pair of return/cancel URLs used by the payment gateway."""
     client = client or get_salesperson_mcp_client()
     return (
@@ -65,30 +62,6 @@ def _base_task_metadata(skill_id: str, correlation_id: str) -> Dict[str, Any]:
         "skill_id": skill_id,
         "correlation_id": correlation_id,
     }
-
-
-def extract_payment_request(task: Task) -> PaymentRequest:
-    """Retrieve the ``PaymentRequest`` carried inside a task."""
-    if not task.history:
-        raise ValueError("Task contains no messages")
-
-    payload = extract_payload_from_parts(
-        task.history[-1].parts,
-        expected_kind=PAYMENT_REQUEST_KIND,
-    )
-    return PaymentRequest.model_validate(payload)
-
-
-def extract_status_request(task: Task) -> QueryStatusRequest:
-    """Retrieve the status request payload from the task."""
-    if not task.history:
-        raise ValueError("Task contains no messages")
-
-    payload = extract_payload_from_parts(
-        task.history[-1].parts,
-        expected_kind=PAYMENT_STATUS_KIND,
-    )
-    return QueryStatusRequest.model_validate(payload)
 
 
 async def _resolve_items_via_product_tool(
@@ -172,9 +145,7 @@ async def prepare_create_order_payload(
     )
 
 
-async def prepare_query_status_payload(
-    correlation_id: str,
-) -> Dict[str, Any]:
+async def prepare_query_status_payload(correlation_id: str) -> Dict[str, Any]:
     """Build the task and payload needed for the payment status skill."""
     from my_a2a_common.a2a_salesperson_payment.messages import build_query_status_message
 
@@ -285,6 +256,4 @@ __all__ = [
     "prepare_create_order_payload_tool",
     "prepare_query_status_payload_tool",
     "prepare_create_order_payload_with_client",
-    "extract_payment_request",
-    "extract_status_request",
 ]

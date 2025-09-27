@@ -10,7 +10,7 @@ from a2a.types import Task, TaskState, TaskStatus
 from my_a2a_common import build_create_order_message, build_payment_response_message
 from my_a2a_common.payment_schemas import CustomerInfo, PaymentItem, PaymentMethod, PaymentRequest, PaymentResponse
 from my_a2a_common.payment_schemas.payment_enums import PaymentChannel, PaymentStatus
-from my_agent.salesperson_agent.salesperson_a2a.client import PaymentAgentResult, SalespersonA2AClient
+from my_agent.salesperson_agent.salesperson_a2a.salesperson_a2a_client import PaymentAgentResult, SalespersonA2AClient
 
 
 def _build_order_task() -> Task:

@@ -9,8 +9,8 @@ from my_a2a_common.payment_schemas.payment_enums import PaymentChannel
 from my_agent.salesperson_agent.salesperson_a2a.payment_tasks import (
     prepare_query_status_payload,
     prepare_create_order_payload_with_client,
-    extract_payment_request,
 )
+from my_a2a_common.a2a_salesperson_payment.content import extract_payment_request
 from my_agent.salesperson_agent.salesperson_mcp_client import SalespersonMcpClient
 
 

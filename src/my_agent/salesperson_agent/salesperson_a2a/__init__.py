@@ -1,6 +1,6 @@
 """Public helpers for the salesperson ↔ payment A2A integration."""
 
-from .client import PaymentAgentResult, SalespersonA2AClient
+from .salesperson_a2a_client import PaymentAgentResult, SalespersonA2AClient
 from .payment_tasks import (
     prepare_create_order_payload,
     prepare_create_order_payload_tool,

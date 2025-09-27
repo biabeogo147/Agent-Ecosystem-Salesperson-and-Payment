@@ -16,7 +16,7 @@ mcp_streamable_http_url = f"http://{MCP_SERVER_HOST_PAYMENT}:{MCP_SERVER_PORT_PA
 def gemini_payment_agent() -> Agent:
     return Agent(
         name="payment_agent",
-        model="gemini-2.0-flash",
+        model=MODEL_NAME,
         description=_DESCRIPTION,
         instruction=_INSTRUCTION,
         tools=[

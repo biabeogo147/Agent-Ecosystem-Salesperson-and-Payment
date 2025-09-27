@@ -10,7 +10,7 @@ from my_agent.payment_agent.payment_a2a.payment_agent_handler import _PAYMENT_HA
 
 
 routes = [
-    Route("/.well-known/agent.json", _PAYMENT_HANDLER.handle_agent_card, methods=["GET"]),
+    Route("/.well-known/agent-card.json", _PAYMENT_HANDLER.handle_agent_card, methods=["GET"]),
     Route("/", _PAYMENT_HANDLER.handle_message_send, methods=["POST"]),
 ]
 a2a_app = Starlette(debug=False, routes=routes)

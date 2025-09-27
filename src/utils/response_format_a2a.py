@@ -1,6 +1,6 @@
 import json
 from utils.status import Status
-from starlette.responses import Response
+from starlette.responses import Response, JSONResponse
 
 
 class ResponseFormatA2A:
@@ -31,4 +31,4 @@ class ResponseFormatA2A:
         return json.dumps(self.to_dict())
 
     def to_response(self) -> Response:
-        return Response(content=self.to_dict())
+        return JSONResponse(content=self.to_dict())

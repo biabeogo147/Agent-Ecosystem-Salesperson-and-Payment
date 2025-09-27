@@ -17,7 +17,7 @@ _DESCRIPTION = "Salesperson who helps Customers to find products, calculate ship
 def gemini_salesperson_agent() -> Agent:
     return Agent(
         name="salesperson_agent",
-        model="gemini-2.0-flash",
+        model=MODEL_NAME,
         description=_DESCRIPTION,
         instruction=_INSTRUCTION,
         sub_agents=[get_remote_payment_agent()],
@@ -52,4 +52,4 @@ def llm_salesperson_agent() -> LlmAgent:
     )
 
 
-root_agent = gemini_salesperson_agent()
+root_agent = llm_salesperson_agent()

@@ -17,7 +17,7 @@ following the protocol requirements from the payment team.
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Sequence, Tuple, List, Literal
+from typing import Any, Dict, Optional, Tuple, List
 from uuid import uuid4
 
 from a2a.types import Task, TaskStatus, TaskState
@@ -63,7 +63,7 @@ def _base_task_metadata(skill_id: str, correlation_id: str) -> Dict[str, Any]:
 
 
 async def _resolve_items_via_product_tool(
-    items: Sequence[Any],
+    items: List[Any],
     *,
     client: SalespersonMcpClient,
 ) -> List[PaymentItem]:
@@ -117,8 +117,8 @@ async def _resolve_items_via_product_tool(
 
 
 async def prepare_create_order_payload(
-    items: Sequence[Any],
-    customer: Any,
+    items: List[Any],
+    customer: Dict[str, str],
     channel: PaymentChannel,
     *,
     note: Optional[str] = None,
@@ -175,8 +175,8 @@ async def prepare_query_status_payload(correlation_id: str) -> Dict[str, Any]:
 
 
 async def prepare_create_order_payload_with_client(
-    items: Sequence[Any],
-    customer: Any,
+    items: List[Any],
+    customer: Dict[str, str],
     channel: PaymentChannel,
     *,
     note: Optional[str] = None,

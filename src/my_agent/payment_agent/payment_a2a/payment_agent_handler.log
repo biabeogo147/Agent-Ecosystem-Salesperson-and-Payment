@@ -1,0 +1,107 @@
+2025-09-27 21:50:05,598 - DEBUG - Building agent card (base_url=http://localhost:8081/)
+2025-09-27 21:50:05,598 - INFO - PaymentAgentHandler initialised with skills: create_order, query_status
+2025-09-27 21:50:05,601 - DEBUG - Using proactor: IocpProactor
+2025-09-27 21:50:28,465 - INFO - message.send received (id=868f4f21-39a7-4492-8ed5-df70c19b7a5d)
+2025-09-27 21:50:28,465 - DEBUG - message.send: hinted skill_id=payment.create-order
+2025-09-27 21:50:28,466 - INFO - Dispatching task (skill_id=payment.create-order)
+2025-09-27 21:50:28,468 - DEBUG - create_order: correlation_id=payment-664860c6-5820-4f50-a47b-c923d59f9374
+2025-09-27 21:50:28,472 - DEBUG - Connecting to StreamableHTTP endpoint: http://localhost:8000/mcp
+2025-09-27 21:50:28,617 - DEBUG - Sending client message: root=JSONRPCRequest(method='initialize', params={'protocolVersion': '2025-06-18', 'capabilities': {}, 'clientInfo': {'name': 'mcp', 'version': '0.1.0'}}, jsonrpc='2.0', id=0)
+2025-09-27 21:50:28,618 - DEBUG - connect_tcp.started host='localhost' port=8000 local_address=None timeout=30.0 socket_options=None
+2025-09-27 21:50:28,896 - DEBUG - connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000017F8D21FEF0>
+2025-09-27 21:50:28,897 - DEBUG - send_request_headers.started request=<Request [b'POST']>
+2025-09-27 21:50:28,897 - DEBUG - send_request_headers.complete
+2025-09-27 21:50:28,897 - DEBUG - send_request_body.started request=<Request [b'POST']>
+2025-09-27 21:50:28,897 - DEBUG - send_request_body.complete
+2025-09-27 21:50:28,897 - DEBUG - receive_response_headers.started request=<Request [b'POST']>
+2025-09-27 21:50:28,898 - DEBUG - receive_response_headers.complete return_value=(b'HTTP/1.1', 307, b'Temporary Redirect', [(b'date', b'Sat, 27 Sep 2025 14:50:28 GMT'), (b'server', b'uvicorn'), (b'content-length', b'0'), (b'location', b'http://localhost:8000/mcp/')])
+2025-09-27 21:50:28,898 - DEBUG - receive_response_body.started request=<Request [b'POST']>
+2025-09-27 21:50:28,898 - DEBUG - receive_response_body.complete
+2025-09-27 21:50:28,898 - DEBUG - response_closed.started
+2025-09-27 21:50:28,898 - DEBUG - response_closed.complete
+2025-09-27 21:50:28,898 - DEBUG - send_request_headers.started request=<Request [b'POST']>
+2025-09-27 21:50:28,898 - DEBUG - send_request_headers.complete
+2025-09-27 21:50:28,898 - DEBUG - send_request_body.started request=<Request [b'POST']>
+2025-09-27 21:50:28,899 - DEBUG - send_request_body.complete
+2025-09-27 21:50:28,899 - DEBUG - receive_response_headers.started request=<Request [b'POST']>
+2025-09-27 21:50:28,902 - DEBUG - receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'date', b'Sat, 27 Sep 2025 14:50:28 GMT'), (b'server', b'uvicorn'), (b'cache-control', b'no-cache, no-transform'), (b'connection', b'keep-alive'), (b'content-type', b'text/event-stream'), (b'x-accel-buffering', b'no'), (b'content-length', b'424')])
+2025-09-27 21:50:28,903 - DEBUG - receive_response_body.started request=<Request [b'POST']>
+2025-09-27 21:50:28,903 - DEBUG - SSE message: root=JSONRPCResponse(jsonrpc='2.0', id=0, result={'protocolVersion': '2025-06-18', 'capabilities': {'experimental': {}, 'tools': {'listChanged': False}}, 'serverInfo': {'name': 'payment_mcp', 'version': '1.14.1'}})
+2025-09-27 21:50:28,903 - INFO - Negotiated protocol version: 2025-06-18
+2025-09-27 21:50:28,903 - DEBUG - response_closed.started
+2025-09-27 21:50:28,904 - DEBUG - response_closed.complete
+2025-09-27 21:50:28,904 - DEBUG - Created new session: session_9345bcd2bce26e710473840e3ff7f2a1
+2025-09-27 21:50:28,904 - DEBUG - Sending client message: root=JSONRPCNotification(method='notifications/initialized', params=None, jsonrpc='2.0')
+2025-09-27 21:50:28,905 - DEBUG - connect_tcp.started host='localhost' port=8000 local_address=None timeout=30.0 socket_options=None
+2025-09-27 21:50:28,905 - DEBUG - receive_response_body.failed exception=GeneratorExit()
+2025-09-27 21:50:29,163 - DEBUG - connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000017F8D259820>
+2025-09-27 21:50:29,163 - DEBUG - send_request_headers.started request=<Request [b'POST']>
+2025-09-27 21:50:29,163 - DEBUG - send_request_headers.complete
+2025-09-27 21:50:29,163 - DEBUG - send_request_body.started request=<Request [b'POST']>
+2025-09-27 21:50:29,164 - DEBUG - send_request_body.complete
+2025-09-27 21:50:29,164 - DEBUG - receive_response_headers.started request=<Request [b'POST']>
+2025-09-27 21:50:29,165 - DEBUG - receive_response_headers.complete return_value=(b'HTTP/1.1', 307, b'Temporary Redirect', [(b'date', b'Sat, 27 Sep 2025 14:50:28 GMT'), (b'server', b'uvicorn'), (b'content-length', b'0'), (b'location', b'http://localhost:8000/mcp/')])
+2025-09-27 21:50:29,165 - DEBUG - receive_response_body.started request=<Request [b'POST']>
+2025-09-27 21:50:29,165 - DEBUG - receive_response_body.complete
+2025-09-27 21:50:29,165 - DEBUG - response_closed.started
+2025-09-27 21:50:29,165 - DEBUG - response_closed.complete
+2025-09-27 21:50:29,165 - DEBUG - send_request_headers.started request=<Request [b'POST']>
+2025-09-27 21:50:29,165 - DEBUG - send_request_headers.complete
+2025-09-27 21:50:29,165 - DEBUG - send_request_body.started request=<Request [b'POST']>
+2025-09-27 21:50:29,166 - DEBUG - send_request_body.complete
+2025-09-27 21:50:29,166 - DEBUG - receive_response_headers.started request=<Request [b'POST']>
+2025-09-27 21:50:29,169 - DEBUG - receive_response_headers.complete return_value=(b'HTTP/1.1', 202, b'Accepted', [(b'date', b'Sat, 27 Sep 2025 14:50:28 GMT'), (b'server', b'uvicorn'), (b'content-type', b'application/json'), (b'content-length', b'0')])
+2025-09-27 21:50:29,169 - DEBUG - Received 202 Accepted
+2025-09-27 21:50:29,169 - DEBUG - response_closed.started
+2025-09-27 21:50:29,169 - DEBUG - response_closed.complete
+2025-09-27 21:50:29,170 - DEBUG - Sending client message: root=JSONRPCRequest(method='tools/call', params={'name': 'create_order', 'arguments': {'payload': {'protocol': 'my_a2a_common.v1', 'correlation_id': 'payment-664860c6-5820-4f50-a47b-c923d59f9374', 'from_agent': 'salesperson_agent', 'to_agent': 'payment_agent', 'action': 'CREATE_ORDER', 'items': [{'sku': 'SKU001', 'name': 'Wireless Mouse', 'quantity': 10, 'unit_price': 25.99, 'currency': 'USD'}], 'customer': {'name': 'Bia', 'email': 'bia@gmail.com', 'phone': '012345', 'shipping_address': None}, 'method': {'type': 'paygate', 'channel': 'redirect', 'return_url': 'http://localhost:3000/return?cid=payment-664860c6-5820-4f50-a47b-c923d59f9374', 'cancel_url': 'http://localhost:3000/cancel?cid=payment-664860c6-5820-4f50-a47b-c923d59f9374'}, 'note': 'Order for wireless mouse by customer Bia', 'metadata': {}}}}, jsonrpc='2.0', id=1)
+2025-09-27 21:50:29,170 - DEBUG - connect_tcp.started host='localhost' port=8000 local_address=None timeout=30.0 socket_options=None
+2025-09-27 21:50:29,428 - DEBUG - connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000017F8D259970>
+2025-09-27 21:50:29,428 - DEBUG - send_request_headers.started request=<Request [b'POST']>
+2025-09-27 21:50:29,429 - DEBUG - send_request_headers.complete
+2025-09-27 21:50:29,429 - DEBUG - send_request_body.started request=<Request [b'POST']>
+2025-09-27 21:50:29,429 - DEBUG - send_request_body.complete
+2025-09-27 21:50:29,429 - DEBUG - receive_response_headers.started request=<Request [b'POST']>
+2025-09-27 21:50:29,430 - DEBUG - receive_response_headers.complete return_value=(b'HTTP/1.1', 307, b'Temporary Redirect', [(b'date', b'Sat, 27 Sep 2025 14:50:28 GMT'), (b'server', b'uvicorn'), (b'content-length', b'0'), (b'location', b'http://localhost:8000/mcp/')])
+2025-09-27 21:50:29,430 - DEBUG - receive_response_body.started request=<Request [b'POST']>
+2025-09-27 21:50:29,430 - DEBUG - receive_response_body.complete
+2025-09-27 21:50:29,430 - DEBUG - response_closed.started
+2025-09-27 21:50:29,430 - DEBUG - response_closed.complete
+2025-09-27 21:50:29,431 - DEBUG - send_request_headers.started request=<Request [b'POST']>
+2025-09-27 21:50:29,431 - DEBUG - send_request_headers.complete
+2025-09-27 21:50:29,431 - DEBUG - send_request_body.started request=<Request [b'POST']>
+2025-09-27 21:50:29,431 - DEBUG - send_request_body.complete
+2025-09-27 21:50:29,431 - DEBUG - receive_response_headers.started request=<Request [b'POST']>
+2025-09-27 21:50:29,439 - DEBUG - receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'date', b'Sat, 27 Sep 2025 14:50:28 GMT'), (b'server', b'uvicorn'), (b'cache-control', b'no-cache, no-transform'), (b'connection', b'keep-alive'), (b'content-type', b'text/event-stream'), (b'x-accel-buffering', b'no'), (b'content-length', b'1398')])
+2025-09-27 21:50:29,439 - DEBUG - receive_response_body.started request=<Request [b'POST']>
+2025-09-27 21:50:29,439 - DEBUG - SSE message: root=JSONRPCResponse(jsonrpc='2.0', id=1, result={'content': [{'type': 'text', 'text': '{"status": "00", "message": "SUCCESS", "data": {"correlation_id": "payment-664860c6-5820-4f50-a47b-c923d59f9374", "status": "PENDING", "provider_name": "nganluong", "order_id": "4485de43-86c1-44c3-a96b-43d5eb513168", "pay_url": "http://localhost:3000/checkout/4485de43-86c1-44c3-a96b-43d5eb513168", "qr_code_url": null, "expires_at": "2025-09-27T15:05:29Z", "next_action": {"type": "REDIRECT", "expires_at": "2025-09-27T15:05:29Z", "url": "http://localhost:3000/checkout/4485de43-86c1-44c3-a96b-43d5eb513168", "qr_code_url": null}}}'}], 'isError': False})
+2025-09-27 21:50:29,439 - DEBUG - response_closed.started
+2025-09-27 21:50:29,439 - DEBUG - response_closed.complete
+2025-09-27 21:50:29,440 - DEBUG - Sending client message: root=JSONRPCRequest(method='tools/list', params=None, jsonrpc='2.0', id=2)
+2025-09-27 21:50:29,440 - DEBUG - connect_tcp.started host='localhost' port=8000 local_address=None timeout=30.0 socket_options=None
+2025-09-27 21:50:29,441 - DEBUG - receive_response_body.failed exception=GeneratorExit()
+2025-09-27 21:50:29,709 - DEBUG - connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000017F8D21F470>
+2025-09-27 21:50:29,710 - DEBUG - send_request_headers.started request=<Request [b'POST']>
+2025-09-27 21:50:29,710 - DEBUG - send_request_headers.complete
+2025-09-27 21:50:29,710 - DEBUG - send_request_body.started request=<Request [b'POST']>
+2025-09-27 21:50:29,710 - DEBUG - send_request_body.complete
+2025-09-27 21:50:29,710 - DEBUG - receive_response_headers.started request=<Request [b'POST']>
+2025-09-27 21:50:29,711 - DEBUG - receive_response_headers.complete return_value=(b'HTTP/1.1', 307, b'Temporary Redirect', [(b'date', b'Sat, 27 Sep 2025 14:50:28 GMT'), (b'server', b'uvicorn'), (b'content-length', b'0'), (b'location', b'http://localhost:8000/mcp/')])
+2025-09-27 21:50:29,711 - DEBUG - receive_response_body.started request=<Request [b'POST']>
+2025-09-27 21:50:29,711 - DEBUG - receive_response_body.complete
+2025-09-27 21:50:29,711 - DEBUG - response_closed.started
+2025-09-27 21:50:29,711 - DEBUG - response_closed.complete
+2025-09-27 21:50:29,711 - DEBUG - send_request_headers.started request=<Request [b'POST']>
+2025-09-27 21:50:29,711 - DEBUG - send_request_headers.complete
+2025-09-27 21:50:29,712 - DEBUG - send_request_body.started request=<Request [b'POST']>
+2025-09-27 21:50:29,712 - DEBUG - send_request_body.complete
+2025-09-27 21:50:29,712 - DEBUG - receive_response_headers.started request=<Request [b'POST']>
+2025-09-27 21:50:29,715 - DEBUG - receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'date', b'Sat, 27 Sep 2025 14:50:29 GMT'), (b'server', b'uvicorn'), (b'cache-control', b'no-cache, no-transform'), (b'connection', b'keep-alive'), (b'content-type', b'text/event-stream'), (b'x-accel-buffering', b'no'), (b'content-length', b'1656')])
+2025-09-27 21:50:29,715 - DEBUG - receive_response_body.started request=<Request [b'POST']>
+2025-09-27 21:50:29,715 - DEBUG - SSE message: root=JSONRPCResponse(jsonrpc='2.0', id=2, result={'tools': [{'name': 'create_order', 'description': 'Create a payment order on a payment paygate and return next_action for the customer.\nArgs:\n  payload: {\n    "correlation_id": "...",\n    "items": [{sku,name,quantity,unit_price,currency}],\n    "customer": {...},\n    "method": {"channel": "redirect|qr", "return_url", "cancel_url"}\n  }\nReturns: PaymentResponse dict (status=PENDING + next_action=REDIRECT|SHOW_QR)', 'inputSchema': {'type': 'object', 'properties': {'payload': {'type': 'object'}}, 'required': ['payload']}}, {'name': 'query_order_status', 'description': 'Query order status by correlation_id\nArgs:\n  payload: {"correlation_id": "..."}', 'inputSchema': {'type': 'object', 'properties': {'payload': {'type': 'object'}}, 'required': ['payload']}}]})
+2025-09-27 21:50:29,715 - DEBUG - response_closed.started
+2025-09-27 21:50:29,716 - DEBUG - response_closed.complete
+2025-09-27 21:50:29,716 - DEBUG - Validating response (cid_resp=payment-664860c6-5820-4f50-a47b-c923d59f9374, cid_exp=payment-664860c6-5820-4f50-a47b-c923d59f9374, status=PENDING, next=NextActionType.REDIRECT)
+2025-09-27 21:50:29,716 - INFO - create_order done (correlation_id=payment-664860c6-5820-4f50-a47b-c923d59f9374, status=PENDING)
+2025-09-27 21:50:29,716 - INFO - message.send handled successfully (id=868f4f21-39a7-4492-8ed5-df70c19b7a5d)
+2025-09-27 21:50:29,717 - DEBUG - receive_response_body.failed exception=GeneratorExit()

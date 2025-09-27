@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Mapping, Sequence, Literal
+import logging
+from typing import Any, Dict, Literal, List
 
 from google.adk.tools import FunctionTool
 
@@ -18,6 +19,16 @@ from my_agent.salesperson_agent.salesperson_a2a.prepare_payment_tasks import (
 from utils.response_format_a2a import ResponseFormatA2A
 
 
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler("salesperson_a2a_client.log")
+    ]
+)
+logger = logging.getLogger("salesperson_a2a_client")
+
 PAYMENT_AGENT_BASE_URL = f"http://{PAYMENT_AGENT_SERVER_HOST}:{PAYMENT_AGENT_SERVER_PORT}"
 
 
@@ -28,71 +39,95 @@ class SalespersonA2AClient(BaseA2AClient):
         super().__init__(
             base_url=base_url or PAYMENT_AGENT_BASE_URL,
             endpoint_path="/",
+            logger=logger,
             **kwargs,
         )
+        self._logger.info("SalespersonA2AClient initialised (base_url=%s)", base_url or PAYMENT_AGENT_BASE_URL)
 
     async def create_order(
         self,
-        items: Sequence[Mapping[str, Any]] | Sequence[Any],
-        customer: Mapping[str, Any] | Any,
+        items: List[Any],
+        customer: Dict[str, str],
         channel: PaymentChannel,
         *,
         note: str | None = None,
         metadata: Dict[str, str] | None = None,
     ) -> ResponseFormatA2A:
         """Create an order by preparing the payload and forwarding it to A2A."""
-        metadata_payload = dict(metadata) if metadata is not None else None
-        payload = await prepare_create_order_payload(
-            items,
-            customer,
-            channel,
-            note=note,
-            metadata=metadata_payload,
-        )
-        message = await self.send_task_payload(payload)
-        response = extract_payment_response(message)
+        try:
+            self._logger.debug(
+                "create_order start (items=%d, channel=%s, note=%s, has_metadata=%s)",
+                len(items), channel.value, bool(note), bool(metadata),
+            )
+            payload = await prepare_create_order_payload(
+                items,
+                customer,
+                channel,
+                note=note,
+                metadata=metadata,
+            )
+            message = await self.send_task_payload(payload)
+            response = extract_payment_response(message)
+            self._logger.info(
+                "create_order ok (correlation_id=%s, status=%s, channel=%s, items=%d)",
+                response.correlation_id, response.status.value, channel.value, len(items),
+            )
 
-        return ResponseFormatA2A(
-            data={
-                "message": message.model_dump(mode="json"),
-                "response": response.model_dump(mode="json"),
-            }
-        )
+            return ResponseFormatA2A(
+                data={
+                    "message": message.model_dump(mode="json"),
+                    "response": response.model_dump(mode="json"),
+                }
+            )
+        except Exception:
+            self._logger.exception("create_order failed")
+            raise
 
     async def query_status(self, correlation_id: str) -> ResponseFormatA2A:
         """Query the payment agent for the status of a previously created order."""
-        payload = await prepare_query_status_payload(correlation_id)
-        message = await self.send_task_payload(payload)
-        response = extract_payment_response(message)
+        try:
+            self._logger.info("query_status start (correlation_id=%s)", correlation_id)
+            payload = await prepare_query_status_payload(correlation_id)
+            message = await self.send_task_payload(payload)
+            response = extract_payment_response(message)
+            self._logger.info(
+                "query_status ok (correlation_id=%s, status=%s)",
+                response.correlation_id, response.status.value,
+            )
 
-        return ResponseFormatA2A(
-            data={
-                "message": message.model_dump(mode="json"),
-                "response": response.model_dump(mode="json"),
-            }
-        )
+            return ResponseFormatA2A(
+                data={
+                    "message": message.model_dump(mode="json"),
+                    "response": response.model_dump(mode="json"),
+                }
+            )
+        except Exception:
+            self._logger.exception("query_status failed (correlation_id=%s)", correlation_id)
+            raise
 
 
 async def _create_payment_order(
-    items: Sequence[Any],
-    customer: Any,
+    items: List[Any],
+    customer: Dict[str, str],
     channel: Literal["redirect", "qr"],
     *,
-    note: str | None = None,
-    metadata: Mapping[str, str] | None = None,
-) -> dict[str, Any]:
+    note: str,
+    metadata: Dict[str, str],
+) -> Dict[str, Any]:
+    logger.debug("tool _create_payment_order invoked (items=%d, channel=%s)", len(items), channel)
     async with SalespersonA2AClient() as client:
         response = await client.create_order(
             items=items,
             customer=customer,
             channel=PaymentChannel(channel),
             note=note,
-            metadata=dict(metadata) if metadata is not None else None,
+            metadata=metadata,
         )
     return response.to_dict()
 
 
 async def _query_payment_order_status(correlation_id: str) -> dict[str, Any]:
+    logger.debug("tool _query_payment_order_status invoked (correlation_id=%s)", correlation_id)
     async with SalespersonA2AClient() as client:
         response = await client.query_status(correlation_id)
     return response.to_dict()

@@ -1,6 +1,5 @@
 from google.adk.tools.mcp_tool.mcp_session_manager import SseConnectionParams
-from google.adk.tools.mcp_tool import StreamableHTTPConnectionParams, McpToolset
-
+from google.adk.tools.mcp_tool import StreamableHTTPConnectionParams
 
 def get_mcp_sse_connect_params(url: str, token: str) -> SseConnectionParams:
     """Get MCP SSE connection params"""

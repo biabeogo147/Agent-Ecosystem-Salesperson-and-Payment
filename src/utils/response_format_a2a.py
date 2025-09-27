@@ -3,7 +3,6 @@ from utils.status import Status
 from starlette.responses import Response
 
 
-
 class ResponseFormatA2A:
     def __init__(
             self,

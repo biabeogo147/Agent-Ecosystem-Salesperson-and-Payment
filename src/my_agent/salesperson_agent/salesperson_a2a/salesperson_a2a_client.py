@@ -26,7 +26,6 @@ class PaymentAgentResult:
 
     def to_dict(self) -> dict[str, Any]:
         """Return a JSON-serialisable view of the result for logging or tests."""
-
         return {
             "message": self.message.model_dump(mode="json"),
             "response": self.response.model_dump(mode="json"),
@@ -52,7 +51,6 @@ class SalespersonA2AClient(BaseA2AClient):
 
     async def create_order(self, payload: Mapping[str, Any]) -> PaymentAgentResult:
         """Send the create-order task to the payment agent and parse the reply."""
-
         task = self._task_from_payload(payload)
         message = await self.send_task(task)
         response = extract_payment_response(message)
@@ -60,7 +58,6 @@ class SalespersonA2AClient(BaseA2AClient):
 
     async def query_status(self, payload: Mapping[str, Any]) -> PaymentAgentResult:
         """Send the status lookup task to the payment agent and parse the reply."""
-
         task = self._task_from_payload(payload)
         message = await self.send_task(task)
         response = extract_payment_response(message)

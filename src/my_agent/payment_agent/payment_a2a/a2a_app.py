@@ -14,12 +14,12 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from starlette.routing import Route
 
-from config import PAYMENT_AGENT_SERVER_HOST, PAYMENT_AGENT_SERVER_PORT
 from my_a2a_common.a2a_salesperson_payment.constants import JSON_MEDIA_TYPE
-from .payment_agent_skills import CREATE_ORDER_SKILL, QUERY_STATUS_SKILL
+from config import PAYMENT_AGENT_SERVER_HOST, PAYMENT_AGENT_SERVER_PORT
 from utils.response_format import ResponseFormat
 
-from my_agent.payment_agent.payment_a2a.payment_agent_handler import PaymentAgentHandler
+from payment_agent_handler import PaymentAgentHandler
+from payment_agent_skills import CREATE_ORDER_SKILL, QUERY_STATUS_SKILL
 from my_agent.payment_agent.payment_mcp_client import create_order, query_order_status
 
 
@@ -28,7 +28,6 @@ logger = logging.getLogger(__name__)
 
 def build_payment_agent_card(base_url: str) -> AgentCard:
     """Describe the payment agent using the official SDK models."""
-
     capabilities = AgentCapabilities(
         streaming=False,
         push_notifications=False,
@@ -47,19 +46,9 @@ def build_payment_agent_card(base_url: str) -> AgentCard:
     )
 
 
-def _sync_adapter(async_callable):
-    async def _run(payload: dict[str, Any]) -> dict[str, Any]:
-        return await async_callable(payload)
-
-    def _wrapper(payload: dict[str, Any]) -> dict[str, Any]:
-        return asyncio.run(_run(payload))
-
-    return _wrapper
-
-
 _PAYMENT_HANDLER = PaymentAgentHandler(
-    create_order_tool=_sync_adapter(create_order),
-    query_status_tool=_sync_adapter(query_order_status),
+    create_order_tool=create_order,
+    query_status_tool=query_order_status,
 )
 
 _CARD_BASE_URL = f"http://{PAYMENT_AGENT_SERVER_HOST}:{PAYMENT_AGENT_SERVER_PORT}/"
@@ -117,8 +106,8 @@ async def _handle_message_send(request: Request) -> Response:
         return _json_rpc_error_response(request_id, code=-32602, message="Invalid task payload", data=exc.errors())
 
     try:
-        message = await asyncio.to_thread(_PAYMENT_HANDLER.handle_task, task)
-    except Exception as exc:  # pragma: no cover - defensive path
+        message = await _PAYMENT_HANDLER.handle_task(task)
+    except Exception as exc:
         logger.exception("Payment agent failed to handle task")
         return _json_rpc_error_response(request_id, code=-32603, message="Internal error", data=str(exc))
 
@@ -146,3 +135,8 @@ a2a_app = Starlette(debug=False, routes=routes)
 
 
 __all__ = ["a2a_app", "build_payment_agent_card"]
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(a2a_app, host=PAYMENT_AGENT_SERVER_HOST, port=PAYMENT_AGENT_SERVER_PORT)

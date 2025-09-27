@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, Awaitable
 
 from a2a.types import Message, Task
 
@@ -24,13 +24,13 @@ class PaymentAgentHandler:
     def __init__(
         self,
         *,
-        create_order_tool: Callable[[Dict[str, Any]], Dict[str, Any]],
-        query_status_tool: Callable[[Dict[str, Any]], Dict[str, Any]],
+        create_order_tool: Callable[[Dict[str, Any]], Awaitable[Dict[str, Any]]],
+        query_status_tool: Callable[[Dict[str, Any]], Awaitable[Dict[str, Any]]],
     ) -> None:
         self._create_order_tool = create_order_tool
         self._query_status_tool = query_status_tool
 
-    def handle_task(self, task: Task) -> Message:
+    async def handle_task(self, task: Task) -> Message:
         """Inspect the task metadata to decide which skill to execute."""
         from my_agent.salesperson_agent.salesperson_a2a.payment_tasks import extract_payment_request, \
             extract_status_request
@@ -39,7 +39,7 @@ class PaymentAgentHandler:
         if skill_id == CREATE_ORDER_SKILL_ID:
             request = extract_payment_request(task)
             payload = request.model_dump(mode="json")
-            raw_response = self._create_order_tool(payload)
+            raw_response = await self._create_order_tool(payload)
             response = PaymentResponse.model_validate(raw_response)
             validate_payment_response(
                 response,
@@ -51,7 +51,7 @@ class PaymentAgentHandler:
         if skill_id == QUERY_STATUS_SKILL_ID:
             status_request = extract_status_request(task)
             payload = status_request.model_dump(mode="json")
-            raw_response = self._query_status_tool(payload)
+            raw_response = await self._query_status_tool(payload)
             response = PaymentResponse.model_validate(raw_response)
             validate_payment_response(
                 response,
@@ -96,6 +96,7 @@ def validate_payment_response(
 
     if response.status is PaymentStatus.SUCCESS and not response.order_id:
         raise ValueError("Successful payments must include an order_id")
+
 
 __all__ = [
     "PaymentAgentHandler",

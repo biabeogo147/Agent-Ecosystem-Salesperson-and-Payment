@@ -6,10 +6,11 @@ import os
 import logging
 from typing import Any, Dict, Literal, List
 
+from a2a.types import Message, DataPart
 from google.adk.tools import FunctionTool
 
 from config import PAYMENT_AGENT_SERVER_HOST, PAYMENT_AGENT_SERVER_PORT
-from my_a2a_common import extract_payment_response
+from my_a2a_common.payment_schemas import PaymentResponse
 from my_a2a_common.payment_schemas.payment_enums import PaymentChannel
 
 from my_agent.base_a2a_client import BaseA2AClient
@@ -27,6 +28,8 @@ os.makedirs(LOG_DIR, exist_ok=True)
 log_file_path = os.path.join(LOG_DIR, "salesperson_a2a_client.log")
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
 file_handler = logging.FileHandler(log_file_path)
 file_handler.setLevel(logging.DEBUG)
 formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
@@ -51,7 +54,7 @@ class SalespersonA2AClient(BaseA2AClient):
 
     async def create_order(
         self,
-        items: List[Any],
+        items: List[Dict],
         customer: Dict[str, str],
         channel: PaymentChannel,
         *,
@@ -71,11 +74,11 @@ class SalespersonA2AClient(BaseA2AClient):
                 note=note,
                 metadata=metadata,
             )
-            message = await self.send_task_payload(payload)
-            response = extract_payment_response(message)
+            message = await self.send_task(payload)
+            response = _extract_payment_response(message)
             self._logger.info(
-                "create_order ok (correlation_id=%s, status=%s, channel=%s, items=%d)",
-                response.correlation_id, response.status.value, channel.value, len(items),
+                "create_order ok (context_id=%s, status=%s, channel=%s, items=%d)",
+                response.context_id, response.status.value, channel.value, len(items),
             )
 
             return ResponseFormatJSONRPC(
@@ -88,16 +91,16 @@ class SalespersonA2AClient(BaseA2AClient):
             self._logger.exception("create_order failed")
             raise
 
-    async def query_status(self, correlation_id: str) -> ResponseFormatJSONRPC:
+    async def query_status(self, context_id: str) -> ResponseFormatJSONRPC:
         """Query the payment agent for the status of a previously created order."""
         try:
-            self._logger.info("query_status start (correlation_id=%s)", correlation_id)
-            payload = await prepare_query_status_payload(correlation_id)
-            message = await self.send_task_payload(payload)
-            response = extract_payment_response(message)
+            self._logger.info("query_status start (context_id=%s)", context_id)
+            payload = await prepare_query_status_payload(context_id)
+            message = await self.send_task(payload)
+            response = _extract_payment_response(message)
             self._logger.info(
-                "query_status ok (correlation_id=%s, status=%s)",
-                response.correlation_id, response.status.value,
+                "query_status ok (context_id=%s, status=%s)",
+                response.context_id, response.status.value,
             )
 
             return ResponseFormatJSONRPC(
@@ -107,12 +110,12 @@ class SalespersonA2AClient(BaseA2AClient):
                 }
             )
         except Exception:
-            self._logger.exception("query_status failed (correlation_id=%s)", correlation_id)
+            self._logger.exception("query_status failed (context_id=%s)", context_id)
             raise
 
 
 async def _create_payment_order(
-    items: List[Any],
+    items: List[Dict],
     customer: Dict[str, str],
     channel: Literal["redirect", "qr"],
     *,
@@ -131,15 +134,26 @@ async def _create_payment_order(
     return response.to_dict()
 
 
-async def _query_payment_order_status(correlation_id: str) -> dict[str, Any]:
-    logger.debug("tool _query_payment_order_status invoked (correlation_id=%s)", correlation_id)
+async def _query_payment_order_status(context_id: str) -> dict[str, Any]:
+    logger.debug("tool _query_payment_order_status invoked (context_id=%s)", context_id)
     async with SalespersonA2AClient() as client:
-        response = await client.query_status(correlation_id)
+        response = await client.query_status(context_id)
     return response.to_dict()
+
+
+def _extract_payment_response(message: Message) -> PaymentResponse:
+    """Convert the structured data ``Part`` back into a ``PaymentResponse``."""
+    payload = None
+    for part in message.parts:
+        if isinstance(part.root, DataPart):
+            payload = part.root.data
+            break
+    return PaymentResponse.model_validate(payload)
 
 
 create_payment_order_tool = FunctionTool(_create_payment_order)
 query_payment_order_status_tool = FunctionTool(_query_payment_order_status)
+
 
 __all__ = [
     "SalespersonA2AClient",

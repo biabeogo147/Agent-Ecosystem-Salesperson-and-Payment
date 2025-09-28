@@ -9,7 +9,7 @@ from .payment_method import PaymentMethod
 
 class PaymentRequest(BaseModel):
     protocol: ProtocolVersion = Field(default=ProtocolVersion.A2A_V1)
-    correlation_id: str = Field(..., description="Unique transaction ID in the client system")
+    context_id: str = Field(..., description="Unique transaction ID in the client system")
     from_agent: str = Field(default="salesperson_agent")
     to_agent: str = Field(default="payment_agent")
     action: PaymentAction = Field(default=PaymentAction.CREATE_ORDER)

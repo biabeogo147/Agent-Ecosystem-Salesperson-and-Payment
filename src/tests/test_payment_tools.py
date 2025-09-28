@@ -23,7 +23,7 @@ async def test_create_order_redirect_channel() -> None:
     from my_mcp.payment.tools_for_payment_agent import create_order
 
     payload = {
-        "correlation_id": "corr-123",
+        "context_id": "corr-123",
         "items": [
             {
                 "sku": "SKU001",
@@ -54,7 +54,7 @@ async def test_create_order_redirect_channel() -> None:
     assert response["next_action"]["url"] == response["pay_url"]
     assert response["qr_code_url"] is None
     assert response["next_action"]["qr_code_url"] is None
-    assert response["correlation_id"] == "corr-123"
+    assert response["context_id"] == "corr-123"
     assert response["order_id"]
     assert response["expires_at"] == response["next_action"]["expires_at"]
 
@@ -64,7 +64,7 @@ async def test_create_order_qr_channel() -> None:
     from my_mcp.payment.tools_for_payment_agent import create_order
 
     payload = {
-        "correlation_id": "corr-qr",
+        "context_id": "corr-qr",
         "items": [
             {
                 "sku": "SKU002",
@@ -100,12 +100,12 @@ async def test_create_order_qr_channel() -> None:
 async def test_query_order_status_returns_failed() -> None:
     from my_mcp.payment.tools_for_payment_agent import query_order_status
 
-    response_json = await query_order_status({"correlation_id": "corr-xyz"})
+    response_json = await query_order_status({"context_id": "corr-xyz"})
     envelope = json.loads(response_json)
     assert envelope["status"] == Status.SUCCESS.value
     response = envelope["data"]
 
-    assert response["correlation_id"] == "corr-xyz"
+    assert response["context_id"] == "corr-xyz"
     assert response["status"] == PaymentStatus.FAILED.value
 
 
@@ -147,7 +147,7 @@ async def test_payment_client_query_order_status_delegates_to_json_call() -> Non
         }
     )
 
-    payload = {"correlation_id": "corr-123"}
+    payload = {"context_id": "corr-123"}
     result = await client.query_order_status(payload=payload)
 
     client._call_tool_json.assert_awaited_once_with("query_order_status", {"payload": payload})
@@ -160,7 +160,7 @@ async def test_payment_client_query_order_status_rejects_non_dict_payload() -> N
     client._call_tool_json = AsyncMock(return_value="unexpected")
 
     with pytest.raises(RuntimeError):
-        await client.query_order_status(payload={"correlation_id": "foo"})
+        await client.query_order_status(payload={"context_id": "foo"})
 
 
 @pytest.mark.asyncio
@@ -187,7 +187,7 @@ async def test_query_order_status_wrapper_uses_singleton_client() -> None:
         "my_agent.payment_agent.payment_mcp_client.get_payment_mcp_client",
         return_value=fake_client,
     ):
-        result = await query_order_status_wrapper({"correlation_id": "abc"})
+        result = await query_order_status_wrapper({"context_id": "abc"})
 
-    fake_client.query_order_status.assert_awaited_once_with(payload={"correlation_id": "abc"})
+    fake_client.query_order_status.assert_awaited_once_with(payload={"context_id": "abc"})
     assert result == {"status": "FAILED"}

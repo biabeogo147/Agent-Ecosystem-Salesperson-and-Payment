@@ -20,12 +20,12 @@ from __future__ import annotations
 from typing import Any, Dict, Optional, Tuple, List
 from uuid import uuid4
 
-from a2a.types import Task, TaskStatus, TaskState
+from a2a.types import Task, TaskStatus, TaskState, Message, Role, Part, TextPart, DataPart, Artifact
+
 from my_a2a_common.payment_schemas import *
 from my_a2a_common.payment_schemas.payment_enums import PaymentChannel
-from my_a2a_common.a2a_salesperson_payment.content import build_artifact, extract_payment_request, \
-    extract_status_request
-from my_a2a_common.a2a_salesperson_payment.constants import PAYMENT_REQUEST_KIND, PAYMENT_STATUS_KIND
+from my_a2a_common.constants import SALESPERSON_AGENT_NAME, PAYMENT_REQUEST_ARTIFACT_NAME, \
+    PAYMENT_STATUS_ARTIFACT_NAME
 
 from my_agent.payment_agent.payment_a2a.payment_agent_skills import CREATE_ORDER_SKILL_ID, QUERY_STATUS_SKILL_ID
 from my_agent.salesperson_agent.salesperson_mcp_client import (
@@ -34,18 +34,18 @@ from my_agent.salesperson_agent.salesperson_mcp_client import (
 )
 
 
-async def _default_correlation_id_factory(prefix: str, *, client: SalespersonMcpClient | None = None) -> str:
+async def _default_context_id_factory(prefix: str, *, client: SalespersonMcpClient | None = None) -> str:
     """Fetch a correlation ID by delegating to the MCP server."""
     client = client or get_salesperson_mcp_client()
-    return await client.generate_correlation_id(prefix=prefix)
+    return await client.generate_context_id(prefix=prefix)
 
 
-async def _default_url_factory(correlation_id: str, *, client: SalespersonMcpClient | None = None) -> Tuple[str, str]:
+async def _default_url_factory(context_id: str, *, client: SalespersonMcpClient | None = None) -> Tuple[str, str]:
     """Return the pair of return/cancel URLs used by the payment gateway."""
     client = client or get_salesperson_mcp_client()
     return (
-        await client.generate_return_url(correlation_id),
-        await client.generate_cancel_url(correlation_id),
+        await client.generate_return_url(context_id),
+        await client.generate_cancel_url(context_id),
     )
 
 
@@ -55,15 +55,8 @@ def _ensure_customer(customer: Any) -> CustomerInfo:
     return CustomerInfo.model_validate(customer)
 
 
-def _base_task_metadata(skill_id: str, correlation_id: str) -> Dict[str, Any]:
-    return {
-        "skill_id": skill_id,
-        "correlation_id": correlation_id,
-    }
-
-
 async def _resolve_items_via_product_tool(
-    items: List[Any],
+    items: List[Dict],
     *,
     client: SalespersonMcpClient,
 ) -> List[PaymentItem]:
@@ -117,7 +110,7 @@ async def _resolve_items_via_product_tool(
 
 
 async def prepare_create_order_payload(
-    items: List[Any],
+    items: List[Dict],
     customer: Dict[str, str],
     channel: PaymentChannel,
     *,
@@ -142,40 +135,66 @@ async def prepare_create_order_payload(
     )
 
 
-async def prepare_query_status_payload(correlation_id: str) -> Dict[str, Any]:
+async def prepare_query_status_payload(context_id: str) -> Dict[str, Any]:
     """Build the task and payload needed for the payment status skill."""
-    from my_a2a_common.a2a_salesperson_payment.messages import build_query_status_message
+    status_request = QueryStatusRequest(context_id=context_id)
+    status_request_json = status_request.model_dump(mode="json")
 
-    status_request = QueryStatusRequest(correlation_id=correlation_id)
-    message = build_query_status_message(status_request)
-
-    artifact = build_artifact(
-        PAYMENT_STATUS_KIND,
-        status_request.model_dump(mode="json"),
-        description="Status lookup request for an existing payment correlation.",
+    message = Message(
+        message_id=str(uuid4()),
+        role=Role.user,
+        context_id=status_request.context_id,
+        parts=[
+            Part(
+                root=TextPart(
+                    text="Salesperson checks the status of the existing payment order.",
+                    metadata={"speaker": SALESPERSON_AGENT_NAME},
+                )
+            ),
+            Part(
+                root=DataPart(
+                    data=status_request_json
+                )
+            ),
+        ],
     )
 
-    task_metadata = _base_task_metadata(QUERY_STATUS_SKILL_ID, correlation_id)
+    artifact = Artifact(
+        artifact_id=str(uuid4()),
+        name=PAYMENT_STATUS_ARTIFACT_NAME,
+        description="Status lookup request for an existing payment context id.",
+        parts=[
+            Part(
+                root=DataPart(
+                    data=status_request_json
+                )
+            ),
+        ],
+    )
+
+    task_metadata = {
+        "skill_id": QUERY_STATUS_SKILL_ID,
+        "context_id": context_id,
+    }
 
     task = Task(
         id=str(uuid4()),
-        context_id=correlation_id,
+        context_id=context_id,
         history=[message],
         artifacts=[artifact],
         status=TaskStatus(state=TaskState.submitted),
         metadata=task_metadata,
     )
 
-    status_request = extract_status_request(task)
     return {
-        "correlation_id": status_request.correlation_id,
+        "context_id": status_request.context_id,
         "status_request": status_request.model_dump(mode="json"),
         "task": task.model_dump(mode="json"),
     }
 
 
 async def prepare_create_order_payload_with_client(
-    items: List[Any],
+    items: List[Dict],
     customer: Dict[str, str],
     channel: PaymentChannel,
     *,
@@ -190,12 +209,10 @@ async def prepare_create_order_payload_with_client(
     the task wholesale to the A2A client or extract the JSON body to call the
     remote skill directly.
     """
-    from my_a2a_common.a2a_salesperson_payment.messages import build_create_order_message
-
     resolved_items = await _resolve_items_via_product_tool(items, client=client)
 
-    correlation_id = await _default_correlation_id_factory("payment", client=client)
-    return_url, cancel_url = await _default_url_factory(correlation_id, client=client)
+    context_id = await _default_context_id_factory("payment", client=client)
+    return_url, cancel_url = await _default_url_factory(context_id, client=client)
 
     method = PaymentMethod(
         channel=channel,
@@ -204,7 +221,7 @@ async def prepare_create_order_payload_with_client(
     )
 
     payment_request = PaymentRequest(
-        correlation_id=correlation_id,
+        context_id=context_id,
         items=resolved_items,
         customer=_ensure_customer(customer),
         method=method,
@@ -212,31 +229,58 @@ async def prepare_create_order_payload_with_client(
         metadata=metadata,
     )
 
-    message = build_create_order_message(payment_request)
-
     request_payload = payment_request.model_dump(mode="json")
-    artifact = build_artifact(
-        PAYMENT_REQUEST_KIND,
-        request_payload,
-        description="Structured payment order request sent by the salesperson agent.",
+
+    message = Message(
+        message_id=str(uuid4()),
+        role=Role.user,
+        context_id=payment_request.context_id,
+        parts=[
+            Part(
+                root=TextPart(
+                    text="Salesperson asks the payment agent to create an order.",
+                    metadata={"speaker": SALESPERSON_AGENT_NAME},
+                )
+            ),
+            Part(
+                root=DataPart(
+                    data=request_payload
+                )
+            ),
+        ],
     )
 
-    task_metadata = _base_task_metadata(CREATE_ORDER_SKILL_ID, correlation_id)
+    artifact = Artifact(
+        artifact_id=str(uuid4()),
+        name=PAYMENT_REQUEST_ARTIFACT_NAME,
+        description="Structured payment order request sent by the salesperson agent.",
+        parts=[
+            Part(
+                root=DataPart(
+                    data=request_payload
+                )
+            ),
+        ],
+    )
+
+    task_metadata = {
+        "skill_id": CREATE_ORDER_SKILL_ID,
+        "context_id": context_id,
+    }
     if metadata:
         task_metadata["client_metadata"] = metadata
 
     task = Task(
         id=str(uuid4()),
-        context_id=correlation_id,
+        context_id=context_id,
         history=[message],
         artifacts=[artifact],
         status=TaskStatus(state=TaskState.submitted),
         metadata=task_metadata,
     )
 
-    payment_request = extract_payment_request(task)
     return {
-        "correlation_id": payment_request.correlation_id,
+        "context_id": payment_request.context_id,
         "payment_request": payment_request.model_dump(mode="json"),
         "task": task.model_dump(mode="json"),
     }

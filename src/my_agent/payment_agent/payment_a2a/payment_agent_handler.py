@@ -6,16 +6,17 @@ import os
 import json
 import logging
 from typing import Any, Callable, Dict, Awaitable
+from uuid import uuid4
 
-from a2a.types import Message, Task, AgentCard, MessageSendParams, AgentCapabilities
+from a2a.types import Message, Task, AgentCard, MessageSendParams, AgentCapabilities, Part, TextPart, Role, DataPart
 from pydantic import ValidationError
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
 from config import PAYMENT_AGENT_SERVER_HOST, PAYMENT_AGENT_SERVER_PORT
-from my_a2a_common.a2a_salesperson_payment.constants import JSON_MEDIA_TYPE
-from my_a2a_common.a2a_salesperson_payment.messages import build_payment_response_message
-from my_a2a_common.payment_schemas import PaymentRequest, PaymentResponse, NextAction
+from my_a2a_common.constants import JSON_MEDIA_TYPE, PAYMENT_REQUEST_ARTIFACT_NAME, \
+    PAYMENT_STATUS_ARTIFACT_NAME, PAYMENT_AGENT_NAME
+from my_a2a_common.payment_schemas import PaymentRequest, PaymentResponse, NextAction, QueryStatusRequest
 from my_a2a_common.payment_schemas.payment_enums import (
     NextActionType,
     PaymentAction,
@@ -36,6 +37,8 @@ os.makedirs(LOG_DIR, exist_ok=True)
 log_file_path = os.path.join(LOG_DIR, "payment_agent_handler.log")
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
 file_handler = logging.FileHandler(log_file_path)
 file_handler.setLevel(logging.DEBUG)
 formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
@@ -155,37 +158,40 @@ class PaymentAgentHandler:
 
     async def handle_task(self, task: Task) -> Message:
         """Inspect the task metadata to decide which skill to execute."""
-        from my_a2a_common.a2a_salesperson_payment.content import extract_status_request, extract_payment_request
 
         skill_id = (task.metadata or {}).get("skill_id")
         logger.info("Dispatching task (skill_id=%s)", skill_id)
 
         if skill_id == CREATE_ORDER_SKILL_ID:
-            request = extract_payment_request(task)
-            logger.debug("create_order: correlation_id=%s", request.correlation_id)
+            request = _extract_payment_request(task)
+            logger.debug("create_order: context_id=%s", request.context_id)
+
             payload = request.model_dump(mode="json")
             raw_response = await self._create_order_tool(payload)
             response = PaymentResponse.model_validate(raw_response)
             validate_payment_response(
                 response,
-                expected_correlation_id=request.correlation_id,
+                expected_context_id=request.context_id,
                 request=request,
             )
-            logger.info("create_order done (correlation_id=%s, status=%s)", response.correlation_id, response.status.value)
-            return build_payment_response_message(response)
+            logger.info("create_order done (context_id=%s, status=%s)", response.context_id, response.status.value)
+
+            return _build_payment_response_message(response)
 
         if skill_id == QUERY_STATUS_SKILL_ID:
-            status_request = extract_status_request(task)
-            logger.debug("query_status: correlation_id=%s", status_request.correlation_id)
+            status_request = _extract_status_request(task)
+            logger.debug("query_status: context_id=%s", status_request.context_id)
+
             payload = status_request.model_dump(mode="json")
             raw_response = await self._query_status_tool(payload)
             response = PaymentResponse.model_validate(raw_response)
             validate_payment_response(
                 response,
-                expected_correlation_id=status_request.correlation_id,
+                expected_context_id=status_request.context_id,
             )
-            logger.info("query_status done (correlation_id=%s, status=%s)", response.correlation_id, response.status.value)
-            return build_payment_response_message(response)
+            logger.info("query_status done (context_id=%s, status=%s)", response.context_id, response.status.value)
+
+            return _build_payment_response_message(response)
 
         logger.warning("Unsupported skill requested: %s", skill_id)
         raise ValueError(f"Unsupported skill: {skill_id}")
@@ -194,21 +200,21 @@ class PaymentAgentHandler:
 def validate_payment_response(
     response: PaymentResponse,
     *,
-    expected_correlation_id: str,
+    expected_context_id: str,
     request: PaymentRequest | None = None,
 ) -> None:
     """Run the safety checks required before replying to the salesperson."""
     logger.debug(
         "Validating response (cid_resp=%s, cid_exp=%s, status=%s, next=%s)",
-        response.correlation_id,
-        expected_correlation_id,
+        response.context_id,
+        expected_context_id,
         getattr(response.status, "value", response.status),
         getattr(getattr(response, "next_action", None), "type", None),
     )
 
-    if response.correlation_id != expected_correlation_id:
-        logger.warning("Validation failed: correlation_id mismatch (expected=%s, got=%s)",
-                       expected_correlation_id, response.correlation_id)
+    if response.context_id != expected_context_id:
+        logger.warning("Validation failed: context_id mismatch (expected=%s, got=%s)",
+                       expected_context_id, response.context_id)
         raise ValueError("Correlation ID mismatch between request and response")
 
     if request is not None:
@@ -217,12 +223,12 @@ def validate_payment_response(
             if next_action.type == NextActionType.REDIRECT and not (
                 response.pay_url or next_action.url
             ):
-                logger.warning("Validation failed: redirect without pay_url/url (cid=%s)", response.correlation_id)
+                logger.warning("Validation failed: redirect without pay_url/url (cid=%s)", response.context_id)
                 raise ValueError("Redirect action requires a pay_url or next_action.url")
             if next_action.type == NextActionType.SHOW_QR and not (
                 response.qr_code_url or next_action.qr_code_url
             ):
-                logger.warning("Validation failed: SHOW_QR without qr_code_url (cid=%s)", response.correlation_id)
+                logger.warning("Validation failed: SHOW_QR without qr_code_url (cid=%s)", response.context_id)
                 raise ValueError("SHOW_QR action requires a QR code URL")
 
     allowed_statuses = {
@@ -232,11 +238,11 @@ def validate_payment_response(
         PaymentStatus.CANCELLED,
     }
     if response.status not in allowed_statuses:
-        logger.warning("Validation failed: unsupported status %s (cid=%s)", response.status, response.correlation_id)
+        logger.warning("Validation failed: unsupported status %s (cid=%s)", response.status, response.context_id)
         raise ValueError(f"Unsupported payment status: {response.status}")
 
     if response.status is PaymentStatus.SUCCESS and not response.order_id:
-        logger.warning("Validation failed: SUCCESS without order_id (cid=%s)", response.correlation_id)
+        logger.warning("Validation failed: SUCCESS without order_id (cid=%s)", response.context_id)
         raise ValueError("Successful payments must include an order_id")
 
 
@@ -261,8 +267,58 @@ def build_payment_agent_card(base_url: str) -> AgentCard:
     )
 
 
+def _extract_payment_request(task: Task) -> PaymentRequest:
+    """Retrieve the ``PaymentRequest`` carried inside a task."""
+    if not task.history:
+        raise ValueError("Task contains no messages")
+
+    payload = None
+    for artifact in task.artifacts:
+        if artifact.name == PAYMENT_REQUEST_ARTIFACT_NAME:
+            payload = artifact.parts[0].root.data
+            break
+
+    return PaymentRequest.model_validate(payload)
+
+
+def _extract_status_request(task: Task) -> QueryStatusRequest:
+    """Retrieve the status request payload from the task."""
+    if not task.history:
+        raise ValueError("Task contains no messages")
+
+    payload = None
+    for artifact in task.artifacts:
+        if artifact.name == PAYMENT_STATUS_ARTIFACT_NAME:
+            payload = artifact.parts[0].root.data
+            break
+
+    return QueryStatusRequest.model_validate(payload)
+
+
+def _build_payment_response_message(response: PaymentResponse) -> Message:
+    """Return the gateway's answer as an agent message."""
+    return Message(
+        message_id=str(uuid4()),
+        role=Role.agent,
+        context_id=response.context_id,
+        parts=[
+            Part(
+                root=TextPart(
+                    text=f"Payment agent replies with status {response.status.value}.",
+                    metadata={"speaker": PAYMENT_AGENT_NAME},
+                )
+            ),
+            Part(
+                root=DataPart(
+                    data=response.model_dump(mode="json"),
+                )
+            )
+        ],
+    )
+
+
 _CARD_BASE_URL = f"http://{PAYMENT_AGENT_SERVER_HOST}:{PAYMENT_AGENT_SERVER_PORT}/"
-_PAYMENT_HANDLER = PaymentAgentHandler(
+PAYMENT_HANDLER = PaymentAgentHandler(
     create_order_tool=create_order,
     query_status_tool=query_order_status,
     agent_card=build_payment_agent_card(_CARD_BASE_URL),
@@ -272,4 +328,6 @@ _PAYMENT_HANDLER = PaymentAgentHandler(
 __all__ = [
     "PaymentAgentHandler",
     "validate_payment_response",
+    "build_payment_agent_card",
+    "PAYMENT_HANDLER",
 ]

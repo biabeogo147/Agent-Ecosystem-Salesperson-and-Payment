@@ -18,8 +18,10 @@ import json
 import uuid
 import httpx
 import logging
-from typing import Any, Mapping
+from typing import Any, Dict
 from a2a.types import Message, MessageSendParams, Task
+
+from utils.request_format_jsonrpc import RequestFormatJSONRPC
 
 
 class BaseA2AClient:
@@ -62,15 +64,13 @@ class BaseA2AClient:
         self._logger.debug("Exiting A2A client context")
         await self.close()
 
-    async def send_message(
-        self,
-        params: MessageSendParams,
-        *,
-        request_id: str | None = None,
-    ) -> Message:
+    async def send_message(self, params: MessageSendParams) -> Message:
         """Send a pre-built ``MessageSendParams`` payload to the remote agent."""
-        payload = self._build_json_rpc_request(params, request_id=request_id)
-        rid = payload["id"]
+        rid = str(uuid.uuid4())
+        self._logger.debug("Building JSON-RPC request (id=%s)", rid)
+        payload = RequestFormatJSONRPC(id=rid, params=params.model_dump(mode="json")).to_dict()
+        self._logger.debug("Sending JSON-RPC request (payload=%s)", payload)
+
         self._logger.info("POST message.send (id=%s) -> %s%s", rid, self._base_url, self._endpoint_path)
         try:
             response = await self._client.post(self._endpoint_path, json=payload)
@@ -88,44 +88,16 @@ class BaseA2AClient:
             raise RuntimeError("Remote A2A agent returned non-JSON response") from exc
 
         message_payload = self._extract_message_from_response(body, self._logger)
-        message = Message.model_validate(message_payload) # Validate into Message object
+        message = Message.model_validate(message_payload)
         self._logger.info("Parsed Message successfully (id=%s, role=%s, parts=%d)",
                     rid, getattr(message, "role", None), len(getattr(message, "content", []) or []))
         return message
 
     async def send_task(
         self,
-        task: Task,
+        payload: Dict[str, Any],
         *,
-        metadata: Mapping[str, Any] | None = None,
-        request_id: str | None = None,
-        message: Message | None = None,
-    ) -> Message:
-        """Send the last message associated with ``task`` to the remote agent."""
-        if message is None:
-            if not task.history:
-                self._logger.warning("send_task called with empty task history")
-                raise ValueError("Task does not contain any messages to send")
-            message = task.history[-1]
-
-        skill_id = (task.metadata or {}).get("skill_id")
-        if skill_id:
-            self._logger.info("send_task dispatch (skill_id=%s)", skill_id)
-        else:
-            self._logger.debug("send_task dispatch without skill_id")
-
-        metadata_payload = dict(metadata or {})
-        metadata_payload.setdefault("task", task.model_dump(mode="json"))
-
-        params = MessageSendParams(message=message, metadata=metadata_payload)
-        return await self.send_message(params, request_id=request_id)
-
-    async def send_task_payload(
-        self,
-        payload: Mapping[str, Any],
-        *,
-        metadata: Mapping[str, Any] | None = None,
-        request_id: str | None = None,
+        metadata: Dict[str, Any] | None = None,
     ) -> Message:
         """Convenience wrapper that accepts a serialised task mapping."""
         self._logger.debug("send_task_payload called")
@@ -135,26 +107,22 @@ class BaseA2AClient:
             raise ValueError("Payload is missing the 'task' entry required by A2A")
 
         task = Task.model_validate(task_payload)
-        return await self.send_task(
-            task,
-            metadata=metadata,
-            request_id=request_id,
-        )
+        if not task.history:
+            self._logger.warning("send_task called with empty task history")
+            raise ValueError("Task does not contain any messages to send")
+        message = task.history[-1]
 
-    def _build_json_rpc_request(
-        self,
-        params: MessageSendParams,
-        *,
-        request_id: str | None = None,
-    ) -> dict[str, Any]:
-        rid = request_id or str(uuid.uuid4())
-        self._logger.debug("Building JSON-RPC request (id=%s)", rid)
-        return {
-            "jsonrpc": "2.0",
-            "id": rid,
-            "method": "message.send",
-            "params": params.model_dump(mode="json"),
-        }
+        skill_id = (task.metadata or {}).get("skill_id")
+        if skill_id:
+            self._logger.info("send_task dispatch (skill_id=%s)", skill_id)
+        else:
+            self._logger.debug("send_task dispatch without skill_id")
+
+        metadata_payload = dict(metadata or {})
+        metadata_payload["task"] = task.model_dump(mode="json")
+
+        params = MessageSendParams(message=message, metadata=metadata_payload)
+        return await self.send_message(params)
 
     @classmethod
     def _extract_message_from_response(cls, payload: Any, logger: logging.Logger) -> Any:

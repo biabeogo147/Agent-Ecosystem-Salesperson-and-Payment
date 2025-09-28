@@ -6,6 +6,7 @@ load_dotenv()
 MODEL_NAME = os.environ.get("MODEL_NAME")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 OPENAI_API_BASE = os.environ.get("OPENAI_API_BASE")
+IS_LLM_AGENT = os.getenv("IS_LLM_AGENT", "false").lower() == "true"
 
 MCP_SERVER_HOST_PAYMENT = os.getenv("MCP_SERVER_HOST_PAYMENT", "localhost")
 MCP_SERVER_PORT_PAYMENT = int(os.getenv("MCP_SERVER_PORT_PAYMENT", "8000"))

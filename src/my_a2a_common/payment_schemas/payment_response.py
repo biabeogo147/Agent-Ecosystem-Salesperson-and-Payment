@@ -6,7 +6,7 @@ from .payment_enums.payment_status import PaymentStatus
 from .next_action import NextAction
 
 class PaymentResponse(BaseModel):
-    correlation_id: str = Field(..., description="The same ID as in the request")
+    context_id: str = Field(..., description="The same ID as in the request")
     status: PaymentStatus = Field(default=PaymentStatus.PENDING)
 
     provider_name: Optional[str] = Field(default=None, description="Provider name")

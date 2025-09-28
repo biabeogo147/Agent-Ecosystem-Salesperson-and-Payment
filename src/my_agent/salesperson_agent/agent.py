@@ -2,7 +2,6 @@ from google.adk.agents import Agent, LlmAgent
 from google.adk.models.lite_llm import LiteLlm
 
 from config import *
-from my_agent.salesperson_agent.salesperson_a2a.remote_agent import get_remote_payment_agent
 from my_agent.salesperson_agent.salesperson_a2a.salesperson_a2a_client import create_payment_order_tool, \
     query_payment_order_status_tool
 from my_agent.salesperson_agent.salesperson_mcp_client import prepare_find_product_tool, prepare_calc_shipping_tool, \
@@ -20,7 +19,6 @@ def gemini_salesperson_agent() -> Agent:
         model=MODEL_NAME,
         description=_DESCRIPTION,
         instruction=_INSTRUCTION,
-        sub_agents=[get_remote_payment_agent()],
         tools=[
             prepare_find_product_tool,
             prepare_calc_shipping_tool,
@@ -41,7 +39,6 @@ def llm_salesperson_agent() -> LlmAgent:
         ),
         description=_DESCRIPTION,
         instruction=_INSTRUCTION,
-        sub_agents=[get_remote_payment_agent()],
         tools=[
             prepare_find_product_tool,
             prepare_calc_shipping_tool,
@@ -52,4 +49,4 @@ def llm_salesperson_agent() -> LlmAgent:
     )
 
 
-root_agent = llm_salesperson_agent()
+root_agent = llm_salesperson_agent() if IS_LLM_AGENT else gemini_salesperson_agent()

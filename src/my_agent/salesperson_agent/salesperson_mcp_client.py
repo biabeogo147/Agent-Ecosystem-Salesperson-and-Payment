@@ -37,22 +37,22 @@ class SalespersonMcpClient(BaseMcpClient):
             token=MCP_SALESPERSON_TOKEN,
         )
 
-    async def generate_correlation_id(self, *, prefix: str) -> str:
+    async def generate_context_id(self, *, prefix: str) -> str:
         """Request a new correlation ID from the MCP server."""
         payload = await self._call_tool_json(
-            "generate_correlation_id", {"prefix": prefix}
+            "generate_context_id", {"prefix": prefix}
         )
-        data = self._extract_success_data(payload, tool="generate_correlation_id")
+        data = self._extract_success_data(payload, tool="generate_context_id")
         if not isinstance(data, str):
             raise RuntimeError(
-                "MCP tool 'generate_correlation_id' returned non-string data"
+                "MCP tool 'generate_context_id' returned non-string data"
             )
         return data
 
-    async def generate_return_url(self, correlation_id: str) -> str:
-        """Request the return URL bound to ``correlation_id`` from MCP."""
+    async def generate_return_url(self, context_id: str) -> str:
+        """Request the return URL bound to ``context_id`` from MCP."""
         payload = await self._call_tool_json(
-            "generate_return_url", {"correlation_id": correlation_id}
+            "generate_return_url", {"context_id": context_id}
         )
         data = self._extract_success_data(payload, tool="generate_return_url")
         if not isinstance(data, str):
@@ -61,10 +61,10 @@ class SalespersonMcpClient(BaseMcpClient):
             )
         return data
 
-    async def generate_cancel_url(self, correlation_id: str) -> str:
-        """Request the cancel URL bound to ``correlation_id`` from MCP."""
+    async def generate_cancel_url(self, context_id: str) -> str:
+        """Request the cancel URL bound to ``context_id`` from MCP."""
         payload = await self._call_tool_json(
-            "generate_cancel_url", {"correlation_id": correlation_id}
+            "generate_cancel_url", {"context_id": context_id}
         )
         data = self._extract_success_data(payload, tool="generate_cancel_url")
         if not isinstance(data, str):

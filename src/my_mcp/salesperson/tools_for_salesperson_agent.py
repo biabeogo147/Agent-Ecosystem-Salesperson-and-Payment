@@ -59,21 +59,21 @@ async def reserve_stock(sku: str, quantity: int) -> str:
     return ResponseFormat(data=True).to_json()
 
 
-async def generate_correlation_id(prefix: str) -> str:
+async def generate_context_id(prefix: str) -> str:
     """Create a unique correlation identifier used to track payment requests."""
-    correlation_id = f"{prefix}-{uuid.uuid4()}"
-    return ResponseFormat(data=correlation_id).to_json()
+    context_id = f"{prefix}-{uuid.uuid4()}"
+    return ResponseFormat(data=context_id).to_json()
 
 
-async def generate_return_url(correlation_id: str) -> str:
+async def generate_return_url(context_id: str) -> str:
     """Build the return URL that the payment gateway should redirect to."""
-    return_url = f"{RETURN_URL}?cid={correlation_id}"
+    return_url = f"{RETURN_URL}?cid={context_id}"
     return ResponseFormat(data=return_url).to_json()
 
 
-async def generate_cancel_url(correlation_id: str) -> str:
+async def generate_cancel_url(context_id: str) -> str:
     """Build the cancel URL that the payment gateway should redirect to."""
-    cancel_url = f"{CANCEL_URL}?cid={correlation_id}"
+    cancel_url = f"{CANCEL_URL}?cid={context_id}"
     return ResponseFormat(data=cancel_url).to_json()
 
 
@@ -81,14 +81,14 @@ print("Initializing ADK tool for salesperson...")
 find_product_tool = FunctionTool(find_product)
 calc_shipping_tool = FunctionTool(calc_shipping)
 reserve_stock_tool = FunctionTool(reserve_stock)
-generate_correlation_id_tool = FunctionTool(generate_correlation_id)
+generate_context_id_tool = FunctionTool(generate_context_id)
 generate_return_url_tool = FunctionTool(generate_return_url)
 generate_cancel_url_tool = FunctionTool(generate_cancel_url)
 ADK_TOOLS_FOR_SALESPERSON = {
     find_product_tool.name: find_product_tool,
     calc_shipping_tool.name: calc_shipping_tool,
     reserve_stock_tool.name: reserve_stock_tool,
-    generate_correlation_id_tool.name: generate_correlation_id_tool,
+    generate_context_id_tool.name: generate_context_id_tool,
     generate_return_url_tool.name: generate_return_url_tool,
     generate_cancel_url_tool.name: generate_cancel_url_tool,
 }

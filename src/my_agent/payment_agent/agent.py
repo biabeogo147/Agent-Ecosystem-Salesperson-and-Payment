@@ -43,4 +43,4 @@ def llm_payment_agent() -> LlmAgent:
     )
 
 
-root_agent = gemini_payment_agent()
+root_agent = llm_payment_agent() if IS_LLM_AGENT else gemini_payment_agent()

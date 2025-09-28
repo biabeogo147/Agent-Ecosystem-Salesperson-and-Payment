@@ -6,4 +6,4 @@ class CustomerInfo(BaseModel):
     name: Optional[str] = Field(default=None)
     email: Optional[EmailStr] = Field(default=None)
     phone: Optional[str] = Field(default=None)
-    shipping_address: Optional[Dict[str, str]] = Field(default=None)
+    shipping_address: Optional[str] = Field(default=None)

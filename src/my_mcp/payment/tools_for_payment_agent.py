@@ -24,7 +24,7 @@ async def create_order(payload: dict[str, Any]) -> str:
     Create a payment order on a payment paygate and return next_action for the customer.
     Args:
       payload: {
-        "correlation_id": "...",
+        "context_id": "...",
         "items": [{sku,name,quantity,unit_price,currency}],
         "customer": {...},
         "method": {"channel": "redirect|qr", "return_url", "cancel_url"}
@@ -32,7 +32,7 @@ async def create_order(payload: dict[str, Any]) -> str:
     Returns: PaymentResponse dict (status=PENDING + next_action=REDIRECT|SHOW_QR)
     """
     req = PaymentRequest.model_validate({
-        "correlation_id": payload["correlation_id"],
+        "context_id": payload["context_id"],
         "items": payload["items"],
         "customer": payload.get("customer", {}),
         "method": payload.get("method", {}),
@@ -55,7 +55,7 @@ async def create_order(payload: dict[str, Any]) -> str:
         )
 
     res = PaymentResponse(
-        correlation_id=req.correlation_id,
+        context_id=req.context_id,
         status=PaymentStatus.PENDING,
         provider_name=PAYGATE_PROVIDER,
         order_id=paygate_response["order_id"],
@@ -69,12 +69,12 @@ async def create_order(payload: dict[str, Any]) -> str:
 
 async def query_order_status(payload: dict[str, Any]) -> str:
     """
-    Query order status by correlation_id
+    Query order status by context_id
     Args:
-      payload: {"correlation_id": "..."}
+      payload: {"context_id": "..."}
     """
-    cid = payload["correlation_id"]
-    res = PaymentResponse(correlation_id=cid, status=PaymentStatus.FAILED)
+    cid = payload["context_id"]
+    res = PaymentResponse(context_id=cid, status=PaymentStatus.FAILED)
     return ResponseFormat(data=res.model_dump()).to_json()
 
 

@@ -6,8 +6,8 @@ Base = declarative_base()
 class ProductModel(Base):
     __tablename__ = 'products'
     
-    sku = Column(String, primary_key=True, index=True)
+    sku = Column(String, primary_key=True, index=True, nullable=False)
     name = Column(String, nullable=False)
-    price = Column(DECIMAL(18, 2), nullable=False, greater_or_equal=0, as_decimal=False)
+    price = Column(DECIMAL(18, 2), nullable=False)
     currency = Column(String, nullable=False, default="USD")
-    stock = Column(Integer, nullable=False, greater_or_equal=0)
+    stock = Column(Integer, nullable=False)

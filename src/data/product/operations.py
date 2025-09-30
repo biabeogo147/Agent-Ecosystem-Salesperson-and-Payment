@@ -16,6 +16,8 @@ def find_products_list_by_substring(query_string: str):
         (ProductModel.name.ilike(query_string))
     ).all()
     
+    print("Results from DB query: ", [_to_dict(product) for product in results])
+    
     session.close()
     
     return [_to_dict(product) for product in results]

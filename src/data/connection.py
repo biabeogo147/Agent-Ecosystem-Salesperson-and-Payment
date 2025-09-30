@@ -8,7 +8,7 @@ class PostgresConnection:
         password = config.POSTGRES_PASSWORD
         host = config.POSTGRES_HOST
         port = config.POSTGRES_PORT
-        self.engine = create_engine(f"postgresql+psycopg2://${user}:{password}@{host}:{port}:${database}", pool_size=20, max_overflow=10)
+        self.engine = create_engine(f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{database}", pool_size=20, max_overflow=10)
         self.Session = sessionmaker(bind=self.engine)
         
     def get_session(self):

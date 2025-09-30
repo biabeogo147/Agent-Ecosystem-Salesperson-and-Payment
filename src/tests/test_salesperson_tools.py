@@ -21,7 +21,7 @@ async def test_find_product_by_sku() -> None:
     from my_mcp.salesperson.tools_for_salesperson_agent import find_product
 
     results = await asyncio.gather(
-        find_product("SKU001"),
+        find_product("SKU0001"),
         find_product("INVALID_SKU"),
         find_product(""),
     )
@@ -53,10 +53,10 @@ async def test_reserve_stock() -> None:
     from my_mcp.salesperson.tools_for_salesperson_agent import reserve_stock
 
     results = await asyncio.gather(
-        reserve_stock("SKU001", 5),
-        reserve_stock("SKU001", 90),
+        reserve_stock("SKU0001", 5),
+        reserve_stock("SKU0001", 90),
         reserve_stock("INVALID_SKU", 1),
-        reserve_stock("SKU002", 100),
+        reserve_stock("SKU0002", 100),
     )
 
     print(results[0])
@@ -113,10 +113,10 @@ async def test_salesperson_client_reserve_stock_delegates_to_json_call() -> None
         return_value={"status": Status.SUCCESS.value, "message": "SUCCESS", "data": True}
     )
 
-    result = await client.reserve_stock(sku="SKU123", quantity=3)
+    result = await client.reserve_stock(sku="SKU0123", quantity=3)
 
     client._call_tool_json.assert_awaited_once_with(
-        "reserve_stock", {"sku": "SKU123", "quantity": 3}
+        "reserve_stock", {"sku": "SKU0123", "quantity": 3}
     )
     assert result == {"status": Status.SUCCESS.value, "message": "SUCCESS", "data": True}
 
@@ -176,9 +176,9 @@ async def test_reserve_stock_wrapper_defaults_to_singleton() -> None:
         "my_agent.salesperson_agent.salesperson_mcp_client.get_salesperson_mcp_client",
         return_value=fake_client,
     ):
-        result = await prepare_reserve_stock("SKU1", 2)
+        result = await prepare_reserve_stock("SKU0001", 2)
 
-    fake_client.reserve_stock.assert_awaited_once_with(sku="SKU1", quantity=2)
+    fake_client.reserve_stock.assert_awaited_once_with(sku="SKU0001", quantity=2)
     assert result == {
         "status": Status.SUCCESS.value,
         "message": "SUCCESS",

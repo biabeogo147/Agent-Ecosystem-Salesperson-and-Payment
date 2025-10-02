@@ -9,21 +9,14 @@ from utils.response_format import ResponseFormat
 from utils.status import Status
 from utils.app_string import *
 
+from data.product.operations import find_products_list_by_substring
 
 async def find_product(query: str) -> str:
     """
     Find product by SKU or substring of name.
     """
-    from data import get_product_list
-
     query = query.lower()
-    lst_product = get_product_list()
-
-    results = [
-        v
-        for k, v in lst_product.items()
-        if query == v["name"].lower() or query == k.lower()
-    ]
+    results = find_products_list_by_substring(query)
 
     return ResponseFormat(data=results).to_json()
 

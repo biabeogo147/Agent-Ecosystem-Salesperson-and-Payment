@@ -1,0 +1,37 @@
+name: "Agent-Ecosystem-Salesperson-and-Payment"
+
+services:
+  # Database service
+  db:
+    image: postgres:18.0-alpine3.22
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: product_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/persistent_data/postgres
+      # Run the script used to initialize the product table
+      - ./scripts/db/init_product.sql:/docker-entrypoint-initdb.d/init_product.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+    
+  # pgAdmin service - database management tool
+  pgAdmin4:
+    image: dpage/pgadmin4:9.8
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@mail.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
+  

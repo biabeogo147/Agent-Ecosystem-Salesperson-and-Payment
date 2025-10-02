@@ -115,7 +115,7 @@ class SalespersonA2AClient(BaseA2AClient):
 
 
 async def _create_payment_order(
-    items: List[Dict],
+    items: List[dict],
     customer: Dict[str, str],
     channel: Literal["redirect", "qr"],
     *,

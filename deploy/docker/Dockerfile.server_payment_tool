@@ -1,25 +1,32 @@
-# Sử dụng Python 3.11-slim để nhất quán môi trường runtime giữa các service Python.
-FROM python:3.11-slim
-# Ngăn Python sinh file .pyc để giữ image gọn.
-ENV PYTHONDONTWRITEBYTECODE=1
-# Bật unbuffered output giúp log xuất ngay, thuận tiện khi chạy trong container/k8s.
-ENV PYTHONUNBUFFERED=1
-# Thiết lập thư mục làm việc chung cho ứng dụng.
-WORKDIR /app
-# Sao chép file dependency trước nhằm tận dụng cache khi mã nguồn thay đổi.
-COPY requirements.txt pyproject.toml ./
-# Cài đặt gói build-essential phục vụ việc build wheel và xoá cache apt để giảm dung lượng.
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
 RUN apt-get update \
     && apt-get install -y --no-install-recommends build-essential curl \
     && rm -rf /var/lib/apt/lists/*
-# Cài đặt toàn bộ thư viện Python được yêu cầu cho MCP server.
-RUN pip install --no-cache-dir -r requirements.txt
-# Sao chép mã nguồn dự án vào container để uvicorn có thể import module.
+
+WORKDIR /app
+
+COPY requirements.txt pyproject.toml ./
+
+RUN pip install --no-cache-dir .
+
 COPY src ./src
-# Đặt biến môi trường để server lắng nghe trên tất cả interface và cổng mặc định 8000.
-ENV MCP_SERVER_HOST_PAYMENT=0.0.0.0
-ENV MCP_SERVER_PORT_PAYMENT=8000
-# Mở cổng 8000 nhằm khai báo cho runtime biết MCP server sẽ phục vụ tại đây.
+
+RUN useradd -m appuser
+USER appuser
+
+ENV PAYMENT_AGENT_SERVER_HOST=0.0.0.0 \
+    PAYMENT_AGENT_SERVER_PORT=8081 \
+    MCP_SERVER_HOST_PAYMENT=payment-tool \
+    MCP_SERVER_PORT_PAYMENT=8000 \
+    MCP_SERVER_HOST_SALESPERSON=salesperson-tool \
+    MCP_SERVER_PORT_SALESPERSON=8001 \
+    ADK_WEB_HOST=0.0.0.0 \
+    ADK_WEB_PORT=8080
+
 EXPOSE 8000
-# Khởi động uvicorn với ứng dụng FastAPI của server_payment_tool khi container chạy.
+
 CMD ["uvicorn", "my_mcp.payment.server_payment_tool:app", "--host", "0.0.0.0", "--port", "8000"]

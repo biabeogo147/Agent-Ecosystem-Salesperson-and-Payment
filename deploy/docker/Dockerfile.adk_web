@@ -1,32 +1,32 @@
-# Dùng Python 3.11-slim để chạy CLI google-adk nhẹ và đồng nhất với các service khác.
-FROM python:3.11-slim
-# Ngăn tạo file .pyc để tối ưu kích thước image.
-ENV PYTHONDONTWRITEBYTECODE=1
-# Bật chế độ unbuffered giúp log real-time phục vụ quan sát trên Kubernetes.
-ENV PYTHONUNBUFFERED=1
-# Thiết lập thư mục làm việc chính của ứng dụng web.
-WORKDIR /app
-# Sao chép file requirements và pyproject trước để tối ưu cache khi cài dependency.
-COPY requirements.txt pyproject.toml ./
-# Cài build-essential để hỗ trợ biên dịch gói cần thiết rồi dọn sạch cache apt.
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
 RUN apt-get update \
     && apt-get install -y --no-install-recommends build-essential curl \
     && rm -rf /var/lib/apt/lists/*
-# Cài đặt toàn bộ dependency Python bao gồm google-adk để có CLI adk web.
-RUN pip install --no-cache-dir -r requirements.txt
-# Chép mã nguồn để adk web có thể load agent definition trong thư mục src/my_agent.
+
+WORKDIR /app
+
+COPY requirements.txt pyproject.toml ./
+
+RUN pip install --no-cache-dir .
+
 COPY src ./src
-# Thiết lập port mặc định 8080 cho giao diện web và cho phép override qua biến môi trường.
-ENV ADK_WEB_HOST=0.0.0.0
-ENV ADK_WEB_PORT=8080
-# Đặt mặc định thông tin kết nối tới các service nội bộ theo tên service trong Kubernetes.
-ENV MCP_SERVER_HOST_PAYMENT=payment-tool
-ENV MCP_SERVER_PORT_PAYMENT=8000
-ENV MCP_SERVER_HOST_SALESPERSON=salesperson-tool
-ENV MCP_SERVER_PORT_SALESPERSON=8001
-ENV PAYMENT_AGENT_SERVER_HOST=a2a-app
-ENV PAYMENT_AGENT_SERVER_PORT=8081
-# Mở cổng 8080 để ingress có thể truy cập ứng dụng web.
+
+RUN useradd -m appuser
+USER appuser
+
+ENV PAYMENT_AGENT_SERVER_HOST=0.0.0.0 \
+    PAYMENT_AGENT_SERVER_PORT=8081 \
+    MCP_SERVER_HOST_PAYMENT=payment-tool \
+    MCP_SERVER_PORT_PAYMENT=8000 \
+    MCP_SERVER_HOST_SALESPERSON=salesperson-tool \
+    MCP_SERVER_PORT_SALESPERSON=8001 \
+    ADK_WEB_HOST=0.0.0.0 \
+    ADK_WEB_PORT=8080
+
 EXPOSE 8080
-# Khởi chạy giao diện ADK web trỏ vào thư mục định nghĩa agent.
+
 CMD ["adk", "web", "/app/src/my_agent", "--host", "0.0.0.0", "--port", "8080"]

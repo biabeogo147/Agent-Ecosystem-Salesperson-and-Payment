@@ -1,0 +1,25 @@
+# Dùng Python 3.11-slim để tương thích với yêu cầu dự án và giảm dung lượng image.
+FROM python:3.11-slim
+# Tắt việc sinh file .pyc để tối ưu dung lượng và I/O.
+ENV PYTHONDONTWRITEBYTECODE=1
+# Đảm bảo log được flush ngay lập tức cho môi trường container.
+ENV PYTHONUNBUFFERED=1
+# Chọn /app làm thư mục làm việc thống nhất cho thao tác copy và chạy lệnh.
+WORKDIR /app
+# Sao chép file định nghĩa dependency trước để tận dụng cache layer.
+COPY requirements.txt pyproject.toml ./
+# Cài đặt công cụ build cần thiết rồi dọn dẹp cache apt nhằm giữ image nhỏ gọn.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends build-essential curl \
+    && rm -rf /var/lib/apt/lists/*
+# Cài các gói Python phục vụ MCP salesperson server.
+RUN pip install --no-cache-dir -r requirements.txt
+# Copy toàn bộ mã nguồn để uvicorn load được module salesperson.
+COPY src ./src
+# Đặt biến môi trường để service nghe ở cổng 8001 và trên mọi interface.
+ENV MCP_SERVER_HOST_SALESPERSON=0.0.0.0
+ENV MCP_SERVER_PORT_SALESPERSON=8001
+# Mở cổng 8001 tương ứng với port dịch vụ MCP salesperson.
+EXPOSE 8001
+# Khởi động uvicorn chạy ứng dụng FastAPI của server_salesperson_tool.
+CMD ["uvicorn", "my_mcp.salesperson.server_salesperson_tool:app", "--host", "0.0.0.0", "--port", "8001"]

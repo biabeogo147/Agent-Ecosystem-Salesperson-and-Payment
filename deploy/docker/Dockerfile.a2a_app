@@ -1,0 +1,30 @@
+# Sử dụng Python 3.11-slim vì dự án yêu cầu Python >=3.10 và biến thể slim giúp giảm kích thước image.
+FROM python:3.11-slim
+# Vô hiệu hoá việc tạo file .pyc để image gọn hơn và tránh ghi đĩa không cần thiết.
+ENV PYTHONDONTWRITEBYTECODE=1
+# Bật unbuffered output để log hiển thị ngay lập tức trong container.
+ENV PYTHONUNBUFFERED=1
+# Đặt thư mục làm việc về /app để tất cả thao tác tiếp theo có cùng ngữ cảnh.
+WORKDIR /app
+# Sao chép file requirements trước để tối ưu cache layer của Docker khi dependency không đổi.
+COPY requirements.txt pyproject.toml ./
+# Cài đặt build dependencies tối thiểu (curl và build-essential) để pip có thể build wheel nếu cần, sau đó xoá cache apt để giảm kích thước image.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends build-essential curl \
+    && rm -rf /var/lib/apt/lists/*
+# Cài đặt phụ thuộc Python cho service dựa trên requirements.txt.
+RUN pip install --no-cache-dir -r requirements.txt
+# Sao chép toàn bộ mã nguồn để container có thể truy cập các module nội bộ.
+COPY src ./src
+# Thiết lập biến môi trường để service lắng nghe trên mọi interface và cổng mặc định 8081.
+ENV PAYMENT_AGENT_SERVER_HOST=0.0.0.0
+ENV PAYMENT_AGENT_SERVER_PORT=8081
+# Mặc định cấu hình URL của các MCP server để a2a app giao tiếp trong cụm Kubernetes.
+ENV MCP_SERVER_HOST_PAYMENT=payment-tool
+ENV MCP_SERVER_PORT_PAYMENT=8000
+ENV MCP_SERVER_HOST_SALESPERSON=salesperson-tool
+ENV MCP_SERVER_PORT_SALESPERSON=8001
+# Mở cổng 8081 vì đây là nơi service a2a_app phục vụ HTTP.
+EXPOSE 8081
+# Chạy uvicorn với module a2a_app để khởi động Starlette app khi container start.
+CMD ["uvicorn", "my_agent.payment_agent.payment_a2a.a2a_app:a2a_app", "--host", "0.0.0.0", "--port", "8081"]

@@ -1,7 +1,6 @@
 from data.connection import PostgresConnection
-from data.product.model import ProductModel
-from data.product.helper import _to_dict
-    
+from data.models.product import Product
+
 def find_products_list_by_substring(query_string: str):
     """
     Find product by SKU or substring of name.
@@ -11,14 +10,16 @@ def find_products_list_by_substring(query_string: str):
     
     query_string = f"%{query_string.lower()}%"
     
-    results = session.query(ProductModel).filter(
-        (ProductModel.sku.ilike(query_string)) | 
-        (ProductModel.name.ilike(query_string))
+    results = session.query(Product).filter(
+        (Product.sku.ilike(query_string)) |
+        (Product.name.ilike(query_string))
     ).all()
+
+    lst_product = [product.to_dict() for product in results]
     
-    print("Results from DB query: ", [_to_dict(product) for product in results])
+    print("Results from DB query: ", lst_product)
     
     session.close()
     
-    return [_to_dict(product) for product in results]
+    return lst_product
         

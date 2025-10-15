@@ -9,7 +9,7 @@ from utils.response_format import ResponseFormat
 from utils.status import Status
 from utils.app_string import *
 
-from data.product.operations import find_products_list_by_substring
+from data.operations.operations import find_products_list_by_substring
 
 async def find_product(query: str) -> str:
     """

@@ -5,7 +5,7 @@ from __future__ import annotations
 from starlette.applications import Starlette
 from starlette.routing import Route
 
-from config import PAYMENT_AGENT_SERVER_HOST, PAYMENT_AGENT_SERVER_PORT
+from config import PAYMENT_AGENT_SERVER_PORT
 from my_agent.payment_agent.payment_a2a.payment_agent_handler import PAYMENT_HANDLER
 
 
@@ -19,4 +19,4 @@ __all__ = ["a2a_app"]
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(a2a_app, host=PAYMENT_AGENT_SERVER_HOST, port=PAYMENT_AGENT_SERVER_PORT)
+    uvicorn.run(a2a_app, host="0.0.0.0", port=PAYMENT_AGENT_SERVER_PORT)

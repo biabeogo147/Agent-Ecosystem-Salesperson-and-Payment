@@ -18,13 +18,6 @@ COPY src ./src
 RUN useradd -m appuser
 USER appuser
 
-ENV PAYMENT_AGENT_SERVER_HOST=0.0.0.0 \
-    PAYMENT_AGENT_SERVER_PORT=8081 \
-    MCP_SERVER_HOST_PAYMENT=payment-tool \
-    MCP_SERVER_PORT_PAYMENT=8000 \
-    MCP_SERVER_HOST_SALESPERSON=salesperson-tool \
-    MCP_SERVER_PORT_SALESPERSON=8001
-
 EXPOSE 8081
 
-CMD ["uvicorn", "my_agent.payment_agent.payment_a2a.a2a_app:a2a_app", "--host", "0.0.0.0", "--port", "8081"]
+CMD ["python", "src/my_agent/payment_agent/payment_a2a/a2a_app.py"]

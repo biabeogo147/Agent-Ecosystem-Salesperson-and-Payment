@@ -18,15 +18,6 @@ COPY src ./src
 RUN useradd -m appuser
 USER appuser
 
-ENV PAYMENT_AGENT_SERVER_HOST=0.0.0.0 \
-    PAYMENT_AGENT_SERVER_PORT=8081 \
-    MCP_SERVER_HOST_PAYMENT=payment-tool \
-    MCP_SERVER_PORT_PAYMENT=8000 \
-    MCP_SERVER_HOST_SALESPERSON=salesperson-tool \
-    MCP_SERVER_PORT_SALESPERSON=8001 \
-    ADK_WEB_HOST=0.0.0.0 \
-    ADK_WEB_PORT=8080
-
 EXPOSE 8001
 
-CMD ["uvicorn", "my_mcp.salesperson.server_salesperson_tool:app", "--host", "0.0.0.0", "--port", "8001"]
+CMD ["python", "src/my_mcp/salesperson/server_salesperson_tool.py"]

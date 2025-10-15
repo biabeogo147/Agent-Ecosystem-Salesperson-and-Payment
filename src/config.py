@@ -29,3 +29,9 @@ POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
 POSTGRES_PORT = os.getenv("POSTGRES_PORT", "5432")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "salesperson")
 POSTGRES_USER = os.getenv("POSTGRES_USER", "123456")
+
+ELASTIC_HOST = os.getenv("ELASTIC_HOST", "localhost")
+ELASTIC_PORT = int(os.getenv("ELASTIC_PORT", "9200"))
+ELASTIC_USER = os.getenv("ELASTIC_USER", "es_salesperson")
+ELASTIC_PASSWORD = os.getenv("ELASTIC_PASSWORD", "123456")
+ELASTIC_INDEX = "products_index"

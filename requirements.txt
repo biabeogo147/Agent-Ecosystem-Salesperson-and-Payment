@@ -13,3 +13,5 @@ a2a-sdk~=0.3.6
 httpx~=0.28.1
 sqlalchemy~= 2.0.43
 pydantic[email]
+elasticsearch~=8.17.0
+psycopg2~=2.9.7

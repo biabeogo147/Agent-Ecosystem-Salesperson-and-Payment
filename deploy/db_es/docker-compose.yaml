@@ -40,7 +40,6 @@ services:
       - bootstrap.memory_lock=true
       - xpack.security.enabled=false
       - xpack.security.http.ssl.enabled=false
-      - ES_JAVA_OPTS=-Xms1g -Xmx1g             # Set JVM heap size to min 1GB, max 1GB
     ulimits:
       memlock:
         soft: -1

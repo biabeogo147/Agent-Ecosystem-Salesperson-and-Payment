@@ -4,7 +4,7 @@ from data.models.product import Product
 from config import ELASTIC_INDEX
 
 def sync_products_to_elastic():
-    pg = PostgresConnection(database="product_db")
+    pg = PostgresConnection(database=POSTGRES_DB)
     session = pg.get_session()
     es = ElasticConnection().get_client()
 

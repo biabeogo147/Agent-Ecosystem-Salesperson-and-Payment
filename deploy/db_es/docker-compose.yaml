@@ -5,8 +5,6 @@ services:
     image: postgres:18.0-alpine3.22
     container_name: postgres-db
     environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
@@ -25,6 +23,9 @@ services:
   pgAdmin4:
     image: dpage/pgadmin4:9.8
     container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
     ports:
       - "5050:80"
     depends_on:
@@ -38,6 +39,7 @@ services:
       - node.name=es-node-1                    # Name of the node
       - discovery.type=single-node             # Single-node cluster
       - bootstrap.memory_lock=true
+      - xpack.security.enrollment.enabled=true
       - xpack.security.enabled=false
       - xpack.security.http.ssl.enabled=false
     ulimits:

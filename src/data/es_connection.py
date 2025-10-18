@@ -10,3 +10,5 @@ class ElasticConnection:
 
     def get_client(self):
         return self.es
+
+es_connection = ElasticConnection()

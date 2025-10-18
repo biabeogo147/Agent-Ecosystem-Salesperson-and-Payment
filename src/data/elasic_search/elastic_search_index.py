@@ -1,9 +1,9 @@
 from config import ELASTIC_INDEX
-from data.es_connection import ElasticConnection
+from data.es_connection import es_connection
 
 
 def create_products_index():
-    es = ElasticConnection().get_client()
+    es = es_connection
     if es.indices.exists(index=ELASTIC_INDEX):
         print(f"Index '{ELASTIC_INDEX}' already exists.")
         return

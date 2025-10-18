@@ -1,5 +1,5 @@
-from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine
 import config
 
 class PostgresConnection:
@@ -13,3 +13,5 @@ class PostgresConnection:
         
     def get_session(self):
         return self.Session()
+
+db_connection = PostgresConnection(database=config.POSTGRES_DB)

@@ -1,12 +1,12 @@
-from data.db_connection import PostgresConnection
-from data.es_connection import ElasticConnection
-from config import ELASTIC_INDEX, POSTGRES_DB
+from data.db_connection import db_connection
+from data.es_connection import es_connection
 from data.models.product import Product
+from config import ELASTIC_INDEX
 
 def sync_products_to_elastic():
-    pg = PostgresConnection(database=POSTGRES_DB)
+    pg = db_connection
     session = pg.get_session()
-    es = ElasticConnection().get_client()
+    es = es_connection
 
     products = session.query(Product).all()
     actions = [

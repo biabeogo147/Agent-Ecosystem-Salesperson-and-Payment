@@ -9,12 +9,13 @@ from utils.response_format import ResponseFormat
 from utils.status import Status
 from utils.app_string import *
 
-from data.operations.operations import find_products_list_by_substring
 
 async def find_product(query: str) -> str:
     """
     Find product by SKU or substring of name.
     """
+    from data.operations.product_ops import find_products_list_by_substring
+
     query = query.lower()
     results = find_products_list_by_substring(query)
 
@@ -37,19 +38,19 @@ async def reserve_stock(sku: str, quantity: int) -> str:
     """
     Reserve stock for a given SKU and quantity.
     """
-    from data import get_product_list
+    from data.operations.product_ops import find_product_by_sku, update_product_stock
 
-    lst_product = get_product_list()
-    product = lst_product.get(sku)
+    product = find_product_by_sku(sku)
 
     if not product:
         return ResponseFormat(status=Status.PRODUCT_NOT_FOUND, data=False, message=PRODUCT_NOT_FOUND).to_json()
 
-    if product["stock"] < quantity:
+    if product.stock < quantity:
         return ResponseFormat(status=Status.QUANTITY_EXCEEDED, data=False, message=QUANTITY_EXCEEDED).to_json()
 
-    product["stock"] -= quantity
-    return ResponseFormat(data=True).to_json()
+    result = update_product_stock(sku, product.stock - quantity)
+
+    return ResponseFormat(data=result).to_json()
 
 
 async def generate_context_id(prefix: str) -> str:

@@ -1,0 +1,15 @@
+import datetime
+
+from pydantic import BaseModel, Field
+from typing import List, Optional
+
+
+class Document(BaseModel):
+    id: int = Field(..., description="Unique document ID")
+    text: str = Field(..., description="Full text content of the document")
+    embedding: List[float] = Field(..., description="Vector embedding of the document content")
+
+    # Metadata
+    title: str = Field(..., description="Document title or short summary")
+    chunk_id: Optional[int] = Field(default=None, description="Chunk identifier if document is split")
+    created_at: Optional[datetime] = Field(default_factory=datetime.datetime.now, description="Creation timestamp")

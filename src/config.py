@@ -36,3 +36,15 @@ POSTGRES_USER = os.getenv("POSTGRES_USER")
 ELASTIC_HOST = os.getenv("ELASTIC_HOST", "localhost")
 ELASTIC_PORT = int(os.getenv("ELASTIC_PORT", "9200"))
 ELASTIC_INDEX = "products_index"
+
+MILVUS_HOST = os.getenv("MILVUS_HOST", "localhost:19530")
+MILVUS_USER = os.getenv("MILVUS_USER", "root")
+MILVUS_PASSWORD = os.getenv("MILVUS_PASSWORD", "Milvus")
+RENEW_VS = os.getenv("RENEW_VS", "false").lower() == "true"
+VS_NAME = os.getenv("VS_NAME", "knowledge_base_vs")
+IS_METADATA = True
+EMBED_VECTOR_DIM = 1024
+DEFAULT_TEXT_FIELD = "text"
+DEFAULT_METRIC_TYPE = "COSINE"
+KNOWLEDGE_BASE_DB = "knowledge_base"
+DEFAULT_EMBEDDING_FIELD = "embedding"

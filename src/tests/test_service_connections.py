@@ -28,3 +28,14 @@ def test_elasticsearch_connection():
             print("❌ Elasticsearch ping failed.")
     except Exception as e:
         print("❌ Elasticsearch connection failed:", e)
+
+
+def test_milvus_connection():
+    from data.vs_connection import get_client_instance
+    print("\n🔍 Testing Milvus connection...")
+    try:
+        milvus_client = get_client_instance()
+        version = milvus_client.get_server_version()
+        print(f"✅ Milvus is healthy. Server version: {version}")
+    except Exception as e:
+        print("❌ Milvus connection failed:", e)

@@ -57,17 +57,28 @@ def find_product_by_sku(sku: str) -> Product | None:
     """
     Find a product by its SKU in DB.
     """
-    db = db_connection
-    product_data = db.products.find_one({"sku": sku})
-    if product_data:
-        return Product(**product_data)
-    return None
+    session = db_connection.get_session()
+    try:
+        product = session.query(Product).filter(Product.sku == sku).first()
+        return product
+    finally:
+        session.close()
 
 
 def update_product_stock(sku: str, new_stock: int) -> bool:
     """
     Update the stock of a product by its SKU in DB.
     """
-    db = db_connection
-    result = db.products.update_one({"sku": sku}, {"$set": {"stock": new_stock}})
-    return result.modified_count > 0
+    session = db_connection.get_session()
+    try:
+        product = session.query(Product).filter(Product.sku == sku).first()
+        if not product:
+            return False
+        product.stock = new_stock
+        session.commit()
+        return True
+    except Exception:
+        session.rollback()
+        return False
+    finally:
+        session.close()

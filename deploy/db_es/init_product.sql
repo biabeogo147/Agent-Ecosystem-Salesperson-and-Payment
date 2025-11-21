@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS products (
+CREATE TABLE IF NOT EXISTS product (
     sku VARCHAR(255) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     price DECIMAL(18, 2) NOT NULL,
@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS products (
     stock INT NOT NULL
 );
 
-INSERT INTO products (sku, name, price, currency, stock) VALUES
+INSERT INTO product (sku, name, price, currency, stock) VALUES
     ('SKU0001', 'Wireless Mouse', 15.99, 'USD', 120),
     ('SKU0002', 'Mechanical Keyboard', 45.50, 'USD', 60),
     ('SKU0003', 'HD Monitor 24 inch', 129.99, 'USD', 30),

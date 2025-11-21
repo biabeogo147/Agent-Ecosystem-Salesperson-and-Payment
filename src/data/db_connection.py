@@ -1,6 +1,6 @@
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
-import src.config
+import src.config as config
 
 class PostgresConnection:
     def __init__(self, database: str):

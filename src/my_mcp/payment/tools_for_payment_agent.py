@@ -8,9 +8,21 @@ from src.data.models.db_entity.order import Order
 from src.data.models.enum.order_status import OrderStatus
 from src.my_agent.my_a2a_common.payment_schemas.payment_enums import *
 from src.my_agent.my_a2a_common.payment_schemas.next_action import NextAction
-from src.my_agent.my_a2a_common.payment_schemas.payment_request import PaymentRequest
 from src.my_agent.my_a2a_common.payment_schemas.payment_response import PaymentResponse
 from src.utils.response_format import ResponseFormat
+from src.utils.status import Status
+
+
+def _map_order_status_to_payment_status(order_status: OrderStatus) -> PaymentStatus:
+    """Map OrderStatus to PaymentStatus."""
+    mapping = {
+        OrderStatus.PENDING: PaymentStatus.PENDING,
+        OrderStatus.SUCCESS: PaymentStatus.SUCCESS,
+        OrderStatus.PAID: PaymentStatus.SUCCESS,
+        OrderStatus.FAILED: PaymentStatus.FAILED,
+        OrderStatus.CANCELLED: PaymentStatus.CANCELLED,
+    }
+    return mapping.get(order_status, PaymentStatus.PENDING)
 
 
 async def _stub_paygate_create(channel: PaymentChannel, total: float, return_url: Optional[str], cancel_url: Optional[str]):
@@ -40,7 +52,7 @@ async def create_order(payload: dict[str, Any]) -> str:
         from src.data.models.db_entity.product import Product
         product = session.query(Product).filter(Product.sku == payload["product_sku"]).first()
         if not product:
-            return ResponseFormat(error="Product not found").to_json()
+            return ResponseFormat(status=Status.PRODUCT_NOT_FOUND, message="Product not found").to_json()
 
         quantity = payload.get("quantity", 1)
         total_amount = float(product.price) * quantity
@@ -93,7 +105,7 @@ async def create_order(payload: dict[str, Any]) -> str:
         return ResponseFormat(data=res.model_dump()).to_json()
     except Exception as e:
         session.rollback()
-        return ResponseFormat(error=str(e)).to_json()
+        return ResponseFormat(status=Status.UNKNOWN_ERROR, message=str(e)).to_json()
     finally:
         session.close()
 
@@ -111,16 +123,16 @@ async def query_order_status(payload: dict[str, Any]) -> str:
         order = session.query(Order).filter(Order.id == int(order_id)).first()
 
         if not order:
-            return ResponseFormat(error="Order not found").to_json()
+            return ResponseFormat(status=Status.ORDER_NOT_FOUND, message="Order not found").to_json()
 
         res = PaymentResponse(
             context_id=str(order.id),
-            status=PaymentStatus(order.status.value),
+            status=_map_order_status_to_payment_status(order.status),
             order_id=str(order.id),
         )
         return ResponseFormat(data={**res.model_dump(), "order": order.to_dict()}).to_json()
     except Exception as e:
-        return ResponseFormat(error=str(e)).to_json()
+        return ResponseFormat(status=Status.UNKNOWN_ERROR, message=str(e)).to_json()
     finally:
         session.close()
 
@@ -139,7 +151,7 @@ async def update_order_status(payload: dict[str, Any]) -> str:
 
         order = session.query(Order).filter(Order.id == int(order_id)).first()
         if not order:
-            return ResponseFormat(error="Order not found").to_json()
+            return ResponseFormat(status=Status.ORDER_NOT_FOUND, message="Order not found").to_json()
 
         order.status = OrderStatus(new_status)
         session.commit()
@@ -148,7 +160,7 @@ async def update_order_status(payload: dict[str, Any]) -> str:
         return ResponseFormat(data=order.to_dict()).to_json()
     except Exception as e:
         session.rollback()
-        return ResponseFormat(error=str(e)).to_json()
+        return ResponseFormat(status=Status.UNKNOWN_ERROR, message=str(e)).to_json()
     finally:
         session.close()
 

@@ -9,8 +9,8 @@ class Order(Base):
     __tablename__ = "order"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-    product_sku = Column(String, ForeignKey("products.sku"), nullable=False)
+    user_id = Column(Integer, ForeignKey("user.id"), nullable=True)
+    product_sku = Column(String, ForeignKey("product.sku"), nullable=False)
     quantity = Column(Integer, nullable=False, default=1)
     total_amount = Column(DECIMAL(18, 2), nullable=False)
     currency = Column(String, nullable=False, default="USD")

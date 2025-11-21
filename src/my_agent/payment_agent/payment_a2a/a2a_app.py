@@ -5,8 +5,8 @@ from __future__ import annotations
 from starlette.applications import Starlette
 from starlette.routing import Route
 
-from config import PAYMENT_AGENT_SERVER_PORT
-from my_agent.payment_agent.payment_a2a.payment_agent_handler import PAYMENT_HANDLER
+from src.config import PAYMENT_AGENT_SERVER_PORT
+from src.my_agent.payment_agent.payment_a2a.payment_agent_handler import PAYMENT_HANDLER
 
 
 routes = [

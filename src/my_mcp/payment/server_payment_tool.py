@@ -9,9 +9,9 @@ from mcp import types as mcp_types
 from mcp.server.lowlevel import Server
 from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
 
-from my_mcp.payment.tools_for_payment_agent import *
-from my_mcp.logging_middleware import LoggingMiddleware, get_logger
-from my_mcp.utils import list_mcp_tools_with_dict, call_mcp_tool_with_dict
+from src.my_mcp.payment.tools_for_payment_agent import *
+from src.my_mcp.logging_middleware import LoggingMiddleware, get_logger
+from src.my_mcp.utils import list_mcp_tools_with_dict, call_mcp_tool_with_dict
 
 my_mcp_server = Server("payment_mcp")
 

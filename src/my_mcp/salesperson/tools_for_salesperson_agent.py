@@ -4,17 +4,17 @@ import uuid
 
 from google.adk.tools import FunctionTool
 
-from config import RETURN_URL, CANCEL_URL
-from utils.response_format import ResponseFormat
-from utils.status import Status
-from utils.app_string import *
+from src.config import RETURN_URL, CANCEL_URL
+from src.utils.response_format import ResponseFormat
+from src.utils.status import Status
+from src.utils.app_string import *
 
 
 async def find_product(query: str) -> str:
     """
     Find product by SKU or substring of name.
     """
-    from data.operations.product_ops import find_products_list_by_substring
+    from src.data.operations.product_ops import find_products_list_by_substring
 
     query = query.lower()
     results = find_products_list_by_substring(query)
@@ -38,7 +38,7 @@ async def reserve_stock(sku: str, quantity: int) -> str:
     """
     Reserve stock for a given SKU and quantity.
     """
-    from data.operations.product_ops import find_product_by_sku, update_product_stock
+    from src.data.operations.product_ops import find_product_by_sku, update_product_stock
 
     product = find_product_by_sku(sku)
 

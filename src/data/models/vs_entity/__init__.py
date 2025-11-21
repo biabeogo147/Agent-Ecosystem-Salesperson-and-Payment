@@ -1,4 +1,3 @@
-from data.models.vs_entity.document import Document
-from data.models.vs_entity.message import Message
+from src.data.models.vs_entity.document import Document
 
-list_vs_entity = [Message, Document]
+list_vs_entity = [Document]

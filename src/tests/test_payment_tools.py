@@ -4,23 +4,23 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from my_agent.payment_agent.payment_mcp_client import (
+from src.my_agent.payment_agent.payment_mcp_client import (
     PaymentMcpClient,
     create_order as create_order_wrapper,
     query_order_status as query_order_status_wrapper,
 )
-from my_a2a_common.payment_schemas.payment_enums import (
+from src.my_agent.my_a2a_common.payment_schemas.payment_enums import (
     NextActionType,
     PaymentChannel,
     PaymentStatus,
 )
-from config import CHECKOUT_URL, PAYGATE_PROVIDER, QR_URL
-from utils.status import Status
+from src.config import CHECKOUT_URL, PAYGATE_PROVIDER, QR_URL
+from src.utils.status import Status
 
 
 @pytest.mark.asyncio
 async def test_create_order_redirect_channel() -> None:
-    from my_mcp.payment.tools_for_payment_agent import create_order
+    from src.my_mcp.payment.tools_for_payment_agent import create_order
 
     payload = {
         "context_id": "corr-123",
@@ -61,7 +61,7 @@ async def test_create_order_redirect_channel() -> None:
 
 @pytest.mark.asyncio
 async def test_create_order_qr_channel() -> None:
-    from my_mcp.payment.tools_for_payment_agent import create_order
+    from src.my_mcp.payment.tools_for_payment_agent import create_order
 
     payload = {
         "context_id": "corr-qr",
@@ -98,7 +98,7 @@ async def test_create_order_qr_channel() -> None:
 
 @pytest.mark.asyncio
 async def test_query_order_status_returns_failed() -> None:
-    from my_mcp.payment.tools_for_payment_agent import query_order_status
+    from src.my_mcp.payment.tools_for_payment_agent import query_order_status
 
     response_json = await query_order_status({"context_id": "corr-xyz"})
     envelope = json.loads(response_json)
@@ -169,7 +169,7 @@ async def test_create_order_wrapper_uses_singleton_client() -> None:
     fake_client.create_order.return_value = {"status": "SUCCESS"}
 
     with patch(
-        "my_agent.payment_agent.payment_mcp_client.get_payment_mcp_client",
+        "src.my_agent.payment_agent.payment_mcp_client.get_payment_mcp_client",
         return_value=fake_client,
     ):
         result = await create_order_wrapper({"foo": "bar"})
@@ -184,7 +184,7 @@ async def test_query_order_status_wrapper_uses_singleton_client() -> None:
     fake_client.query_order_status.return_value = {"status": "FAILED"}
 
     with patch(
-        "my_agent.payment_agent.payment_mcp_client.get_payment_mcp_client",
+        "src.my_agent.payment_agent.payment_mcp_client.get_payment_mcp_client",
         return_value=fake_client,
     ):
         result = await query_order_status_wrapper({"context_id": "abc"})

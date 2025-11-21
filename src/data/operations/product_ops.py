@@ -1,7 +1,7 @@
-from config import ELASTIC_INDEX
-from data.db_connection import db_connection
-from data.es_connection import es_connection
-from data.models.db_entity.product import Product
+from src.config import ELASTIC_INDEX
+from src.data.db_connection import db_connection
+from src.data.es_connection import es_connection
+from src.data.models.db_entity.product import Product
 
 
 def find_products_list_by_substring(query_string: str, min_price: float = None, max_price: float = None):

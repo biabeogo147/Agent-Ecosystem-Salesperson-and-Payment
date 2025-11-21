@@ -2,8 +2,8 @@ from __future__ import annotations
 from typing import Optional
 from pydantic import BaseModel, Field
 
-from .payment_enums.payment_status import PaymentStatus
-from .next_action import NextAction
+from src.my_agent.my_a2a_common.payment_schemas.payment_enums.payment_status import PaymentStatus
+from src.my_agent.my_a2a_common.payment_schemas.next_action import NextAction
 
 class PaymentResponse(BaseModel):
     context_id: str = Field(..., description="The same ID as in the request")

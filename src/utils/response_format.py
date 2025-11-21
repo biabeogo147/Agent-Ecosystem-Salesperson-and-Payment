@@ -1,5 +1,5 @@
 import json
-from utils.status import Status
+from src.utils.status import Status
 
 
 class ResponseFormat:

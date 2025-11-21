@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from my_agent.salesperson_agent.salesperson_mcp_client import (
+from src.my_agent.salesperson_agent.salesperson_mcp_client import (
     SalespersonMcpClient,
     prepare_calc_shipping,
     prepare_calc_shipping_with_client,
@@ -13,12 +13,12 @@ from my_agent.salesperson_agent.salesperson_mcp_client import (
     prepare_reserve_stock,
     prepare_reserve_stock_with_client,
 )
-from utils.status import Status
+from src.utils.status import Status
 
 
 @pytest.mark.asyncio
 async def test_find_product_by_sku() -> None:
-    from my_mcp.salesperson.tools_for_salesperson_agent import find_product
+    from src.my_mcp.salesperson.tools_for_salesperson_agent import find_product
 
     results = await asyncio.gather(
         find_product("SKU0001"),
@@ -33,7 +33,7 @@ async def test_find_product_by_sku() -> None:
 
 @pytest.mark.asyncio
 async def test_calc_shipping() -> None:
-    from my_mcp.salesperson.tools_for_salesperson_agent import calc_shipping
+    from src.my_mcp.salesperson.tools_for_salesperson_agent import calc_shipping
 
     results = await asyncio.gather(
         calc_shipping(10, 100),
@@ -50,7 +50,7 @@ async def test_calc_shipping() -> None:
 
 @pytest.mark.asyncio
 async def test_reserve_stock() -> None:
-    from my_mcp.salesperson.tools_for_salesperson_agent import reserve_stock
+    from src.my_mcp.salesperson.tools_for_salesperson_agent import reserve_stock
 
     results = await asyncio.gather(
         reserve_stock("SKU0001", 5),
@@ -150,7 +150,7 @@ async def test_calc_shipping_wrapper_defaults_to_singleton() -> None:
     }
 
     with patch(
-        "my_agent.salesperson_agent.salesperson_mcp_client.get_salesperson_mcp_client",
+        "src.my_agent.salesperson_agent.salesperson_mcp_client.get_salesperson_mcp_client",
         return_value=fake_client,
     ):
         result = await prepare_calc_shipping(1.0, 5.0)
@@ -173,7 +173,7 @@ async def test_reserve_stock_wrapper_defaults_to_singleton() -> None:
     }
 
     with patch(
-        "my_agent.salesperson_agent.salesperson_mcp_client.get_salesperson_mcp_client",
+        "src.my_agent.salesperson_agent.salesperson_mcp_client.get_salesperson_mcp_client",
         return_value=fake_client,
     ):
         result = await prepare_reserve_stock("SKU0001", 2)

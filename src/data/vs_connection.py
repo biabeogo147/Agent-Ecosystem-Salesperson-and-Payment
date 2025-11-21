@@ -1,6 +1,6 @@
 from pymilvus import MilvusClient
 
-from config import *
+from src.config import *
 
 _client = None
 

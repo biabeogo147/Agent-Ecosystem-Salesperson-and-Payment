@@ -1,10 +1,10 @@
 from google.adk.agents import Agent, LlmAgent
 from google.adk.models.lite_llm import LiteLlm
 
-from config import *
-from my_agent.salesperson_agent.salesperson_a2a.salesperson_a2a_client import create_payment_order_tool, \
+from src.config import *
+from src.my_agent.salesperson_agent.salesperson_a2a.salesperson_a2a_client import create_payment_order_tool, \
     query_payment_order_status_tool
-from my_agent.salesperson_agent.salesperson_mcp_client import prepare_find_product_tool, prepare_calc_shipping_tool, \
+from src.my_agent.salesperson_agent.salesperson_mcp_client import prepare_find_product_tool, prepare_calc_shipping_tool, \
     prepare_reserve_stock_tool
 
 instruction_path = os.path.join(os.path.dirname(__file__), "instruction.txt")

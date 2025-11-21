@@ -1,9 +1,9 @@
 from pymilvus import CollectionSchema, MilvusClient, DataType
 from pymilvus.milvus_client import IndexParams
 
-from config import *
-from config import RENEW_VS, VS_NAME
-from data.vs_connection import get_client_instance
+from src.config import *
+from src.config import RENEW_VS, VS_NAME
+from src.data.vs_connection import get_client_instance
 
 
 def setup_vector_store():

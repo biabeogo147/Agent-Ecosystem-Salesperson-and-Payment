@@ -15,8 +15,8 @@ from typing import Any
 from google.adk.tools import FunctionTool
 from google.adk.tools.mcp_tool.mcp_session_manager import MCPSessionManager
 
-from config import MCP_PAYMENT_TOKEN, MCP_SERVER_HOST_PAYMENT, MCP_SERVER_PORT_PAYMENT
-from my_agent.base_mcp_client import BaseMcpClient
+from src.config import MCP_PAYMENT_TOKEN, MCP_SERVER_HOST_PAYMENT, MCP_SERVER_PORT_PAYMENT
+from src.my_agent.base_mcp_client import BaseMcpClient
 
 mcp_sse_url = f"http://{MCP_SERVER_HOST_PAYMENT}:{MCP_SERVER_PORT_PAYMENT}/sse"
 mcp_streamable_http_url = f"http://{MCP_SERVER_HOST_PAYMENT}:{MCP_SERVER_PORT_PAYMENT}/mcp"

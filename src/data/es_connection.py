@@ -1,4 +1,4 @@
-import config
+import src.config
 from elasticsearch import Elasticsearch
 
 class ElasticConnection:

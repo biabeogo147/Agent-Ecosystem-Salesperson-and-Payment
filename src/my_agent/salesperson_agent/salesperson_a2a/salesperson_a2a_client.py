@@ -9,16 +9,16 @@ from typing import Any, Dict, Literal, List
 from a2a.types import Message, DataPart
 from google.adk.tools import FunctionTool
 
-from config import PAYMENT_AGENT_SERVER_HOST, PAYMENT_AGENT_SERVER_PORT
-from my_a2a_common.payment_schemas import PaymentResponse
-from my_a2a_common.payment_schemas.payment_enums import PaymentChannel
+from src.config import PAYMENT_AGENT_SERVER_HOST, PAYMENT_AGENT_SERVER_PORT
+from src.my_agent.my_a2a_common.payment_schemas import PaymentResponse
+from src.my_agent.my_a2a_common.payment_schemas.payment_enums import PaymentChannel
 
-from my_agent.base_a2a_client import BaseA2AClient
-from my_agent.salesperson_agent.salesperson_a2a.prepare_payment_tasks import (
+from src.my_agent.base_a2a_client import BaseA2AClient
+from src.my_agent.salesperson_agent.salesperson_a2a.prepare_payment_tasks import (
     prepare_create_order_payload,
     prepare_query_status_payload,
 )
-from utils.response_format_jsonrpc import ResponseFormatJSONRPC
+from src.utils.response_format_jsonrpc import ResponseFormatJSONRPC
 
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))

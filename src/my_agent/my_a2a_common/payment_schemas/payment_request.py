@@ -2,10 +2,10 @@ from __future__ import annotations
 from typing import Dict, List, Optional
 from pydantic import BaseModel, Field, model_validator
 
-from .payment_enums import *
-from .payment_item import PaymentItem
-from .customer_info import CustomerInfo
-from .payment_method import PaymentMethod
+from src.my_agent.my_a2a_common.payment_schemas.payment_enums import *
+from src.my_agent.my_a2a_common.payment_schemas.payment_item import PaymentItem
+from src.my_agent.my_a2a_common.payment_schemas.customer_info import CustomerInfo
+from src.my_agent.my_a2a_common.payment_schemas.payment_method import PaymentMethod
 
 class PaymentRequest(BaseModel):
     protocol: ProtocolVersion = Field(default=ProtocolVersion.A2A_V1)

@@ -22,13 +22,13 @@ from uuid import uuid4
 
 from a2a.types import Task, TaskStatus, TaskState, Message, Role, Part, TextPart, DataPart, Artifact
 
-from my_a2a_common.payment_schemas import *
-from my_a2a_common.payment_schemas.payment_enums import PaymentChannel
-from my_a2a_common.constants import SALESPERSON_AGENT_NAME, PAYMENT_REQUEST_ARTIFACT_NAME, \
+from src.my_agent.my_a2a_common.payment_schemas import *
+from src.my_agent.my_a2a_common.payment_schemas.payment_enums import PaymentChannel
+from src.my_agent.my_a2a_common.constants import SALESPERSON_AGENT_NAME, PAYMENT_REQUEST_ARTIFACT_NAME, \
     PAYMENT_STATUS_ARTIFACT_NAME
 
-from my_agent.payment_agent.payment_a2a.payment_agent_skills import CREATE_ORDER_SKILL_ID, QUERY_STATUS_SKILL_ID
-from my_agent.salesperson_agent.salesperson_mcp_client import (
+from src.my_agent.payment_agent.payment_a2a.payment_agent_skills import CREATE_ORDER_SKILL_ID, QUERY_STATUS_SKILL_ID
+from src.my_agent.salesperson_agent.salesperson_mcp_client import (
     SalespersonMcpClient,
     get_salesperson_mcp_client
 )

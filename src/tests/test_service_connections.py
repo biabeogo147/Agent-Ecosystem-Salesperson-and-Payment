@@ -1,7 +1,7 @@
 from sqlalchemy import text
-from config import POSTGRES_DB
-from data.db_connection import PostgresConnection
-from data.es_connection import ElasticConnection
+from src.config import POSTGRES_DB
+from src.data.db_connection import PostgresConnection
+from src.data.es_connection import ElasticConnection
 
 
 def test_postgres_connection():
@@ -31,7 +31,7 @@ def test_elasticsearch_connection():
 
 
 def test_milvus_connection():
-    from data.vs_connection import get_client_instance
+    from src.data.vs_connection import get_client_instance
     print("\n🔍 Testing Milvus connection...")
     try:
         milvus_client = get_client_instance()

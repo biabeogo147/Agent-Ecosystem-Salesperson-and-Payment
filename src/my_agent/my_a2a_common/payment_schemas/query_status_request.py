@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
-from .payment_enums import PaymentAction, ProtocolVersion
+from src.my_agent.my_a2a_common.payment_schemas.payment_enums import PaymentAction, ProtocolVersion
 
 
 class QueryStatusRequest(BaseModel):

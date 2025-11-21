@@ -1,6 +1,6 @@
-from data.milvus.milvus_ops import create_collection
-from data.models.vs_entity import list_vs_entity
-from data.vs_connection import get_client_instance
+from src.data.milvus.milvus_ops import create_collection
+from src.data.models.vs_entity import list_vs_entity
+from src.data.vs_connection import get_client_instance
 
 
 def ensure_all_vs_models():

@@ -1,1 +1,1 @@
-from . import agent
+from src.my_agent.payment_agent import agent

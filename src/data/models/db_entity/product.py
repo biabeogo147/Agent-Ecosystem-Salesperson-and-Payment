@@ -1,8 +1,8 @@
 from sqlalchemy import Column, String, DECIMAL, Integer
-from data.models import Base
+from src.data.models import Base
 
 class Product(Base):
-    __tablename__ = 'products'
+    __tablename__ = 'product'
 
     sku = Column(String, primary_key=True, index=True, nullable=False)
     name = Column(String, nullable=False)

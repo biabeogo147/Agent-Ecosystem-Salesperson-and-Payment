@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Optional
 from pydantic import BaseModel, Field
 
-from my_a2a_common.payment_schemas.payment_enums import *
+from src.my_agent.my_a2a_common.payment_schemas.payment_enums import *
 
 
 class PaymentMethod(BaseModel):

@@ -1,10 +1,10 @@
 from sqlalchemy import Column, Integer, String, DateTime, func, Enum
-from data.models.enum.user_role import UserRole
-from data.models import Base
+from src.data.models.enum.user_role import UserRole
+from src.data.models import Base
 
 
 class User(Base):
-    __tablename__ = "users"
+    __tablename__ = "user"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     username = Column(String(100), unique=True, nullable=False, index=True)

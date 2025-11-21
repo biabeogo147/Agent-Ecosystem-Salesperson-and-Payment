@@ -13,21 +13,21 @@ from pydantic import ValidationError
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 
-from config import PAYMENT_AGENT_SERVER_HOST, PAYMENT_AGENT_SERVER_PORT
-from my_a2a_common.constants import JSON_MEDIA_TYPE, PAYMENT_REQUEST_ARTIFACT_NAME, \
+from src.config import PAYMENT_AGENT_SERVER_HOST, PAYMENT_AGENT_SERVER_PORT
+from src.my_agent.my_a2a_common.constants import JSON_MEDIA_TYPE, PAYMENT_REQUEST_ARTIFACT_NAME, \
     PAYMENT_STATUS_ARTIFACT_NAME, PAYMENT_AGENT_NAME
-from my_a2a_common.payment_schemas import PaymentRequest, PaymentResponse, NextAction, QueryStatusRequest
-from my_a2a_common.payment_schemas.payment_enums import (
+from src.my_agent.my_a2a_common.payment_schemas import PaymentRequest, PaymentResponse, NextAction, QueryStatusRequest
+from src.my_agent.my_a2a_common.payment_schemas.payment_enums import (
     NextActionType,
     PaymentAction,
     PaymentStatus,
 )
 
-from my_agent.payment_agent.payment_a2a.payment_agent_skills import CREATE_ORDER_SKILL_ID, QUERY_STATUS_SKILL_ID, \
+from src.my_agent.payment_agent.payment_a2a.payment_agent_skills import CREATE_ORDER_SKILL_ID, QUERY_STATUS_SKILL_ID, \
     CREATE_ORDER_SKILL, QUERY_STATUS_SKILL
-from my_agent.payment_agent.payment_mcp_client import create_order, query_order_status
-from utils.response_format_jsonrpc import ResponseFormatJSONRPC
-from utils.status import Status
+from src.my_agent.payment_agent.payment_mcp_client import create_order, query_order_status
+from src.utils.response_format_jsonrpc import ResponseFormatJSONRPC
+from src.utils.status import Status
 
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))

@@ -1,8 +1,8 @@
 from google.adk.agents import Agent, LlmAgent
 from google.adk.models.lite_llm import LiteLlm
 
-from config import *
-from my_agent.payment_agent.payment_mcp_client import create_order_tool, query_order_status_tool
+from src.config import *
+from src.my_agent.payment_agent.payment_mcp_client import create_order_tool, query_order_status_tool
 
 instruction_path = os.path.join(os.path.dirname(__file__), "instruction.txt")
 with open(instruction_path, "r", encoding="utf-8") as f:

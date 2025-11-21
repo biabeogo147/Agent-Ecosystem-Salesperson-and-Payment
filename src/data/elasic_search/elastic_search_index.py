@@ -1,5 +1,5 @@
-from config import ELASTIC_INDEX
-from data.es_connection import es_connection
+from src.config import ELASTIC_INDEX
+from src.data.es_connection import es_connection
 
 
 def create_products_index():

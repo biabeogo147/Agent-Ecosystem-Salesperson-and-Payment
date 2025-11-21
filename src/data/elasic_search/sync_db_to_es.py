@@ -1,7 +1,7 @@
-from data.db_connection import db_connection
-from data.es_connection import es_connection
-from data.models.product import Product
-from config import ELASTIC_INDEX
+from src.data.db_connection import db_connection
+from src.data.es_connection import es_connection
+from src.data.models.db_entity.product import Product
+from src.config import ELASTIC_INDEX
 
 def sync_products_to_elastic():
     pg = db_connection

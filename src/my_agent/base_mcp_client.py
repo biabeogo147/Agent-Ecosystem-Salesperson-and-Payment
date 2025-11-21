@@ -15,8 +15,8 @@ from typing import Any, Optional
 from mcp import types as mcp_types
 from google.adk.tools.mcp_tool.mcp_session_manager import MCPSessionManager
 
-from my_mcp.mcp_connect_params import get_mcp_streamable_http_connect_params
-from utils.status import Status
+from src.my_mcp.mcp_connect_params import get_mcp_streamable_http_connect_params
+from src.utils.status import Status
 
 
 class BaseMcpClient:

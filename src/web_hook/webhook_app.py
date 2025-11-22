@@ -1,8 +1,4 @@
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse
-
-from src.utils.response_format import ResponseFormat
-from src.utils.status import Status
 from src.web_hook.api import product_router, document_router
 
 app = FastAPI(

@@ -1,5 +1,6 @@
 import datetime
 
+from pymilvus import CollectionSchema, DataType
 from pydantic import BaseModel, Field
 from typing import List, Optional
 
@@ -13,4 +14,4 @@ class Document(BaseModel):
     title: str = Field(..., description="Document title or short summary")
     product_id: Optional[int] = Field(default=None, description="Associated product ID if applicable")
     chunk_id: Optional[int] = Field(default=None, description="Chunk identifier if document is split")
-    created_at: Optional[datetime] = Field(default_factory=datetime.datetime.now, description="Creation timestamp")
+    created_at: Optional[datetime.datetime] = Field(default_factory=datetime.datetime.now, description="Creation timestamp")

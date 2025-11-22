@@ -7,7 +7,6 @@ from src.web_hook.services.product_service import (
 )
 from src.web_hook.services.document_service import (
     insert_document,
-    generate_document_id,
     generate_mock_embedding,
 )
 
@@ -18,6 +17,5 @@ __all__ = [
     "get_all_products",
     "delete_product",
     "insert_document",
-    "generate_document_id",
     "generate_mock_embedding",
 ]

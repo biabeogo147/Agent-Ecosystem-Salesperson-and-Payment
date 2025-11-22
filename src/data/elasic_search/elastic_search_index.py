@@ -1,11 +1,12 @@
 from src.config import ELASTIC_INDEX
 from src.data.es_connection import es_connection
+from src.utils.logger import logger
 
 
 def create_products_index():
     es = es_connection
     if es.indices.exists(index=ELASTIC_INDEX):
-        print(f"Index '{ELASTIC_INDEX}' already exists.")
+        logger.info(f"Index '{ELASTIC_INDEX}' already exists.")
         return
 
     settings = {
@@ -49,4 +50,4 @@ def create_products_index():
     }
 
     es.indices.create(index=ELASTIC_INDEX, body=settings)
-    print(f"Index '{ELASTIC_INDEX}' created successfully.")
+    logger.info(f"Index '{ELASTIC_INDEX}' created successfully.")

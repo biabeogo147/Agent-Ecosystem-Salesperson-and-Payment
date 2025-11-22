@@ -8,6 +8,7 @@ from src.config import RETURN_URL, CANCEL_URL, VS_NAME
 from src.utils.response_format import ResponseFormat
 from src.utils.status import Status
 from src.utils.app_string import *
+from src.utils.logger import logger
 
 
 async def find_product(query: str) -> str:
@@ -139,7 +140,7 @@ async def get_product_info(sku: str) -> str:
     return ResponseFormat(data=product.to_dict()).to_json()
 
 
-print("Initializing ADK tool for salesperson...")
+logger.info("Initializing ADK tool for salesperson...")
 find_product_tool = FunctionTool(find_product)
 calc_shipping_tool = FunctionTool(calc_shipping)
 reserve_stock_tool = FunctionTool(reserve_stock)
@@ -161,4 +162,4 @@ ADK_TOOLS_FOR_SALESPERSON = {
 }
 
 for adk_tool in ADK_TOOLS_FOR_SALESPERSON.values():
-    print(f"ADK tool '{adk_tool.name}' initialized and ready to be exposed via MCP.")
+    logger.info(f"ADK tool '{adk_tool.name}' initialized and ready to be exposed via MCP.")

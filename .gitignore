@@ -1,6 +1,8 @@
 .idea
 .env
 __pycache__
+.pytest_cache
+logs
 agent_ecosystem_salesperson_and_payment.egg-info
 
 a2a_client.log
@@ -12,3 +14,7 @@ salesperson_a2a_client.log
 .venv
 build
 log
+
+deploy/db_es/volume
+deploy/db_es/logs
+deploy/milvus/volumes

@@ -1,16 +1,12 @@
 from typing import Optional, List
 import hashlib
 
+from pymilvus import MilvusException
+
+from src.utils.logger import logger
 from src.data.vs_connection import get_client_instance
-from src.config import DEFAULT_EMBEDDING_FIELD, DEFAULT_TEXT_FIELD, EMBED_VECTOR_DIM
 from src.web_hook.schemas.document_schemas import DocumentCreate
-
-
-def generate_document_id(text: str, product_sku: Optional[str], chunk_id: Optional[int]) -> int:
-    """Generate a unique document ID based on content hash."""
-    content = f"{text}:{product_sku or ''}:{chunk_id or 0}"
-    hash_bytes = hashlib.md5(content.encode()).digest()
-    return int.from_bytes(hash_bytes[:8], byteorder='big') & 0x7FFFFFFFFFFFFFFF
+from src.config import DEFAULT_EMBEDDING_FIELD, DEFAULT_TEXT_FIELD, EMBED_VECTOR_DIM
 
 
 def generate_mock_embedding(text: str) -> List[float]:
@@ -24,11 +20,9 @@ def insert_document(data: DocumentCreate, collection_name: str = "Document") -> 
     """Insert a document into the vector database."""
     client = get_client_instance()
 
-    doc_id = generate_document_id(data.text, data.product_sku, data.chunk_id)
     embedding = generate_mock_embedding(data.text)
 
     doc_data = {
-        "id": doc_id,
         DEFAULT_TEXT_FIELD: data.text,
         DEFAULT_EMBEDDING_FIELD: embedding,
         "title": data.title,
@@ -36,15 +30,24 @@ def insert_document(data: DocumentCreate, collection_name: str = "Document") -> 
         "chunk_id": data.chunk_id or 0,
     }
 
+    logger.info(f"Document text {data.text[:100]}")
+    logger.info(f"Document title {data.title}")
+    logger.info(f"Document product_sku {data.product_sku}")
+    logger.info(f"Document chunk_id {data.chunk_id}")
+
     try:
-        client.insert(collection_name=collection_name, data=[doc_data])
+        result = client.insert(collection_name=collection_name, data=[doc_data])
+        logger.info(f"Document inserted successfully with ID {result}")
         return {
-            "id": doc_id,
+            "id": result.ids[0],
             "text": data.text,
             "title": data.title,
             "product_sku": data.product_sku,
             "chunk_id": data.chunk_id,
-            "message": f"Document inserted successfully with ID {doc_id}"
         }
+    except MilvusException as e:
+        logger.error(f"Failed to insert document: {e.message}")
+        raise RuntimeError(f"Failed to insert document: MilvusException")
     except Exception as e:
-        raise RuntimeError(f"Failed to insert document: {e}")
+        logger.error(f"Failed to insert document: {e.message}")
+        raise RuntimeError(f"Failed to insert document: {e.message}")

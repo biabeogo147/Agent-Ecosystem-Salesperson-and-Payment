@@ -1,34 +1,35 @@
+from pymilvus import MilvusClient
+
 from src.data.milvus.milvus_ops import create_collection
 from src.data.models.vs_entity import list_vs_entity
-from src.data.vs_connection import get_client_instance
+from src.utils.logger import logger
 
 
-def ensure_all_vs_models():
+def ensure_all_vs_models(client: MilvusClient):
     """
     Ensure that all models declared in vs_entity.list_vs_entity have corresponding Milvus collections.
     """
     if not list_vs_entity:
-        print("⚠️ No models found in list_vs_entity.")
+        logger.warning("⚠️ No models found in list_vs_entity.")
         return
 
-    print(f"🔍 Found {len(list_vs_entity)} vector-store models:")
+    logger.info(f"🔍 Found {len(list_vs_entity)} vector-store models:")
     for model in list_vs_entity:
         collection_name = model.__name__
-        print(f"  → Ensuring collection for model: {collection_name}")
-        ensure_collection(collection_name)
+        logger.info(f"  → Ensuring collection for model: {collection_name}")
+        ensure_collection(client, collection_name)
 
-    print("✅ All vector-store collections ensured successfully.")
+    logger.info("✅ All vector-store collections ensured successfully.")
 
 
-def ensure_collection(collection_name: str):
+def ensure_collection(client: MilvusClient, collection_name: str):
     """
     Check if the collection exists; if not, create it.
     """
-    client = get_client_instance()
     collections = client.list_collections()
 
     if collection_name not in collections:
-        print(f"Collection '{collection_name}' not found. Creating new collection...")
-        create_collection(collection_name)
+        logger.info(f"Collection '{collection_name}' not found. Creating new collection...")
+        create_collection(client, collection_name)
     else:
-        print(f"Collection '{collection_name}' already exists.")
+        logger.info(f"Collection '{collection_name}' already exists.")

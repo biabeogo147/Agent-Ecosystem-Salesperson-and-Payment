@@ -2,6 +2,7 @@ from src.data.db_connection import db_connection
 from src.data.es_connection import es_connection
 from src.data.models.db_entity.product import Product
 from src.config import ELASTIC_INDEX
+from src.utils.logger import logger
 
 def sync_products_to_elastic():
     pg = db_connection
@@ -21,5 +22,5 @@ def sync_products_to_elastic():
 
     from elasticsearch.helpers import bulk
     bulk(es, actions)
-    print(f"✅ Indexed {len(actions)} products into Elasticsearch.")
+    logger.info(f"✅ Indexed {len(actions)} products into Elasticsearch.")
     session.close()

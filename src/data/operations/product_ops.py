@@ -2,6 +2,7 @@ from src.config import ELASTIC_INDEX
 from src.data.db_connection import db_connection
 from src.data.es_connection import es_connection
 from src.data.models.db_entity.product import Product
+from src.utils.logger import logger
 
 
 def find_products_list_by_substring(query_string: str, min_price: float = None, max_price: float = None):
@@ -49,7 +50,7 @@ def find_products_list_by_substring(query_string: str, min_price: float = None, 
         for hit in response["hits"]["hits"]
     ]
 
-    print(f"Results from Elasticsearch ({len(results)}):", results)
+    logger.info(f"Results from Elasticsearch ({len(results)}): {results}")
     return results
 
 

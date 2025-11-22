@@ -1,8 +1,10 @@
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
-from src.utils.response_format import ResponseFormat
+from src.utils.logger import logger
 from src.utils.status import Status
+from src.utils.response_format import ResponseFormat
+
 from src.web_hook.schemas import DocumentCreate
 from src.web_hook.services import insert_document, get_product
 
@@ -18,6 +20,7 @@ async def create_document_endpoint(data: DocumentCreate):
     try:
         if data.product_sku:
             product = get_product(data.product_sku)
+            logger.info(f"Product found: {product.sku} - {product.name}")
             if not product:
                 return JSONResponse(
                     status_code=404,

@@ -92,6 +92,13 @@ class SalespersonMcpClient(BaseMcpClient):
         )
         return self._ensure_response_format(payload, tool="reserve_stock")
 
+    async def search_product_documents(self, *, query: str, product_sku: str | None = None, limit: int = 5) -> dict[str, Any]:
+        """Search product documents via the MCP ``search_product_documents`` tool."""
+        payload = await self._call_tool_json(
+            "search_product_documents", {"query": query, "product_sku": product_sku, "limit": limit}
+        )
+        return self._ensure_response_format(payload, tool="search_product_documents")
+
 
 _client: SalespersonMcpClient | None = None
 
@@ -122,6 +129,12 @@ async def prepare_reserve_stock(sku: str, quantity: int) -> Dict[str, Any]:
     return await prepare_reserve_stock_with_client(sku=sku, quantity=quantity, client=client)
 
 
+async def prepare_search_product_documents(query: str, product_sku: str | None = None, limit: int = 5) -> Dict[str, Any]:
+    """Search product documents via the salesperson MCP server."""
+    client = get_salesperson_mcp_client()
+    return await prepare_search_product_documents_with_client(query=query, product_sku=product_sku, limit=limit, client=client)
+
+
 async def prepare_find_product_with_client(query: str, client: SalespersonMcpClient) -> Dict[str, Any]:
     """Look up products via the salesperson MCP server."""
     return await client.find_product(query=query)
@@ -137,9 +150,15 @@ async def prepare_reserve_stock_with_client(sku: str, quantity: int, client: Sal
     return await client.reserve_stock(sku=sku, quantity=quantity)
 
 
+async def prepare_search_product_documents_with_client(query: str, client: SalespersonMcpClient, product_sku: str | None = None, limit: int = 5) -> Dict[str, Any]:
+    """Search product documents via the salesperson MCP server."""
+    return await client.search_product_documents(query=query, product_sku=product_sku, limit=limit)
+
+
 prepare_find_product_tool = FunctionTool(prepare_find_product)
 prepare_calc_shipping_tool = FunctionTool(prepare_calc_shipping)
 prepare_reserve_stock_tool = FunctionTool(prepare_reserve_stock)
+prepare_search_product_documents_tool = FunctionTool(prepare_search_product_documents)
 
 
 __all__ = [
@@ -154,4 +173,7 @@ __all__ = [
     "prepare_find_product_tool",
     "prepare_calc_shipping_tool",
     "prepare_reserve_stock_tool",
+    "prepare_search_product_documents",
+    "prepare_search_product_documents_with_client",
+    "prepare_search_product_documents_tool",
 ]

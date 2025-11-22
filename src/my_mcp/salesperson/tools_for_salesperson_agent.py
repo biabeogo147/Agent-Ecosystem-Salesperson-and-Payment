@@ -124,22 +124,6 @@ async def search_product_documents(query: str, product_sku: str = None, limit: i
         return ResponseFormat(status=Status.UNKNOWN_ERROR, message=str(e)).to_json()
 
 
-async def get_product_info(sku: str) -> str:
-    """
-    Get detailed product information by SKU.
-    Args:
-        sku: Product SKU
-    Returns: Product details including stock info
-    """
-    from src.data.operations.product_ops import find_product_by_sku
-
-    product = find_product_by_sku(sku)
-    if not product:
-        return ResponseFormat(status=Status.PRODUCT_NOT_FOUND, message=PRODUCT_NOT_FOUND).to_json()
-
-    return ResponseFormat(data=product.to_dict()).to_json()
-
-
 logger.info("Initializing ADK tool for salesperson...")
 find_product_tool = FunctionTool(find_product)
 calc_shipping_tool = FunctionTool(calc_shipping)
@@ -148,7 +132,6 @@ generate_context_id_tool = FunctionTool(generate_context_id)
 generate_return_url_tool = FunctionTool(generate_return_url)
 generate_cancel_url_tool = FunctionTool(generate_cancel_url)
 search_product_documents_tool = FunctionTool(search_product_documents)
-get_product_info_tool = FunctionTool(get_product_info)
 
 ADK_TOOLS_FOR_SALESPERSON = {
     find_product_tool.name: find_product_tool,
@@ -158,7 +141,6 @@ ADK_TOOLS_FOR_SALESPERSON = {
     generate_return_url_tool.name: generate_return_url_tool,
     generate_cancel_url_tool.name: generate_cancel_url_tool,
     search_product_documents_tool.name: search_product_documents_tool,
-    get_product_info_tool.name: get_product_info_tool,
 }
 
 for adk_tool in ADK_TOOLS_FOR_SALESPERSON.values():

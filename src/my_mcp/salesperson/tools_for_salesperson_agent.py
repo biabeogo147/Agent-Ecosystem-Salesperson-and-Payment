@@ -73,7 +73,7 @@ async def generate_cancel_url(context_id: str) -> str:
     return ResponseFormat(data=cancel_url).to_json()
 
 
-async def search_product_documents(query: str, product_sku: str = None, limit: int = 5) -> str:
+async def search_product_documents(query: str, product_sku: str | None = None, limit: int = 5) -> str:
     """
     Search product documents in vector database.
     Args:

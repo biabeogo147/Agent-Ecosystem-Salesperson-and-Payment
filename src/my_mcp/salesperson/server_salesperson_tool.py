@@ -1,3 +1,4 @@
+import asyncio
 import contextlib
 from collections.abc import AsyncIterator
 
@@ -12,9 +13,11 @@ from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
 from . import salesperson_mcp_logger
 
 from src.config import *
-from src.my_mcp.salesperson.tools_for_salesperson_agent import *
 from src.my_mcp.logging_middleware import LoggingMiddleware
+from src.my_mcp.salesperson.tools_for_salesperson_agent import *
 from src.my_mcp.utils import list_mcp_tools_with_dict, call_mcp_tool_with_dict
+from src.data.elasic_search.sync_db_to_es import sync_products_to_elastic
+from src.data.elasic_search.elastic_search_index import create_products_index, index_exists
 
 my_mcp_server = Server("salesperson_mcp")
 
@@ -40,10 +43,50 @@ session_manager = StreamableHTTPSessionManager(
 async def handle_streamable_http(scope: Scope, receive: Receive, send: Send) -> None:
     await session_manager.handle_request(scope, receive, send)
 
+
+# Background task to sync products every 20 seconds
+async def sync_products_periodically():
+    """Background task that syncs products from DB to Elasticsearch every 20 seconds."""
+    while True:
+        try:
+            await asyncio.sleep(20)
+            salesperson_mcp_logger.info("🔄 Starting periodic product sync to Elasticsearch...")
+            
+            if not index_exists():
+                salesperson_mcp_logger.warning("⚠️ Elasticsearch index not found. Creating index...")
+                create_products_index()
+            
+            sync_products_to_elastic()
+            salesperson_mcp_logger.info("✅ Periodic product sync completed successfully.")
+        except Exception as e:
+            salesperson_mcp_logger.error(f"❌ Error during periodic sync: {str(e)}")
+
+
 @contextlib.asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    salesperson_mcp_logger.info("🚀 Starting Salesperson MCP server...")
+    
+    try:
+        if not index_exists():
+            salesperson_mcp_logger.info("📋 Creating Elasticsearch index for products...")
+            create_products_index()
+        else:
+            salesperson_mcp_logger.info("✅ Elasticsearch index already exists.")
+    except Exception as e:
+        salesperson_mcp_logger.error(f"❌ Failed to initialize Elasticsearch index: {str(e)}")
+    
+    sync_task = asyncio.create_task(sync_products_periodically())
+    
     async with session_manager.run():
         yield
+    
+    salesperson_mcp_logger.info("🛑 Shutting down Salesperson MCP server...")
+    sync_task.cancel()
+    try:
+        await sync_task
+    except asyncio.CancelledError:
+        salesperson_mcp_logger.info("✅ Background sync task cancelled successfully.")
+
 
 app = FastAPI(title="Salesperson MCP", lifespan=lifespan)
 app.routes.append(Mount("/mcp", app=handle_streamable_http))

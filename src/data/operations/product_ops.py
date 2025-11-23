@@ -9,7 +9,7 @@ def find_products_list_by_substring(query_string: str, min_price: float = None, 
     """
     Find products by fuzzy or full-text match using Elasticsearch.
     """
-    es = es_connection
+    es = es_connection.get_client()
 
     query = {
         "query": {
@@ -45,6 +45,7 @@ def find_products_list_by_substring(query_string: str, min_price: float = None, 
             "price": hit["_source"]["price"],
             "currency": hit["_source"]["currency"],
             "stock": hit["_source"]["stock"],
+            "merchant_id": hit["_source"]["merchant_id"],
             "score": hit["_score"],
         }
         for hit in response["hits"]["hits"]

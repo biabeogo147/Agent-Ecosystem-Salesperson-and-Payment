@@ -3,8 +3,16 @@ from src.data.es_connection import es_connection
 from src.utils.logger import logger
 
 
+def index_exists() -> bool:
+    """Check if the products index exists in Elasticsearch."""
+    es = es_connection.get_client()
+    return es.indices.exists(index=ELASTIC_INDEX)
+
+
 def create_products_index():
-    es = es_connection
+    """Create the products index in Elasticsearch with proper mapping and analyzers."""
+    es = es_connection.get_client()
+    
     if es.indices.exists(index=ELASTIC_INDEX):
         logger.info(f"Index '{ELASTIC_INDEX}' already exists.")
         return
@@ -44,7 +52,8 @@ def create_products_index():
                 },
                 "price": {"type": "float"},
                 "currency": {"type": "keyword"},
-                "stock": {"type": "integer"}
+                "stock": {"type": "integer"},
+                "merchant_id": {"type": "integer"}
             }
         }
     }

@@ -1,17 +1,3 @@
-"""Shared HTTP helpers for talking to remote A2A agents.
-
-The payment flow currently ships with a dedicated :class:`SalespersonA2AClient`
-but a number of other agents will eventually need to speak the same JSON-RPC
-protocol.  This module hosts a small, well-tested base class that understands
-how to serialise :class:`~a2a.types.Task` objects into ``message.send`` calls and
-how to parse the structured :mod:`utils.response_format` responses returned by
-the server.
-
-Keeping the networking code here allows individual agents to focus on their
-business logic while still benefitting from the same error handling and
-transport behaviour.
-"""
-
 from __future__ import annotations
 
 import json

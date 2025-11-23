@@ -1,5 +1,3 @@
-"""Starlette application that exposes the payment agent over JSON-RPC."""
-
 from __future__ import annotations
 
 from starlette.applications import Starlette

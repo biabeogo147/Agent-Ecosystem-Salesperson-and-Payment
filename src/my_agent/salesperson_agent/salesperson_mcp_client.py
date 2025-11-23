@@ -1,12 +1,3 @@
-"""Async helper for calling salesperson MCP tools over HTTP.
-
-This module centralises the code that connects to the salesperson MCP server
-so that other modules (such as :mod:`payment_tasks`) no longer import the
-in-process tool implementations directly. Keeping the networking logic here
-makes it easy to swap the transport in the future and gives us a clean seam
-for unit tests.
-"""
-
 from __future__ import annotations
 
 from typing import Any, Dict
@@ -39,38 +30,26 @@ class SalespersonMcpClient(BaseMcpClient):
 
     async def generate_context_id(self, *, prefix: str) -> str:
         """Request a new correlation ID from the MCP server."""
-        payload = await self._call_tool_json(
-            "generate_context_id", {"prefix": prefix}
-        )
+        payload = await self._call_tool_json("generate_context_id", {"prefix": prefix})
         data = self._extract_success_data(payload, tool="generate_context_id")
         if not isinstance(data, str):
-            raise RuntimeError(
-                "MCP tool 'generate_context_id' returned non-string data"
-            )
+            raise RuntimeError("MCP tool 'generate_context_id' returned non-string data")
         return data
 
     async def generate_return_url(self, context_id: str) -> str:
         """Request the return URL bound to ``context_id`` from MCP."""
-        payload = await self._call_tool_json(
-            "generate_return_url", {"context_id": context_id}
-        )
+        payload = await self._call_tool_json("generate_return_url", {"context_id": context_id})
         data = self._extract_success_data(payload, tool="generate_return_url")
         if not isinstance(data, str):
-            raise RuntimeError(
-                "MCP tool 'generate_return_url' returned non-string data"
-            )
+            raise RuntimeError("MCP tool 'generate_return_url' returned non-string data")
         return data
 
     async def generate_cancel_url(self, context_id: str) -> str:
         """Request the cancel URL bound to ``context_id`` from MCP."""
-        payload = await self._call_tool_json(
-            "generate_cancel_url", {"context_id": context_id}
-        )
+        payload = await self._call_tool_json("generate_cancel_url", {"context_id": context_id})
         data = self._extract_success_data(payload, tool="generate_cancel_url")
         if not isinstance(data, str):
-            raise RuntimeError(
-                "MCP tool 'generate_cancel_url' returned non-string data"
-            )
+            raise RuntimeError("MCP tool 'generate_cancel_url' returned non-string data")
         return data
 
     async def find_product(self, *, query: str) -> dict[str, Any]:
@@ -114,44 +93,24 @@ def get_salesperson_mcp_client() -> SalespersonMcpClient:
 async def prepare_find_product(query: str) -> Dict[str, Any]:
     """Look up products via the salesperson MCP server."""
     client = get_salesperson_mcp_client()
-    return await prepare_find_product_with_client(query=query, client=client)
+    return await client.find_product(query=query)
 
 
 async def prepare_calc_shipping(weight: float, distance: float) -> Dict[str, Any]:
     """Calculate shipping costs through the MCP shipping helper."""
     client = get_salesperson_mcp_client()
-    return await prepare_calc_shipping_with_client(weight=weight, distance=distance, client=client)
+    return await client.calc_shipping(weight=weight, distance=distance)
 
 
 async def prepare_reserve_stock(sku: str, quantity: int) -> Dict[str, Any]:
     """Reserve inventory through the MCP stock tool."""
     client = get_salesperson_mcp_client()
-    return await prepare_reserve_stock_with_client(sku=sku, quantity=quantity, client=client)
+    return await client.reserve_stock(sku=sku, quantity=quantity)
 
 
 async def prepare_search_product_documents(query: str, product_sku: str | None = None, limit: int = 5) -> Dict[str, Any]:
     """Search product documents via the salesperson MCP server."""
     client = get_salesperson_mcp_client()
-    return await prepare_search_product_documents_with_client(query=query, product_sku=product_sku, limit=limit, client=client)
-
-
-async def prepare_find_product_with_client(query: str, client: SalespersonMcpClient) -> Dict[str, Any]:
-    """Look up products via the salesperson MCP server."""
-    return await client.find_product(query=query)
-
-
-async def prepare_calc_shipping_with_client(weight: float, distance: float, client: SalespersonMcpClient) -> Dict[str, Any]:
-    """Calculate shipping costs through the MCP shipping helper."""
-    return await client.calc_shipping(weight=weight, distance=distance)
-
-
-async def prepare_reserve_stock_with_client(sku: str, quantity: int, client: SalespersonMcpClient) -> Dict[str, Any]:
-    """Reserve inventory through the MCP stock tool."""
-    return await client.reserve_stock(sku=sku, quantity=quantity)
-
-
-async def prepare_search_product_documents_with_client(query: str, client: SalespersonMcpClient, product_sku: str | None = None, limit: int = 5) -> Dict[str, Any]:
-    """Search product documents via the salesperson MCP server."""
     return await client.search_product_documents(query=query, product_sku=product_sku, limit=limit)
 
 
@@ -167,13 +126,9 @@ __all__ = [
     "prepare_find_product",
     "prepare_calc_shipping",
     "prepare_reserve_stock",
-    "prepare_find_product_with_client",
-    "prepare_calc_shipping_with_client",
-    "prepare_reserve_stock_with_client",
     "prepare_find_product_tool",
     "prepare_calc_shipping_tool",
     "prepare_reserve_stock_tool",
     "prepare_search_product_documents",
-    "prepare_search_product_documents_with_client",
     "prepare_search_product_documents_tool",
 ]

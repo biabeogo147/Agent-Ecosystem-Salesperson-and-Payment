@@ -1,20 +1,3 @@
-"""Helpers for building payment-related A2A tasks for the salesperson agent.
-
-This module keeps the orchestration logic in one place so new developers can
-read through the step-by-step flow:
-
-1. Create a correlation ID that uniquely identifies the payment request.  The
-   ID now comes from the MCP server so we can share the generator across
-   multiple salesperson deployments.
-2. Generate the return and cancel URLs bound to that correlation ID.
-3. Use the shared :mod:`my_a2a_common` helpers to build the task payload that will be
-   sent to the remote payment agent.
-
-The high-level function :func:`build_salesperson_create_order_task` exposes an
-easy-to-use wrapper around :func:`my_a2a_common.build_create_order_task` while still
-following the protocol requirements from the payment team.
-"""
-
 from __future__ import annotations
 
 from typing import Any, Dict, Optional, Tuple, List

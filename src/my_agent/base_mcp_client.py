@@ -1,12 +1,3 @@
-"""Shared helpers for calling MCP tools over HTTP.
-
-The payment and salesperson agents both talk to MCP servers via the
-``MCPSessionManager`` class.  The logic to open sessions, call tools, and parse
-responses was previously duplicated between the two clients.  This module hosts
-the shared behaviours so that each specialised client can focus on the tools it
-exposes while still benefiting from the same response validation.
-"""
-
 from __future__ import annotations
 
 import json

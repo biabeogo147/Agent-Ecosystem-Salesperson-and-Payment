@@ -1,5 +1,3 @@
-"""AgentSkill declarations for the payment agent."""
-
 from a2a.types import AgentSkill
 
 from src.my_agent.my_a2a_common.constants import JSON_MEDIA_TYPE

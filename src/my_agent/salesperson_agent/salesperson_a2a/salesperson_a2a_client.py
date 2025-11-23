@@ -1,5 +1,3 @@
-"""Convenience wrapper for the salesperson agent to call the payment agent."""
-
 from __future__ import annotations
 
 import os

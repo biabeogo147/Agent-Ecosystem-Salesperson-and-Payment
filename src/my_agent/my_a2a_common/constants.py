@@ -1,5 +1,3 @@
-"""Shared constants used by the payment A2A examples."""
-
 # All payloads we exchange are JSON documents.
 JSON_MEDIA_TYPE = "application/json"
 

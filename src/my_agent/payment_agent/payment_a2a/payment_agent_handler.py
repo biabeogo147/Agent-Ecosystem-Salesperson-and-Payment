@@ -1,5 +1,3 @@
-"""Server-side utilities for the payment agent."""
-
 from __future__ import annotations
 
 import os

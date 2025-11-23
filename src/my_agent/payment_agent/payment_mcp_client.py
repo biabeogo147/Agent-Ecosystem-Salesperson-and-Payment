@@ -1,12 +1,3 @@
-"""Async helper for calling salesperson MCP tools over HTTP.
-
-This module centralises the code that connects to the salesperson MCP server
-so that other modules (such as :mod:`payment_tasks`) no longer import the
-in-process tool implementations directly. Keeping the networking logic here
-makes it easy to swap the transport in the future and gives us a clean seam
-for unit tests.
-"""
-
 from __future__ import annotations
 
 import json

@@ -4,11 +4,12 @@ import uuid
 
 from google.adk.tools import FunctionTool
 
+from . import salesperson_mcp_logger
+
 from src.config import RETURN_URL, CANCEL_URL, VS_NAME
 from src.utils.response_format import ResponseFormat
 from src.utils.status import Status
 from src.utils.app_string import *
-from src.utils.logger import logger
 
 
 async def find_product(query: str) -> str:
@@ -124,7 +125,7 @@ async def search_product_documents(query: str, product_sku: str = None, limit: i
         return ResponseFormat(status=Status.UNKNOWN_ERROR, message=str(e)).to_json()
 
 
-logger.info("Initializing ADK tool for salesperson...")
+salesperson_mcp_logger.info("Initializing ADK tool for salesperson...")
 find_product_tool = FunctionTool(find_product)
 calc_shipping_tool = FunctionTool(calc_shipping)
 reserve_stock_tool = FunctionTool(reserve_stock)
@@ -144,4 +145,4 @@ ADK_TOOLS_FOR_SALESPERSON = {
 }
 
 for adk_tool in ADK_TOOLS_FOR_SALESPERSON.values():
-    logger.info(f"ADK tool '{adk_tool.name}' initialized and ready to be exposed via MCP.")
+    salesperson_mcp_logger.info(f"ADK tool '{adk_tool.name}' initialized and ready to be exposed via MCP.")

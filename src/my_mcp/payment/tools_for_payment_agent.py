@@ -2,6 +2,8 @@ from typing import Optional, Any
 
 from google.adk.tools import FunctionTool
 
+from . import payment_mcp_logger
+
 from src.config import *
 from src.data.db_connection import db_connection
 from src.data.models.db_entity.order import Order
@@ -11,7 +13,6 @@ from src.my_agent.my_a2a_common.payment_schemas.next_action import NextAction
 from src.my_agent.my_a2a_common.payment_schemas.payment_response import PaymentResponse
 from src.utils.response_format import ResponseFormat
 from src.utils.status import Status
-from src.utils.logger import logger
 
 
 def _map_order_status_to_payment_status(order_status: OrderStatus) -> PaymentStatus:
@@ -166,7 +167,7 @@ async def update_order_status(payload: dict[str, Any]) -> str:
         session.close()
 
 
-logger.info("Initializing ADK tool for payment...")
+payment_mcp_logger.info("Initializing ADK tool for payment...")
 create_order_tool = FunctionTool(create_order)
 query_order_status_tool = FunctionTool(query_order_status)
 update_order_status_tool = FunctionTool(update_order_status)
@@ -178,4 +179,4 @@ ADK_TOOLS_FOR_PAYMENT = {
 }
 
 for adk_tool in ADK_TOOLS_FOR_PAYMENT.values():
-    logger.info(f"ADK tool '{adk_tool.name}' initialized and ready to be exposed via MCP.")
+    payment_mcp_logger.info(f"ADK tool '{adk_tool.name}' initialized and ready to be exposed via MCP.")

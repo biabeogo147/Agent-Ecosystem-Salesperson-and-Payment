@@ -1,4 +1,3 @@
-import os
 import json
 import logging
 from typing import Optional
@@ -7,33 +6,16 @@ from starlette.responses import Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import Message
 
-
-def get_logger(name: str, filename: str) -> logging.Logger:
-    PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    LOG_DIR = os.path.join(PROJECT_ROOT, "log")
-    os.makedirs(LOG_DIR, exist_ok=True)
-
-    log_file_path = os.path.join(LOG_DIR, filename)
-    logger = logging.getLogger(name)
-
-    if not logger.handlers:
-        file_handler = logging.FileHandler(log_file_path)
-        file_handler.setLevel(logging.DEBUG)
-        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
-
-    logger.setLevel(logging.DEBUG)
-    return logger
+from src.utils.logger import setup_logger
 
 
 MAX_LOG_BYTES = 4096
 
 
 class LoggingMiddleware(BaseHTTPMiddleware):
-    def __init__(self, app, logger: logging.Logger):
+    def __init__(self, app, logger: logging.Logger = None):
         super().__init__(app)
-        self.logger = logger
+        self.logger = logger if logger else setup_logger("mcp_middleware", logging.DEBUG)
 
     async def dispatch(self, request: Request, call_next):
         logger = self.logger

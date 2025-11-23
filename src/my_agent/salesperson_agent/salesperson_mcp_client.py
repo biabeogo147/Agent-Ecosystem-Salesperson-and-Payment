@@ -13,8 +13,6 @@ mcp_streamable_http_url = f"http://{MCP_SERVER_HOST_SALESPERSON}:{MCP_SERVER_POR
 
 
 class SalespersonMcpClient(BaseMcpClient):
-    """Small wrapper around :class:`MCPSessionManager` for salesperson tools."""
-
     def __init__(
         self,
         *,
@@ -29,7 +27,7 @@ class SalespersonMcpClient(BaseMcpClient):
         )
 
     async def generate_context_id(self, *, prefix: str) -> str:
-        """Request a new correlation ID from the MCP server."""
+        """Request a new context_id from the MCP server."""
         payload = await self._call_tool_json("generate_context_id", {"prefix": prefix})
         data = self._extract_success_data(payload, tool="generate_context_id")
         if not isinstance(data, str):
@@ -83,7 +81,6 @@ _client: SalespersonMcpClient | None = None
 
 
 def get_salesperson_mcp_client() -> SalespersonMcpClient:
-    """Return a process-wide :class:`SalespersonMcpClient` singleton."""
     global _client
     if _client is None:
         _client = SalespersonMcpClient()
@@ -91,25 +88,21 @@ def get_salesperson_mcp_client() -> SalespersonMcpClient:
 
 
 async def prepare_find_product(query: str) -> Dict[str, Any]:
-    """Look up products via the salesperson MCP server."""
     client = get_salesperson_mcp_client()
     return await client.find_product(query=query)
 
 
 async def prepare_calc_shipping(weight: float, distance: float) -> Dict[str, Any]:
-    """Calculate shipping costs through the MCP shipping helper."""
     client = get_salesperson_mcp_client()
     return await client.calc_shipping(weight=weight, distance=distance)
 
 
 async def prepare_reserve_stock(sku: str, quantity: int) -> Dict[str, Any]:
-    """Reserve inventory through the MCP stock tool."""
     client = get_salesperson_mcp_client()
     return await client.reserve_stock(sku=sku, quantity=quantity)
 
 
 async def prepare_search_product_documents(query: str, product_sku: str | None = None, limit: int = 5) -> Dict[str, Any]:
-    """Search product documents via the salesperson MCP server."""
     client = get_salesperson_mcp_client()
     return await client.search_product_documents(query=query, product_sku=product_sku, limit=limit)
 
@@ -118,17 +111,3 @@ prepare_find_product_tool = FunctionTool(prepare_find_product)
 prepare_calc_shipping_tool = FunctionTool(prepare_calc_shipping)
 prepare_reserve_stock_tool = FunctionTool(prepare_reserve_stock)
 prepare_search_product_documents_tool = FunctionTool(prepare_search_product_documents)
-
-
-__all__ = [
-    "SalespersonMcpClient",
-    "get_salesperson_mcp_client",
-    "prepare_find_product",
-    "prepare_calc_shipping",
-    "prepare_reserve_stock",
-    "prepare_find_product_tool",
-    "prepare_calc_shipping_tool",
-    "prepare_reserve_stock_tool",
-    "prepare_search_product_documents",
-    "prepare_search_product_documents_tool",
-]

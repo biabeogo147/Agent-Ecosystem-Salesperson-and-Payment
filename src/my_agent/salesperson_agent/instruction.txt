@@ -29,7 +29,14 @@ Primary responsibilities
    - Example:
        {"sku": "ABC123", "quantity": 2}
 
-4. Tool: _create_payment_order
+4. Tool: prepare_search_product_documents
+   - Purpose: Search products based on user description.  
+   - Input parameters:
+       description (string): the product description to search for.
+   - Example:
+       {"description": "a mobile phone with advance camera system"}
+
+5. Tool: _create_payment_order
    - Purpose: Create a payment order with selected items and customer information.
    - Input parameters:
        items (list of objects): each object must contain either "sku" or "name", and a "quantity".
@@ -57,7 +64,7 @@ Primary responsibilities
          "metadata": {"order_source": "website"}
        }
 
-5. Tool: _query_payment_order_status
+6. Tool: _query_payment_order_status
    - Purpose: Query the current status of an existing payment order.
    - Input parameters:
        context_id (string): unique identifier of the order context.

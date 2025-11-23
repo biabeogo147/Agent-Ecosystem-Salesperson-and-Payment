@@ -81,9 +81,9 @@ async def update_product_endpoint(sku: str, data: ProductUpdate):
 
 
 @router.get("/{sku}")
-async def get_product_endpoint(sku: str):
+async def get_product_endpoint(sku: str, merchant_id: int):
     """Get a product by SKU."""
-    product = get_product(sku)
+    product = get_product(sku, merchant_id)
     if not product:
         return JSONResponse(
             status_code=404,
@@ -103,9 +103,9 @@ async def get_product_endpoint(sku: str):
 
 
 @router.get("")
-async def list_products_endpoint():
+async def list_products_endpoint(merchant_id: int):
     """List all products."""
-    products = get_all_products()
+    products = get_all_products(merchant_id)
     return JSONResponse(
         content=ResponseFormat(
             status=Status.SUCCESS,
@@ -116,22 +116,41 @@ async def list_products_endpoint():
 
 
 @router.delete("/{sku}")
-async def delete_product_endpoint(sku: str):
-    """Delete a product by SKU."""
-    if not delete_product(sku):
+async def delete_product_endpoint(sku: str, merchant_id: int):
+    """Delete a product by SKU. Requires merchant_id to verify ownership."""
+    try:
+        if not delete_product(sku, merchant_id):
+            return JSONResponse(
+                status_code=404,
+                content=ResponseFormat(
+                    status=Status.PRODUCT_NOT_FOUND,
+                    message=f"Product '{sku}' not found",
+                    data=None
+                ).to_dict()
+            )
         return JSONResponse(
-            status_code=404,
+            status_code=200,
             content=ResponseFormat(
-                status=Status.PRODUCT_NOT_FOUND,
-                message=f"Product '{sku}' not found",
+                status=Status.SUCCESS,
+                message="Product deleted successfully",
                 data=None
             ).to_dict()
         )
-    return JSONResponse(
-        status_code=200,
-        content=ResponseFormat(
-            status=Status.SUCCESS,
-            message="Product deleted successfully",
-            data=None
-        ).to_dict()
-    )
+    except ValueError as e:
+         return JSONResponse(
+            status_code=403,
+            content=ResponseFormat(
+                status=Status.FAILURE,
+                message=str(e),
+                data=None
+            ).to_dict()
+        )
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content=ResponseFormat(
+                status=Status.UNKNOWN_ERROR,
+                message=str(e),
+                data=None
+            ).to_dict()
+        )

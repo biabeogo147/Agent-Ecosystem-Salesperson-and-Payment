@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DECIMAL, Integer
+from sqlalchemy import Column, String, DECIMAL, Integer, ForeignKey
 from src.data.models import Base
 
 class Product(Base):
@@ -9,6 +9,7 @@ class Product(Base):
     price = Column(DECIMAL(18, 2), nullable=False)
     currency = Column(String, nullable=False, default="USD")
     stock = Column(Integer, nullable=False)
+    merchant_id = Column(Integer, ForeignKey('merchant.id'), nullable=True)
 
     def to_dict(self):
         return {
@@ -16,5 +17,6 @@ class Product(Base):
             "name": self.name,
             "price": float(self.price),
             "currency": self.currency,
-            "stock": self.stock
+            "stock": self.stock,
+            "merchant_id": self.merchant_id
         }

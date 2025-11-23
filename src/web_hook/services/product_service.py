@@ -18,7 +18,8 @@ def create_product(data: ProductCreate) -> Product:
             name=data.name,
             price=data.price,
             currency=data.currency,
-            stock=data.stock
+            stock=data.stock,
+            merchant_id=data.merchant_id
         )
         session.add(product)
         session.commit()
@@ -38,6 +39,9 @@ def update_product(sku: str, data: ProductUpdate) -> Product:
         product = session.query(Product).filter(Product.sku == sku).first()
         if not product:
             raise ValueError(f"Product with SKU '{sku}' not found")
+        
+        if product.merchant_id != data.merchant_id:
+             raise ValueError(f"Merchant '{data.merchant_id}' is not authorized to update this product")
 
         if data.name is not None:
             product.name = data.name
@@ -58,31 +62,41 @@ def update_product(sku: str, data: ProductUpdate) -> Product:
         session.close()
 
 
-def get_product(sku: str) -> Optional[Product]:
-    """Get product by SKU."""
+def get_product(sku: str, merchant_id: int) -> Optional[Product]:
+    """Get product by SKU, optionally verifying merchant_id."""
     session = db_connection.get_session()
     try:
-        return session.query(Product).filter(Product.sku == sku).first()
+        query = session.query(Product).filter(Product.sku == sku)
+        if merchant_id is not None:
+            query = query.filter(Product.merchant_id == merchant_id)
+        return query.first()
     finally:
         session.close()
 
 
-def get_all_products() -> List[Product]:
-    """Get all products."""
+def get_all_products(merchant_id: int) -> List[Product]:
+    """Get all products, optionally filtered by merchant_id."""
     session = db_connection.get_session()
     try:
-        return session.query(Product).all()
+        query = session.query(Product)
+        if merchant_id is not None:
+            query = query.filter(Product.merchant_id == merchant_id)
+        return query.all()
     finally:
         session.close()
 
 
-def delete_product(sku: str) -> bool:
+def delete_product(sku: str, merchant_id: int) -> bool:
     """Delete a product by SKU."""
     session = db_connection.get_session()
     try:
         product = session.query(Product).filter(Product.sku == sku).first()
         if not product:
             return False
+        
+        if product.merchant_id != merchant_id:
+             raise ValueError(f"Merchant '{merchant_id}' is not authorized to delete this product")
+             
         session.delete(product)
         session.commit()
         return True

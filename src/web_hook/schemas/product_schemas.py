@@ -8,6 +8,7 @@ class ProductCreate(BaseModel):
     price: float = Field(..., gt=0, description="Product price")
     currency: str = Field(default="USD", description="Currency code")
     stock: int = Field(..., ge=0, description="Stock quantity")
+    merchant_id: int = Field(..., description="ID of the merchant owning the product")
 
 
 class ProductUpdate(BaseModel):
@@ -15,3 +16,4 @@ class ProductUpdate(BaseModel):
     price: Optional[float] = Field(default=None, gt=0)
     currency: Optional[str] = None
     stock: Optional[int] = Field(default=None, ge=0)
+    merchant_id: int = Field(default=None, description="ID of the merchant owning the product")

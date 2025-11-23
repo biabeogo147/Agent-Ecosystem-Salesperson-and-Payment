@@ -7,3 +7,4 @@ class DocumentCreate(BaseModel):
     title: str = Field(..., description="Document title")
     product_sku: Optional[str] = Field(default=None, description="Associated product SKU")
     chunk_id: Optional[int] = Field(default=None, description="Chunk ID if document is split")
+    merchant_id: Optional[int] = Field(default=None, description="Associated merchant ID")

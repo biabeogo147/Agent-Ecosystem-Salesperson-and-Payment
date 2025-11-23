@@ -28,12 +28,14 @@ def insert_document(data: DocumentCreate, collection_name: str = "Document") -> 
         "title": data.title,
         "product_sku": data.product_sku or "",
         "chunk_id": data.chunk_id or 0,
+        "merchant_id": data.merchant_id or 0,
     }
 
     logger.info(f"Document text {data.text[:100]}")
     logger.info(f"Document title {data.title}")
     logger.info(f"Document product_sku {data.product_sku}")
     logger.info(f"Document chunk_id {data.chunk_id}")
+    logger.info(f"Document merchant_id {data.merchant_id}")
 
     try:
         result = client.insert(collection_name=collection_name, data=[doc_data])
@@ -44,6 +46,7 @@ def insert_document(data: DocumentCreate, collection_name: str = "Document") -> 
             "title": data.title,
             "product_sku": data.product_sku,
             "chunk_id": data.chunk_id,
+            "merchant_id": data.merchant_id,
         }
     except MilvusException as e:
         logger.error(f"Failed to insert document: {e.message}")

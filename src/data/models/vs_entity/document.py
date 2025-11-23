@@ -13,5 +13,6 @@ class Document(BaseModel):
     # Metadata
     title: str = Field(..., description="Document title or short summary")
     product_id: Optional[int] = Field(default=None, description="Associated product ID if applicable")
+    merchant_id: Optional[int] = Field(default=None, description="Associated merchant ID if applicable")
     chunk_id: Optional[int] = Field(default=None, description="Chunk identifier if document is split")
     created_at: Optional[datetime.datetime] = Field(default_factory=datetime.datetime.now, description="Creation timestamp")

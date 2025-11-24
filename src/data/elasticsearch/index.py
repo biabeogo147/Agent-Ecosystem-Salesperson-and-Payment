@@ -1,6 +1,8 @@
 from src.config import ELASTIC_INDEX
 from src.data.elasticsearch.connection import es_connection
-from src.utils.logger import logger
+from src.utils.logger import get_current_logger
+
+logger = get_current_logger()
 
 
 def index_exists() -> bool:

@@ -1,7 +1,9 @@
 import redis
 from redis.connection import ConnectionPool
 from src.config import REDIS_HOST, REDIS_PORT, REDIS_PASSWORD, REDIS_DB
-from src.utils.logger import logger
+from src.utils.logger import get_current_logger
+
+logger = get_current_logger()
 
 
 class RedisConnection:

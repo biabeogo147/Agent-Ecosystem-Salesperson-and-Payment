@@ -2,7 +2,7 @@ from typing import List
 
 from pymilvus import MilvusException
 
-from src.utils.logger import logger
+from src.web_hook import webhook_logger as logger
 from src.data.milvus.connection import get_client_instance
 from src.web_hook.schemas.document_schemas import DocumentCreate
 from src.config import DEFAULT_EMBEDDING_FIELD, DEFAULT_TEXT_FIELD, EMBED_VECTOR_DIM

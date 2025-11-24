@@ -9,8 +9,7 @@ from starlette.types import Scope, Receive, Send
 from mcp import types as mcp_types
 from mcp.server.lowlevel import Server
 from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
-
-from . import salesperson_mcp_logger
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from src.config import *
 from src.my_mcp.logging_middleware import LoggingMiddleware
@@ -18,6 +17,16 @@ from src.my_mcp.salesperson.tools_for_salesperson_agent import *
 from src.my_mcp.utils import list_mcp_tools_with_dict, call_mcp_tool_with_dict
 from src.data.elasticsearch.sync import sync_products_to_elastic
 from src.data.elasticsearch.index import create_products_index, index_exists
+from src.utils.logger import set_app_context, AppLogger
+
+
+class AppContextMiddleware(BaseHTTPMiddleware):
+    """Middleware to set app logger context for all requests."""
+
+    async def dispatch(self, request, call_next):
+        with set_app_context(AppLogger.SALESPERSON_MCP):
+            response = await call_next(request)
+        return response
 
 my_mcp_server = Server("salesperson_mcp")
 
@@ -50,14 +59,16 @@ async def sync_products_periodically():
     while True:
         try:
             await asyncio.sleep(20)
-            salesperson_mcp_logger.info("🔄 Starting periodic product sync to Elasticsearch...")
-            
-            if not index_exists():
-                salesperson_mcp_logger.warning("⚠️ Elasticsearch index not found. Creating index...")
-                create_products_index()
-            
-            sync_products_to_elastic()
-            salesperson_mcp_logger.info("✅ Periodic product sync completed successfully.")
+            # Set context for background task
+            with set_app_context(AppLogger.SALESPERSON_MCP):
+                salesperson_mcp_logger.info("🔄 Starting periodic product sync to Elasticsearch...")
+
+                if not index_exists():
+                    salesperson_mcp_logger.warning("⚠️ Elasticsearch index not found. Creating index...")
+                    create_products_index()
+
+                sync_products_to_elastic()
+                salesperson_mcp_logger.info("✅ Periodic product sync completed successfully.")
         except Exception as e:
             salesperson_mcp_logger.error(f"❌ Error during periodic sync: {str(e)}")
 
@@ -90,10 +101,13 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(title="Salesperson MCP", lifespan=lifespan)
 app.routes.append(Mount("/mcp", app=handle_streamable_http))
+
+# Add middlewares in reverse order (last added = first executed)
 app.add_middleware(
-    LoggingMiddleware, 
+    LoggingMiddleware,
     logger=salesperson_mcp_logger
 )
+app.add_middleware(AppContextMiddleware)
 
 
 # Using SSE transport for /sse (GET) and /message (POST) endpoints

@@ -16,24 +16,8 @@ from src.my_agent.salesperson_agent.salesperson_a2a.prepare_payment_tasks import
     prepare_create_order_payload,
     prepare_query_status_payload,
 )
+from src.my_agent.salesperson_agent import salesperson_agent_logger as logger
 from src.utils.response_format_jsonrpc import ResponseFormatJSONRPC
-
-
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-LOG_DIR = os.path.join(PROJECT_ROOT, "log")
-os.makedirs(LOG_DIR, exist_ok=True)
-
-log_file_path = os.path.join(LOG_DIR, "salesperson_a2a_client.log")
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
-file_handler = logging.FileHandler(log_file_path)
-file_handler.setLevel(logging.DEBUG)
-formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-file_handler.setFormatter(formatter)
-if not logger.handlers:
-    logger.addHandler(file_handler)
 
 PAYMENT_AGENT_BASE_URL = f"http://{PAYMENT_AGENT_SERVER_HOST}:{PAYMENT_AGENT_SERVER_PORT}"
 

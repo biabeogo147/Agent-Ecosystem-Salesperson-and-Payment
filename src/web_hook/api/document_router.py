@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
-from src.utils.logger import logger
+from src.web_hook import webhook_logger as logger
 from src.utils.status import Status
 from src.utils.response_format import ResponseFormat
 

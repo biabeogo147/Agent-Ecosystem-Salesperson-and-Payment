@@ -4,7 +4,9 @@ from src.config import ELASTIC_INDEX
 from src.data.elasticsearch.connection import es_connection
 from src.data.redis.cache_ops import get_cached_value, set_cached_value
 from src.data.redis.cache_keys import CacheKeys, TTL
-from src.utils.logger import logger
+from src.utils.logger import get_current_logger
+
+logger = get_current_logger()
 
 
 def find_products_by_text(

@@ -4,7 +4,9 @@ from pymilvus.milvus_client import IndexParams
 from src.config import *
 from src.config import RENEW_VS, VS_NAME
 
-from src.utils.logger import logger
+from src.utils.logger import get_current_logger
+
+logger = get_current_logger()
 
 
 def setup_vector_store(client: MilvusClient):

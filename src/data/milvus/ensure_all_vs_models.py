@@ -2,7 +2,9 @@ from pymilvus import MilvusClient
 
 from src.data.milvus.milvus_ops import create_collection
 from src.data.models.vs_entity import list_vs_entity
-from src.utils.logger import logger
+from src.utils.logger import get_current_logger
+
+logger = get_current_logger()
 
 
 def ensure_all_vs_models(client: MilvusClient):

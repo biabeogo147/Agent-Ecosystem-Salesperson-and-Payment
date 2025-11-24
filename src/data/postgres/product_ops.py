@@ -3,7 +3,9 @@ from src.data.postgres.connection import db_connection
 from src.data.models.db_entity.product import Product
 from src.data.redis.cache_ops import get_cached_value, set_cached_value, delete_cached_value
 from src.data.redis.cache_keys import CacheKeys, TTL
-from src.utils.logger import logger
+from src.utils.logger import get_current_logger
+
+logger = get_current_logger()
 
 
 def find_product_by_sku(sku: str, use_cache: bool = True) -> Product | None:

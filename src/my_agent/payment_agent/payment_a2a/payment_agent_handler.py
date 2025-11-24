@@ -24,25 +24,9 @@ from src.my_agent.my_a2a_common.payment_schemas.payment_enums import (
 from src.my_agent.payment_agent.payment_a2a.payment_agent_skills import CREATE_ORDER_SKILL_ID, QUERY_STATUS_SKILL_ID, \
     CREATE_ORDER_SKILL, QUERY_STATUS_SKILL
 from src.my_agent.payment_agent.payment_mcp_client import create_order, query_order_status
+from src.my_agent.payment_agent import a2a_payment_logger as logger
 from src.utils.response_format_jsonrpc import ResponseFormatJSONRPC
 from src.utils.status import Status
-
-
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-LOG_DIR = os.path.join(PROJECT_ROOT, "log")
-os.makedirs(LOG_DIR, exist_ok=True)
-
-log_file_path = os.path.join(LOG_DIR, "payment_agent_handler.log")
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
-file_handler = logging.FileHandler(log_file_path)
-file_handler.setLevel(logging.DEBUG)
-formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-file_handler.setFormatter(formatter)
-if not logger.handlers:
-    logger.addHandler(file_handler)
 
 
 class PaymentAgentHandler:

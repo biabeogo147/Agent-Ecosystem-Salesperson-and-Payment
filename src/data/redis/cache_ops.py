@@ -1,7 +1,9 @@
 import json
 from typing import Any
 from src.data.redis.connection import redis_connection
-from src.utils.logger import logger
+from src.utils.logger import get_current_logger
+
+logger = get_current_logger()
 
 
 def get_cached_value(key: str) -> Any | None:

@@ -1,15 +1,16 @@
-from datetime import datetime
+import datetime
 
 from src.data.postgres.connection import db_connection
 from src.data.elasticsearch.connection import es_connection
 from src.data.redis.sync_tracker import (
     get_unsynced_skus,
     mark_skus_as_synced,
-    clear_sync_state,
     get_sync_stats
 )
 from src.config import ELASTIC_INDEX
-from src.utils.logger import logger
+from src.utils.logger import get_current_logger
+
+logger = get_current_logger()
 
 
 def sync_products_to_elastic():
@@ -34,7 +35,7 @@ def sync_products_to_elastic():
     try:
         # Get products updated in last 60 seconds (to catch recent changes)
         # This query is super fast thanks to index on updated_at
-        one_minute_ago = datetime.utcnow()
+        one_minute_ago = datetime.datetime.now(datetime.UTC)
         from datetime import timedelta
         one_minute_ago = one_minute_ago - timedelta(seconds=60)
 
@@ -45,9 +46,7 @@ def sync_products_to_elastic():
                 Product.updated_at >= one_minute_ago
             ).all()
 
-            # On first run or if no recent products, get all
             if not products:
-                # Check if we have any sync state
                 stats = get_sync_stats()
                 if stats["total_synced"] == 0:
                     logger.info("📊 First sync - getting all products")
@@ -62,13 +61,12 @@ def sync_products_to_elastic():
             logger.info("ℹ️ No products found")
             return
 
-        # Extract SKUs and create product map
         product_map = {p.sku: p for p in products}
         all_skus = list(product_map.keys())
 
         logger.info(f"📦 Checking {len(all_skus)} products")
 
-        # Use Redis to get unsynced SKUs (SUPER FAST - O(n) with pipelining)
+        # Use Redis to get unsynced SKUs
         unsynced_skus = get_unsynced_skus(all_skus)
 
         if not unsynced_skus:
@@ -92,7 +90,6 @@ def sync_products_to_elastic():
         from elasticsearch.helpers import bulk
         bulk(es, actions)
 
-        # Mark as synced in Redis
         mark_skus_as_synced(list(unsynced_skus))
 
         logger.info(
@@ -100,46 +97,9 @@ def sync_products_to_elastic():
             f"(skipped {len(all_skus) - len(unsynced_skus)} already synced)"
         )
 
-        # Log stats
         stats = get_sync_stats()
         logger.info(f"📊 Total synced products in Redis: {stats['total_synced']}")
 
     except Exception as e:
         logger.error(f"❌ Failed to sync products to Elasticsearch: {str(e)}")
         raise
-
-
-def force_full_resync():
-    """
-    Force a full resync of all products.
-
-    This will:
-    1. Clear all sync state from Redis
-    2. Re-index all products from PostgreSQL to Elasticsearch
-
-    Use this when:
-    - Elasticsearch index was recreated
-    - You suspect data inconsistency
-    - Initial setup
-    """
-    logger.info("🔄 Forcing full resync - clearing Redis sync state...")
-
-    # Clear Redis sync state
-    clear_sync_state()
-
-    logger.info("🔄 Starting full product sync...")
-
-    # Trigger sync (will sync all products since Redis state is empty)
-    sync_products_to_elastic()
-
-    logger.info("✅ Full resync completed!")
-
-
-def get_sync_statistics() -> dict:
-    """
-    Get current sync statistics.
-
-    Returns:
-        Dictionary with sync stats
-    """
-    return get_sync_stats()

@@ -1,7 +1,9 @@
 """Redis-based sync state tracking for Elasticsearch sync optimization."""
 
 from src.data.redis.connection import redis_connection
-from src.utils.logger import logger
+from src.utils.logger import get_current_logger
+
+logger = get_current_logger()
 
 
 SYNCED_SKUS_KEY = "elasticsearch:synced_skus"

@@ -5,7 +5,7 @@ from src.data.models.db_entity.product import Product
 from src.data.redis.cache_ops import get_cached_value, set_cached_value, delete_cached_value, clear_pattern
 from src.data.redis.cache_keys import CacheKeys, CachePatterns, TTL
 from src.web_hook.schemas.product_schemas import ProductCreate, ProductUpdate
-from src.utils.logger import logger
+from src.web_hook import webhook_logger as logger
 
 
 def create_product(data: ProductCreate) -> Product:

@@ -8,13 +8,21 @@ from starlette.types import Scope, Receive, Send
 from mcp import types as mcp_types
 from mcp.server.lowlevel import Server
 from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
+from starlette.middleware.base import BaseHTTPMiddleware
 
-from . import payment_mcp_logger
-
-from src.config import *
 from src.my_mcp.payment.tools_for_payment_agent import *
 from src.my_mcp.logging_middleware import LoggingMiddleware
 from src.my_mcp.utils import list_mcp_tools_with_dict, call_mcp_tool_with_dict
+from src.utils.logger import set_app_context, AppLogger
+
+
+class AppContextMiddleware(BaseHTTPMiddleware):
+    """Middleware to set app logger context for all requests."""
+
+    async def dispatch(self, request, call_next):
+        with set_app_context(AppLogger.PAYMENT_MCP):
+            response = await call_next(request)
+        return response
 
 my_mcp_server = Server("payment_mcp")
 
@@ -47,10 +55,13 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(title="Payment MCP", lifespan=lifespan)
 app.routes.append(Mount("/mcp", app=handle_streamable_http))
+
+# Add middlewares in reverse order (last added = first executed)
 app.add_middleware(
-    LoggingMiddleware, 
+    LoggingMiddleware,
     logger=payment_mcp_logger
 )
+app.add_middleware(AppContextMiddleware)
 
 
 # Using SSE transport for /sse (GET) and /message (POST) endpoints

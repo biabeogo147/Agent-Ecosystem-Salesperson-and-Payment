@@ -32,17 +32,19 @@ Tạo sản phẩm mới.
     "name": "iPhone 15 Pro",
     "price": 999.99,
     "currency": "USD",
-    "stock": 100
+    "stock": 100,
+    "merchant_id": 1
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| sku | string | Yes | Mã sản phẩm (unique) |
-| name | string | Yes | Tên sản phẩm |
-| price | float | Yes | Giá (> 0) |
-| currency | string | No | Đơn vị tiền tệ (default: USD) |
-| stock | int | Yes | Số lượng tồn kho (>= 0) |
+| Field       | Type     | Required | Description                     |
+|-------------|----------|----------|---------------------------------|
+| sku         | string   | Yes      | Mã sản phẩm (unique)            |
+| name        | string   | Yes      | Tên sản phẩm                    |
+| price       | float    | Yes      | Giá (> 0)                       |
+| currency    | string   | No       | Đơn vị tiền tệ (default: USD)   |
+| stock       | int      | Yes      | Số lượng tồn kho (>= 0)         |
+| merchant_id | int      | Yes      | ID của merchant sở hữu sản phẩm |
 
 **Response Success (201):**
 ```json
@@ -86,16 +88,18 @@ Cập nhật thông tin sản phẩm.
 {
     "name": "iPhone 15 Pro Max",
     "price": 1199.99,
-    "stock": 50
+    "stock": 50,
+    "merchant_id": 1
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| name | string | No | Tên sản phẩm mới |
-| price | float | No | Giá mới (> 0) |
-| currency | string | No | Đơn vị tiền tệ mới |
-| stock | int | No | Số lượng tồn kho mới (>= 0) |
+| Field       | Type     | Required | Description                     |
+|-------------|----------|----------|---------------------------------|
+| name        | string   | No       | Tên sản phẩm mới                |
+| price       | float    | No       | Giá mới (> 0)                   |
+| currency    | string   | No       | Đơn vị tiền tệ mới              |
+| stock       | int      | No       | Số lượng tồn kho mới (>= 0)     |
+| merchant_id | int      | No       | ID của merchant sở hữu sản phẩm |
 
 **Response Success (200):**
 ```json
@@ -127,12 +131,17 @@ Cập nhật thông tin sản phẩm.
 
 Lấy thông tin sản phẩm theo SKU.
 
-**Endpoint:** `GET /webhook/products/{sku}`
+**Endpoint:** `GET /webhook/products/{sku}?merchant_id={merchant_id}`
 
 **Path Parameters:**
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | sku | string | Mã sản phẩm |
+
+**Query Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| merchant_id | int | Yes | ID của merchant để xác thực quyền truy cập |
 
 **Response Success (200):**
 ```json
@@ -162,9 +171,14 @@ Lấy thông tin sản phẩm theo SKU.
 
 ### 4. List Products
 
-Lấy danh sách tất cả sản phẩm.
+Lấy danh sách tất cả sản phẩm của merchant.
 
-**Endpoint:** `GET /webhook/products`
+**Endpoint:** `GET /webhook/products?merchant_id={merchant_id}`
+
+**Query Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| merchant_id | int | Yes | ID của merchant để lấy danh sách sản phẩm |
 
 **Response Success (200):**
 ```json
@@ -194,14 +208,19 @@ Lấy danh sách tất cả sản phẩm.
 
 ### 5. Delete Product
 
-Xóa sản phẩm theo SKU.
+Xóa sản phẩm theo SKU. Yêu cầu merchant_id để xác thực quyền sở hữu.
 
-**Endpoint:** `DELETE /webhook/products/{sku}`
+**Endpoint:** `DELETE /webhook/products/{sku}?merchant_id={merchant_id}`
 
 **Path Parameters:**
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | sku | string | Mã sản phẩm |
+
+**Query Parameters:**
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| merchant_id | int | Yes | ID của merchant để xác thực quyền xóa |
 
 **Response Success (200):**
 ```json
@@ -217,6 +236,15 @@ Xóa sản phẩm theo SKU.
 {
     "status": "02",
     "message": "Product 'SKU001' not found",
+    "data": null
+}
+```
+
+**Response Error (403 - Forbidden):**
+```json
+{
+    "status": "01",
+    "message": "You do not have permission to delete this product",
     "data": null
 }
 ```
@@ -237,16 +265,18 @@ Thêm tài liệu vào vector database. Sử dụng `product_sku` từ response 
     "text": "iPhone 15 Pro features A17 Pro chip, titanium design, and advanced camera system.",
     "title": "iPhone 15 Pro Product Guide",
     "product_sku": "SKU001",
-    "chunk_id": 1
+    "chunk_id": 1,
+    "merchant_id": 1
 }
 ```
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| text | string | Yes | Nội dung tài liệu |
-| title | string | Yes | Tiêu đề tài liệu |
-| product_sku | string | No | SKU sản phẩm liên kết (phải tồn tại) |
-| chunk_id | int | No | ID chunk nếu tài liệu được chia nhỏ |
+| Field       | Type    | Required | Description                          |
+|-------------|---------|----------|--------------------------------------|
+| text        | string  | Yes      | Nội dung tài liệu                    |
+| title       | string  | Yes      | Tiêu đề tài liệu                     |
+| product_sku | string  | No       | SKU sản phẩm liên kết (phải tồn tại) |
+| chunk_id    | int     | No       | ID chunk nếu tài liệu được chia nhỏ  |
+| merchant_id | int     | No       | ID của merchant liên kết             |
 
 **Response Success (201):**
 ```json
@@ -272,74 +302,3 @@ Thêm tài liệu vào vector database. Sử dụng `product_sku` từ response 
     "data": null
 }
 ```
-
----
-
-## Health Check
-
-### Health Check
-
-Kiểm tra trạng thái service.
-
-**Endpoint:** `GET /webhook/health`
-
-**Response Success (200):**
-```json
-{
-    "status": "00",
-    "message": "Service is healthy",
-    "data": {
-        "status": "healthy"
-    }
-}
-```
-
----
-
-## Usage Example
-
-### Flow: Tạo Product và Document
-
-```bash
-# Step 1: Tạo product
-curl -X POST http://localhost:8082/webhook/products \
-  -H "Content-Type: application/json" \
-  -d '{
-    "sku": "SKU001",
-    "name": "iPhone 15 Pro",
-    "price": 999.99,
-    "stock": 100
-  }'
-
-# Response: {"status":"00","message":"Product created successfully","data":{"sku":"SKU001",...}}
-
-# Step 2: Thêm document với product_sku từ response trên
-curl -X POST http://localhost:8082/webhook/documents \
-  -H "Content-Type: application/json" \
-  -d '{
-    "text": "iPhone 15 Pro features...",
-    "title": "iPhone 15 Pro Guide",
-    "product_sku": "SKU001"
-  }'
-
-# Response: {"status":"00","message":"Document inserted successfully","data":{"id":123...}}
-```
-
----
-
-## Run Server
-
-```bash
-# Option 1: Direct run
-python -m src.web_hook.webhook_app
-
-# Option 2: Using uvicorn
-uvicorn src.web_hook.webhook_app:app --host 0.0.0.0 --port 8082
-
-# Option 3: With reload (development)
-uvicorn src.web_hook.webhook_app:app --host 0.0.0.0 --port 8082 --reload
-```
-
-**Swagger UI:** `http://localhost:8082/docs`
-
-**ReDoc:** `http://localhost:8082/redoc`

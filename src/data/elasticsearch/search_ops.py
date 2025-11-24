@@ -2,6 +2,8 @@
 
 from src.config import ELASTIC_INDEX
 from src.data.elasticsearch.connection import es_connection
+from src.data.redis.cache_ops import get_cached_value, set_cached_value
+from src.data.redis.cache_keys import CacheKeys, TTL
 from src.utils.logger import logger
 
 
@@ -25,6 +27,17 @@ def find_products_by_text(
     Returns:
         List of product dictionaries with relevance scores
     """
+    cache_key = CacheKeys.search_products(query_string, min_price, max_price, merchant_id, limit)
+
+    try:
+        cached = get_cached_value(cache_key)
+        if cached:
+            logger.debug(f"Cache HIT: {cache_key}")
+            return cached
+    except Exception as e:
+        logger.warning(f"Cache read failed for {cache_key}, using ES: {e}")
+
+    logger.debug(f"Cache MISS: {cache_key}")
     es = es_connection.get_client()
 
     query = {
@@ -74,6 +87,13 @@ def find_products_by_text(
     ]
 
     logger.info(f"Elasticsearch search returned {len(results)} results for query: '{query_string}'")
+
+    try:
+        set_cached_value(cache_key, results, ttl=TTL.SEARCH)
+        logger.debug(f"Cached search results: {cache_key}")
+    except Exception as e:
+        logger.warning(f"Failed to cache search results: {e}")
+
     return results
 
 

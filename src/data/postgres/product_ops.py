@@ -1,22 +1,45 @@
 from datetime import datetime
 from src.data.postgres.connection import db_connection
 from src.data.models.db_entity.product import Product
+from src.data.redis.cache_ops import get_cached_value, set_cached_value, delete_cached_value
+from src.data.redis.cache_keys import CacheKeys, TTL
 from src.utils.logger import logger
 
 
-def find_product_by_sku(sku: str) -> Product | None:
+def find_product_by_sku(sku: str, use_cache: bool = True) -> Product | None:
     """
-    Find a product by its SKU in PostgreSQL.
+    Find a product by its SKU in PostgreSQL with Redis caching.
 
     Args:
         sku: Product SKU to search for
+        use_cache: Whether to use Redis cache (default: True)
 
     Returns:
         Product object if found, None otherwise
     """
+    cache_key = CacheKeys.product_by_sku(sku)
+
+    if use_cache:
+        try:
+            cached = get_cached_value(cache_key)
+            if cached:
+                logger.debug(f"Cache HIT: {cache_key}")
+                return Product(**cached)
+        except Exception as e:
+            logger.warning(f"Cache read failed for {cache_key}, using DB: {e}")
+
+    logger.debug(f"Cache MISS: {cache_key}")
     session = db_connection.get_session()
     try:
         product = session.query(Product).filter(Product.sku == sku).first()
+
+        if product and use_cache:
+            try:
+                set_cached_value(cache_key, product.to_dict(), ttl=TTL.PRODUCT)
+                logger.debug(f"Cached product: {cache_key}")
+            except Exception as e:
+                logger.warning(f"Failed to cache product {sku}: {e}")
+
         return product
     finally:
         session.close()
@@ -25,6 +48,7 @@ def find_product_by_sku(sku: str) -> Product | None:
 def update_product_stock(sku: str, new_stock: int) -> bool:
     """
     Update the stock of a product by its SKU in PostgreSQL.
+    Invalidates cache after successful update.
 
     Args:
         sku: Product SKU
@@ -41,9 +65,17 @@ def update_product_stock(sku: str, new_stock: int) -> bool:
             return False
 
         product.stock = new_stock
-        # updated_at will be automatically updated by trigger
         session.commit()
         logger.info(f"Updated stock for {sku}: {new_stock}")
+
+        # Invalidate cache after successful update
+        try:
+            cache_key = CacheKeys.product_by_sku(sku)
+            delete_cached_value(cache_key)
+            logger.debug(f"Invalidated cache: {cache_key}")
+        except Exception as e:
+            logger.warning(f"Failed to invalidate cache for {sku}: {e}")
+
         return True
     except Exception as e:
         logger.error(f"Failed to update stock for {sku}: {e}")

@@ -1,23 +1,28 @@
 from __future__ import annotations
 
 import uuid
+import random
 
 from google.adk.tools import FunctionTool
 
 from . import salesperson_mcp_logger
 
-from src.config import RETURN_URL, CANCEL_URL, VS_NAME
+from src.config import RETURN_URL, CANCEL_URL, EMBED_VECTOR_DIM
 from src.utils.response_format import ResponseFormat
 from src.utils.status import Status
 from src.utils.app_string import *
+from src.data.redis.cache_ops import get_cached_value, set_cached_value
+from src.data.redis.cache_keys import CacheKeys, TTL
+from src.utils.logger import logger
+from src.data.elasticsearch.search_ops import find_products_by_text
+from src.data.postgres.product_ops import find_product_by_sku, update_product_stock
+from src.data.milvus.connection import get_client_instance
 
 
 async def find_product(query: str) -> str:
     """
     Find product by SKU or substring of name.
     """
-    from src.data.elasticsearch.search_ops import find_products_by_text
-
     query = query.lower()
     results = find_products_by_text(query)
 
@@ -40,9 +45,7 @@ async def reserve_stock(sku: str, quantity: int) -> str:
     """
     Reserve stock for a given SKU and quantity.
     """
-    from src.data.postgres.product_ops import find_product_by_sku, update_product_stock
-
-    product = find_product_by_sku(sku)
+    product = find_product_by_sku(sku, use_cache=False)
 
     if not product:
         return ResponseFormat(status=Status.PRODUCT_NOT_FOUND, data=False, message=PRODUCT_NOT_FOUND).to_json()
@@ -82,9 +85,17 @@ async def search_product_documents(query: str, product_sku: str | None = None, l
         limit: Maximum number of results (default 5)
     Returns: List of matching documents
     """
-    from src.data.milvus.connection import get_client_instance
-    from src.config import EMBED_VECTOR_DIM
-    import random
+    cache_key = CacheKeys.vector_search(query, product_sku, limit)
+
+    try:
+        cached = get_cached_value(cache_key)
+        if cached:
+            logger.debug(f"Cache HIT: {cache_key}")
+            return ResponseFormat(data=cached).to_json()
+    except Exception as e:
+        logger.warning(f"Cache read failed for {cache_key}, using Milvus: {e}")
+
+    logger.debug(f"Cache MISS: {cache_key}")
 
     try:
         client = get_client_instance()
@@ -119,6 +130,12 @@ async def search_product_documents(query: str, product_sku: str | None = None, l
                     "chunk_id": hit.get("entity", {}).get("chunk_id"),
                     "score": hit.get("distance", 0),
                 })
+
+        try:
+            set_cached_value(cache_key, documents, ttl=TTL.VECTOR_SEARCH)
+            logger.debug(f"Cached vector search results: {cache_key}")
+        except Exception as e:
+            logger.warning(f"Failed to cache vector search results: {e}")
 
         return ResponseFormat(data=documents).to_json()
     except Exception as e:

@@ -32,9 +32,9 @@ Primary responsibilities
 4. Tool: prepare_search_product_documents
    - Purpose: Search products based on user description.  
    - Input parameters:
-       description (string): the product description to search for.
+       query (string): the product description to search for.
    - Example:
-       {"description": "a mobile phone with advance camera system"}
+       {"query": "a mobile phone with advance camera system"}
 
 5. Tool: _create_payment_order
    - Purpose: Create a payment order with selected items and customer information.

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from google.adk.tools import FunctionTool
 from google.adk.tools.mcp_tool.mcp_session_manager import MCPSessionManager
@@ -102,9 +102,9 @@ async def prepare_reserve_stock(sku: str, quantity: int) -> Dict[str, Any]:
     return await client.reserve_stock(sku=sku, quantity=quantity)
 
 
-async def prepare_search_product_documents(query: str, product_sku: str | None = None, limit: int = 5) -> Dict[str, Any]:
+async def prepare_search_product_documents(query: str) -> Dict[str, Any]:
     client = get_salesperson_mcp_client()
-    return await client.search_product_documents(query=query, product_sku=product_sku, limit=limit)
+    return await client.search_product_documents(query=query)
 
 
 prepare_find_product_tool = FunctionTool(prepare_find_product)

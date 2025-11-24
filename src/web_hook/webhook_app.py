@@ -24,8 +24,8 @@ app = FastAPI(
 app.add_middleware(AppContextMiddleware)
 
 # Include routers
-app.include_router(product_router)
-app.include_router(document_router)
+app.include_router(product_router.router)
+app.include_router(document_router.router)
 
 
 if __name__ == "__main__":

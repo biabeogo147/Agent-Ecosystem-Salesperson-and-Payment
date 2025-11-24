@@ -14,7 +14,6 @@ from src.my_agent.salesperson_agent.salesperson_a2a.prepare_payment_tasks import
     prepare_create_order_payload,
     prepare_query_status_payload,
 )
-from src.my_agent.salesperson_agent import salesperson_agent_logger as logger
 from src.utils.response_format_jsonrpc import ResponseFormatJSONRPC
 
 PAYMENT_AGENT_BASE_URL = f"http://{PAYMENT_AGENT_SERVER_HOST}:{PAYMENT_AGENT_SERVER_PORT}"
@@ -24,6 +23,7 @@ class SalespersonA2AClient(BaseA2AClient):
     """Client used by the salesperson agent to reach the payment service."""
 
     def __init__(self, *, base_url: str | None = None, **kwargs: Any) -> None:
+        from src.my_agent.salesperson_agent import salesperson_agent_logger as logger
         super().__init__(
             base_url=base_url or PAYMENT_AGENT_BASE_URL,
             endpoint_path="/",
@@ -102,8 +102,8 @@ async def _create_payment_order(
     note: str,
     metadata: Dict[str, str],
 ) -> Dict[str, Any]:
-    logger.debug("tool _create_payment_order invoked (items=%d, channel=%s)", len(items), channel)
     async with SalespersonA2AClient() as client:
+        client._logger.debug("tool _create_payment_order invoked (items=%d, channel=%s)", len(items), channel)
         response = await client.create_order(
             items=items,
             customer=customer,
@@ -115,8 +115,8 @@ async def _create_payment_order(
 
 
 async def _query_payment_order_status(context_id: str) -> dict[str, Any]:
-    logger.debug("tool _query_payment_order_status invoked (context_id=%s)", context_id)
     async with SalespersonA2AClient() as client:
+        client._logger.debug("tool _query_payment_order_status invoked (context_id=%s)", context_id)
         response = await client.query_status(context_id)
     return response.to_dict()
 

@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import os
 import json
-import logging
 from typing import Any, Callable, Dict, Awaitable
 from uuid import uuid4
 
@@ -305,11 +303,3 @@ PAYMENT_HANDLER = PaymentAgentHandler(
     query_status_tool=query_order_status,
     agent_card=build_payment_agent_card(_CARD_BASE_URL),
 )
-
-
-__all__ = [
-    "PaymentAgentHandler",
-    "validate_payment_response",
-    "build_payment_agent_card",
-    "PAYMENT_HANDLER",
-]

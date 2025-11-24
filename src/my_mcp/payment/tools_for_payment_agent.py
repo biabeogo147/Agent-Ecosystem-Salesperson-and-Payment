@@ -1,3 +1,4 @@
+import time
 from typing import Optional, Any
 
 from google.adk.tools import FunctionTool
@@ -19,7 +20,6 @@ from src.utils.response_format import ResponseFormat
 
 
 def _map_order_status_to_payment_status(order_status: OrderStatus) -> PaymentStatus:
-    """Map OrderStatus to PaymentStatus."""
     mapping = {
         OrderStatus.PENDING: PaymentStatus.PENDING,
         OrderStatus.SUCCESS: PaymentStatus.SUCCESS,
@@ -30,9 +30,10 @@ def _map_order_status_to_payment_status(order_status: OrderStatus) -> PaymentSta
     return mapping.get(order_status, PaymentStatus.PENDING)
 
 
-async def _stub_paygate_create(channel: PaymentChannel, total: float, return_url: Optional[str], cancel_url: Optional[str]):
-    import time, uuid
-    oid = str(uuid.uuid4())
+async def _stub_paygate_create(
+        channel: PaymentChannel, oid: int, total: float,
+        return_url: Optional[str], cancel_url: Optional[str]
+) -> dict[str, Any]:
     exp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() + 15*60))
     if channel == PaymentChannel.REDIRECT.value:
         return {"order_id": oid, "pay_url": f"{CHECKOUT_URL}/{oid}", "expires_at": exp}
@@ -77,14 +78,14 @@ async def create_order(payload: dict[str, Any]) -> str:
 
         # Call payment gateway
         method = payload.get("method", {})
-        channel = method.get("channel", PaymentChannel.REDIRECT.value)
+        channel = method.get("channel", PaymentChannel.REDIRECT)
         paygate_response = await _stub_paygate_create(
-            channel, total_amount,
+            channel, order.id, total_amount,
             method.get("return_url"), method.get("cancel_url")
         )
 
         # Build next_action
-        if channel == PaymentChannel.REDIRECT.value:
+        if channel == PaymentChannel.REDIRECT:
             next_action = NextAction(
                 type=NextActionType.REDIRECT,
                 url=paygate_response["pay_url"],
@@ -126,7 +127,6 @@ async def query_order_status(payload: dict[str, Any]) -> str:
     try:
         order_id = payload.get("order_id")
 
-        # Safe type conversion with validation
         try:
             order_id_int = int(order_id)
         except (TypeError, ValueError):
@@ -164,7 +164,6 @@ async def update_order_status(payload: dict[str, Any]) -> str:
         order_id = payload.get("order_id")
         new_status = payload.get("status")
 
-        # Safe type conversion with validation
         try:
             order_id_int = int(order_id)
         except (TypeError, ValueError):
@@ -177,7 +176,6 @@ async def update_order_status(payload: dict[str, Any]) -> str:
         if not order:
             return ResponseFormat(status=Status.ORDER_NOT_FOUND, message="Order not found").to_json()
 
-        # Safe enum conversion with validation
         try:
             order.status = OrderStatus(new_status)
         except ValueError:

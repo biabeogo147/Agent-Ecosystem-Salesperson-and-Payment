@@ -11,6 +11,7 @@ from src.my_agent.base_mcp_client import BaseMcpClient
 
 mcp_sse_url = f"http://{MCP_SERVER_HOST_PAYMENT}:{MCP_SERVER_PORT_PAYMENT}/sse"
 mcp_streamable_http_url = f"http://{MCP_SERVER_HOST_PAYMENT}:{MCP_SERVER_PORT_PAYMENT}/mcp"
+
 class PaymentMcpClient(BaseMcpClient):
     """Small wrapper around :class:`MCPSessionManager` for payment tools."""
 
@@ -38,9 +39,7 @@ class PaymentMcpClient(BaseMcpClient):
         response = await self._call_tool_json("create_order", {"payload": payload})
         data = self._extract_success_data(response, tool="create_order")
         if not isinstance(data, dict):
-            raise RuntimeError(
-                "MCP tool 'create_order' returned non-dict data payload"
-            )
+            raise RuntimeError("MCP tool 'create_order' returned non-dict data payload")
         return data
 
     async def query_order_status(self, *, payload: dict[str, Any] | str) -> dict[str, Any]:
@@ -54,9 +53,7 @@ class PaymentMcpClient(BaseMcpClient):
         response = await self._call_tool_json("query_order_status", {"payload": payload})
         data = self._extract_success_data(response, tool="query_order_status")
         if not isinstance(data, dict):
-            raise RuntimeError(
-                "MCP tool 'query_order_status' returned non-dict data payload"
-            )
+            raise RuntimeError("MCP tool 'query_order_status' returned non-dict data payload")
         return data
 
 

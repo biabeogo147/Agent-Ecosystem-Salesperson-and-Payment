@@ -108,90 +108,6 @@ async def prepare_create_order_payload(
     remote skill directly.
     """
     client = get_salesperson_mcp_client()
-    return await prepare_create_order_payload_with_client(
-        items,
-        customer,
-        channel,
-        note=note,
-        metadata=metadata,
-        client=client,
-    )
-
-
-async def prepare_query_status_payload(context_id: str) -> Dict[str, Any]:
-    """Build the task and payload needed for the payment status skill."""
-    status_request = QueryStatusRequest(context_id=context_id)
-    status_request_json = status_request.model_dump(mode="json")
-
-    message = Message(
-        message_id=str(uuid4()),
-        role=Role.user,
-        context_id=status_request.context_id,
-        parts=[
-            Part(
-                root=TextPart(
-                    text="Salesperson checks the status of the existing payment order.",
-                    metadata={"speaker": SALESPERSON_AGENT_NAME},
-                )
-            ),
-            Part(
-                root=DataPart(
-                    data=status_request_json
-                )
-            ),
-        ],
-    )
-
-    artifact = Artifact(
-        artifact_id=str(uuid4()),
-        name=PAYMENT_STATUS_ARTIFACT_NAME,
-        description="Status lookup request for an existing payment context id.",
-        parts=[
-            Part(
-                root=DataPart(
-                    data=status_request_json
-                )
-            ),
-        ],
-    )
-
-    task_metadata = {
-        "skill_id": QUERY_STATUS_SKILL_ID,
-        "context_id": context_id,
-    }
-
-    task = Task(
-        id=str(uuid4()),
-        context_id=context_id,
-        history=[message],
-        artifacts=[artifact],
-        status=TaskStatus(state=TaskState.submitted),
-        metadata=task_metadata,
-    )
-
-    return {
-        "context_id": status_request.context_id,
-        "status_request": status_request.model_dump(mode="json"),
-        "task": task.model_dump(mode="json"),
-    }
-
-
-async def prepare_create_order_payload_with_client(
-    items: List[Dict],
-    customer: Dict[str, str],
-    channel: PaymentChannel,
-    *,
-    note: Optional[str] = None,
-    metadata: Optional[Dict[str, str]] = None,
-    client: SalespersonMcpClient,
-) -> Dict[str, Any]:
-    """Build the full payload required to call the payment agent's order skill.
-
-    The helper returns both the structured :class:`~a2a.types.Task` and the
-    flattened payment request payload so the salesperson agent can either pass
-    the task wholesale to the A2A client or extract the JSON body to call the
-    remote skill directly.
-    """
     resolved_items = await _resolve_items_via_product_tool(items, client=client)
 
     context_id = await _default_context_id_factory("payment", client=client)
@@ -269,8 +185,59 @@ async def prepare_create_order_payload_with_client(
     }
 
 
-__all__ = [
-    "prepare_create_order_payload",
-    "prepare_query_status_payload",
-    "prepare_create_order_payload_with_client",
-]
+async def prepare_query_status_payload(context_id: str) -> Dict[str, Any]:
+    """Build the task and payload needed for the payment status skill."""
+    status_request = QueryStatusRequest(context_id=context_id)
+    status_request_json = status_request.model_dump(mode="json")
+
+    message = Message(
+        message_id=str(uuid4()),
+        role=Role.user,
+        context_id=status_request.context_id,
+        parts=[
+            Part(
+                root=TextPart(
+                    text="Salesperson checks the status of the existing payment order.",
+                    metadata={"speaker": SALESPERSON_AGENT_NAME},
+                )
+            ),
+            Part(
+                root=DataPart(
+                    data=status_request_json
+                )
+            ),
+        ],
+    )
+
+    artifact = Artifact(
+        artifact_id=str(uuid4()),
+        name=PAYMENT_STATUS_ARTIFACT_NAME,
+        description="Status lookup request for an existing payment context id.",
+        parts=[
+            Part(
+                root=DataPart(
+                    data=status_request_json
+                )
+            ),
+        ],
+    )
+
+    task_metadata = {
+        "skill_id": QUERY_STATUS_SKILL_ID,
+        "context_id": context_id,
+    }
+
+    task = Task(
+        id=str(uuid4()),
+        context_id=context_id,
+        history=[message],
+        artifacts=[artifact],
+        status=TaskStatus(state=TaskState.submitted),
+        metadata=task_metadata,
+    )
+
+    return {
+        "context_id": status_request.context_id,
+        "status_request": status_request.model_dump(mode="json"),
+        "task": task.model_dump(mode="json"),
+    }

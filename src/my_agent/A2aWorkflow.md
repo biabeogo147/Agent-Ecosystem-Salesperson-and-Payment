@@ -79,20 +79,6 @@ class PaymentRequest(BaseModel):
 
 Phản hồi từ Payment Agent trả về cho Salesperson Agent.
 
-```python
-class PaymentResponse(BaseModel):
-    context_id: str                 # ID giao dịch (giống request)
-    status: PaymentStatus           # PENDING / SUCCESS / FAILED / CANCELLED
-
-    provider_name: Optional[str]    # Tên nhà cung cấp (nganluong, vnpay...)
-    order_id: Optional[str]         # Mã đơn hàng từ provider
-    pay_url: Optional[str]          # URL thanh toán (redirect channel)
-    qr_code_url: Optional[str]      # URL hình QR (qr channel)
-    expires_at: Optional[str]       # Thời gian hết hạn (ISO 8601)
-
-    next_action: NextAction         # Hành động tiếp theo cho client
-```
-
 **Ví dụ (Redirect Channel):**
 ```json
 {
@@ -135,15 +121,6 @@ class PaymentResponse(BaseModel):
 
 Yêu cầu tra cứu trạng thái thanh toán.
 
-```python
-class QueryStatusRequest(BaseModel):
-    protocol: ProtocolVersion       # A2A_V1
-    context_id: str                 # ID giao dịch cần tra cứu
-    from_agent: str                 # "salesperson_agent"
-    to_agent: str                   # "payment_agent"
-    action: PaymentAction           # QUERY_STATUS
-```
-
 **Ví dụ:**
 ```json
 {
@@ -153,47 +130,6 @@ class QueryStatusRequest(BaseModel):
     "to_agent": "payment_agent",
     "action": "QUERY_STATUS"
 }
-```
-
----
-
-### 5. Sub-Schemas
-
-#### PaymentItem
-```python
-class PaymentItem(BaseModel):
-    sku: str            # Mã sản phẩm
-    name: str           # Tên sản phẩm
-    quantity: int       # Số lượng (> 0)
-    unit_price: float   # Đơn giá (>= 0)
-    currency: str       # Đơn vị tiền tệ (default: USD)
-```
-
-#### CustomerInfo
-```python
-class CustomerInfo(BaseModel):
-    name: Optional[str]             # Tên khách hàng
-    email: Optional[EmailStr]       # Email
-    phone: Optional[str]            # Số điện thoại
-    shipping_address: Optional[str] # Địa chỉ giao hàng
-```
-
-#### PaymentMethod
-```python
-class PaymentMethod(BaseModel):
-    type: PaymentMethodType         # PAYGATE
-    channel: PaymentChannel         # redirect / qr
-    return_url: Optional[str]       # URL callback khi thanh toán thành công
-    cancel_url: Optional[str]       # URL callback khi hủy thanh toán
-```
-
-#### NextAction
-```python
-class NextAction(BaseModel):
-    type: NextActionType            # NONE / ASK_USER / REDIRECT / SHOW_QR
-    expires_at: Optional[str]       # Thời gian hết hạn
-    url: Optional[str]              # URL redirect (type=REDIRECT)
-    qr_code_url: Optional[str]      # URL QR code (type=SHOW_QR)
 ```
 
 ---
@@ -353,28 +289,3 @@ User ← Salesperson Agent ← Webhook ← Payment Gateway
 | Gateway error | `status=99`, message="Unknown error" |
 
 ---
-
-## File Structure
-
-```
-src/my_agent/my_a2a_common/
-├── __init__.py
-├── constants.py                    # Các hằng số
-└── payment_schemas/
-    ├── __init__.py
-    ├── payment_request.py          # PaymentRequest
-    ├── payment_response.py         # PaymentResponse
-    ├── query_status_request.py     # QueryStatusRequest
-    ├── payment_item.py             # PaymentItem
-    ├── customer_info.py            # CustomerInfo
-    ├── payment_method.py           # PaymentMethod
-    ├── next_action.py              # NextAction
-    └── payment_enums/
-        ├── __init__.py
-        ├── payment_status.py       # PaymentStatus
-        ├── payment_channel.py      # PaymentChannel
-        ├── payment_action.py       # PaymentAction
-        ├── next_action_type.py     # NextActionType
-        ├── payment_method_type.py  # PaymentMethodType
-        └── protocol_version.py     # ProtocolVersion
-```

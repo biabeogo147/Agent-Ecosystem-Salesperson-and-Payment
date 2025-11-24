@@ -22,6 +22,6 @@ class Conversation(Base):
             "title": self.title,
             "user_id": self.user_id,
             "summary": self.summary,
-            "created_at": str(self.created_at),
-            "updated_at": str(self.updated_at)
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None
         }

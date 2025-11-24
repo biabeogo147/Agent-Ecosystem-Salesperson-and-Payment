@@ -49,8 +49,18 @@ def sync_products_to_elastic():
             if not products:
                 stats = get_sync_stats()
                 if stats["total_synced"] == 0:
-                    logger.info("📊 First sync - getting all products")
-                    products = session.query(Product).all()
+                    logger.info("📊 First sync - loading products in batches for memory efficiency")
+                    # Use pagination to avoid loading all products into memory at once
+                    batch_size = 1000
+                    offset = 0
+                    products = []
+                    while True:
+                        batch = session.query(Product).limit(batch_size).offset(offset).all()
+                        if not batch:
+                            break
+                        products.extend(batch)
+                        offset += batch_size
+                        logger.info(f"  Loaded {len(products)} products so far...")
                 else:
                     logger.info("ℹ️ No new products to sync")
                     return

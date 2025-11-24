@@ -88,7 +88,7 @@ def delete_cached_value(key: str) -> bool:
 
 def clear_pattern(pattern: str) -> int:
     """
-    Delete all keys matching a pattern.
+    Delete all keys matching a pattern using SCAN (non-blocking).
 
     Args:
         pattern: Redis key pattern (e.g., "user:*", "cache:product:*")
@@ -98,12 +98,20 @@ def clear_pattern(pattern: str) -> int:
     """
     try:
         redis = redis_connection.get_client()
-        keys = redis.keys(pattern)
+        deleted = 0
+        cursor = 0
 
-        if not keys:
-            return 0
+        # Use SCAN instead of KEYS to avoid blocking Redis server
+        # SCAN is cursor-based and works incrementally
+        while True:
+            cursor, keys = redis.scan(cursor, match=pattern, count=100)
 
-        deleted = redis.delete(*keys)
+            if keys:
+                deleted += redis.delete(*keys)
+
+            if cursor == 0:
+                break
+
         logger.info(f"Deleted {deleted} keys matching pattern '{pattern}'")
         return deleted
 

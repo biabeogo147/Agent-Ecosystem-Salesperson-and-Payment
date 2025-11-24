@@ -39,8 +39,14 @@ def insert_document(data: DocumentCreate, collection_name: str = "Document") -> 
     try:
         result = client.insert(collection_name=collection_name, data=[doc_data])
         logger.info(f"Document inserted successfully with ID {result}")
+
+        ids = result.get("ids", [])
+        if not ids or ids[0] is None:
+            logger.error(f"No valid ID returned from Milvus insert. Result: {result}")
+            raise RuntimeError("No valid ID returned from Milvus insert")
+
         return {
-            "id": result.get("ids", [None])[0],
+            "id": ids[0],
             "text": data.text,
             "title": data.title,
             "product_sku": data.product_sku,

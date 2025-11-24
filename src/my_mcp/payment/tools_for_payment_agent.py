@@ -125,7 +125,17 @@ async def query_order_status(payload: dict[str, Any]) -> str:
     session = db_connection.get_session()
     try:
         order_id = payload.get("order_id")
-        order = session.query(Order).filter(Order.id == int(order_id)).first()
+
+        # Safe type conversion with validation
+        try:
+            order_id_int = int(order_id)
+        except (TypeError, ValueError):
+            return ResponseFormat(
+                status=Status.INVALID_PARAMS,
+                message=f"Invalid order_id format: {order_id}. Must be an integer."
+            ).to_json()
+
+        order = session.query(Order).filter(Order.id == order_id_int).first()
 
         if not order:
             return ResponseFormat(status=Status.ORDER_NOT_FOUND, message="Order not found").to_json()
@@ -154,11 +164,29 @@ async def update_order_status(payload: dict[str, Any]) -> str:
         order_id = payload.get("order_id")
         new_status = payload.get("status")
 
-        order = session.query(Order).filter(Order.id == int(order_id)).first()
+        # Safe type conversion with validation
+        try:
+            order_id_int = int(order_id)
+        except (TypeError, ValueError):
+            return ResponseFormat(
+                status=Status.INVALID_PARAMS,
+                message=f"Invalid order_id format: {order_id}. Must be an integer."
+            ).to_json()
+
+        order = session.query(Order).filter(Order.id == order_id_int).first()
         if not order:
             return ResponseFormat(status=Status.ORDER_NOT_FOUND, message="Order not found").to_json()
 
-        order.status = OrderStatus(new_status)
+        # Safe enum conversion with validation
+        try:
+            order.status = OrderStatus(new_status)
+        except ValueError:
+            valid_statuses = [s.value for s in OrderStatus]
+            return ResponseFormat(
+                status=Status.INVALID_PARAMS,
+                message=f"Invalid status: {new_status}. Must be one of: {', '.join(valid_statuses)}"
+            ).to_json()
+
         session.commit()
         session.refresh(order)
 

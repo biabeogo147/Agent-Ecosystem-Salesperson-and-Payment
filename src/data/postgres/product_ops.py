@@ -87,16 +87,25 @@ def update_product_stock(sku: str, new_stock: int) -> bool:
         session.close()
 
 
-def get_all_products() -> list[Product]:
+def get_all_products(limit: int = None, offset: int = 0) -> list[Product]:
     """
-    Get all products from PostgreSQL.
+    Get products from PostgreSQL with optional pagination.
+
+    Args:
+        limit: Maximum number of products to return (None = all)
+        offset: Number of products to skip
 
     Returns:
-        List of all Product objects
+        List of Product objects
     """
     session = db_connection.get_session()
     try:
-        products = session.query(Product).all()
+        query = session.query(Product)
+
+        if limit is not None:
+            query = query.limit(limit).offset(offset)
+
+        products = query.all()
         return products
     finally:
         session.close()

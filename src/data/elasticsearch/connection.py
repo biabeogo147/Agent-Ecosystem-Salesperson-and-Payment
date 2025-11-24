@@ -10,10 +10,14 @@ class ElasticConnection:
     """
 
     def __init__(self):
-        """Initialize Elasticsearch connection."""
+        """Initialize Elasticsearch connection with optimized pooling and retry settings."""
         self.es = Elasticsearch(
             hosts=[{"host": ELASTIC_HOST, "port": ELASTIC_PORT, "scheme": "http"}],
-            verify_certs=False
+            verify_certs=False,
+            max_retries=3,  # Retry failed requests up to 3 times
+            retry_on_timeout=True,  # Retry if request times out
+            timeout=30,  # Request timeout in seconds
+            maxsize=50,  # Connection pool size for concurrent requests
         )
 
     def get_client(self):

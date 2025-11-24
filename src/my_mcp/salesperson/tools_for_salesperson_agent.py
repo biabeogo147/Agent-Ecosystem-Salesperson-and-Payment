@@ -22,8 +22,11 @@ async def find_product(query: str) -> str:
     """
     Find product by SKU or substring of name.
     """
+    import asyncio
+
     query = query.lower()
-    results = find_products_by_text(query)
+    # Run blocking Elasticsearch call in thread pool
+    results = await asyncio.to_thread(find_products_by_text, query)
 
     return ResponseFormat(data=results).to_json()
 
@@ -44,7 +47,10 @@ async def reserve_stock(sku: str, quantity: int) -> str:
     """
     Reserve stock for a given SKU and quantity.
     """
-    product = find_product_by_sku(sku, use_cache=False)
+    import asyncio
+
+    # Run blocking database call in thread pool to avoid blocking event loop
+    product = await asyncio.to_thread(find_product_by_sku, sku, use_cache=False)
 
     if not product:
         return ResponseFormat(status=Status.PRODUCT_NOT_FOUND, data=False, message=PRODUCT_NOT_FOUND).to_json()
@@ -52,7 +58,8 @@ async def reserve_stock(sku: str, quantity: int) -> str:
     if product.stock < quantity:
         return ResponseFormat(status=Status.QUANTITY_EXCEEDED, data=False, message=QUANTITY_EXCEEDED).to_json()
 
-    result = update_product_stock(sku, product.stock - quantity)
+    # Run blocking database update in thread pool
+    result = await asyncio.to_thread(update_product_stock, sku, product.stock - quantity)
 
     return ResponseFormat(data=result).to_json()
 
@@ -84,10 +91,13 @@ async def search_product_documents(query: str, product_sku: str | None = None, l
         limit: Maximum number of results (default 5)
     Returns: List of matching documents
     """
+    import asyncio
+
     cache_key = CacheKeys.vector_search(query, product_sku, limit)
 
     try:
-        cached = get_cached_value(cache_key)
+        # Run blocking Redis call in thread pool
+        cached = await asyncio.to_thread(get_cached_value, cache_key)
         if cached:
             salesperson_mcp_logger.debug(f"Cache HIT: {cache_key}")
             return ResponseFormat(data=cached).to_json()
@@ -97,7 +107,8 @@ async def search_product_documents(query: str, product_sku: str | None = None, l
     salesperson_mcp_logger.debug(f"Cache MISS: {cache_key}")
 
     try:
-        client = get_client_instance()
+        # Run blocking Milvus client initialization in thread pool
+        client = await asyncio.to_thread(get_client_instance)
 
         # Generate mock embedding for query (replace with real embedding in production)
         random.seed(hash(query) % (2**32))
@@ -116,7 +127,8 @@ async def search_product_documents(query: str, product_sku: str | None = None, l
         if product_sku:
             search_params["filter"] = f'product_sku == "{product_sku}"'
 
-        results = client.search(**search_params)
+        # Run blocking Milvus search in thread pool
+        results = await asyncio.to_thread(client.search, **search_params)
 
         documents = []
         for hits in results:
@@ -131,7 +143,8 @@ async def search_product_documents(query: str, product_sku: str | None = None, l
                 })
 
         try:
-            set_cached_value(cache_key, documents, ttl=TTL.VECTOR_SEARCH)
+            # Run blocking Redis write in thread pool
+            await asyncio.to_thread(set_cached_value, cache_key, documents, ttl=TTL.VECTOR_SEARCH)
             salesperson_mcp_logger.debug(f"Cached vector search results: {cache_key}")
         except Exception as e:
             salesperson_mcp_logger.warning(f"Failed to cache vector search results: {e}")

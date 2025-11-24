@@ -75,18 +75,19 @@ def find_products_by_text(
 
     response = es.search(index=ELASTIC_INDEX, body=query)
 
-    results = [
-        {
-            "sku": hit["_source"]["sku"],
-            "name": hit["_source"]["name"],
-            "price": hit["_source"]["price"],
-            "currency": hit["_source"]["currency"],
-            "stock": hit["_source"]["stock"],
-            "merchant_id": hit["_source"]["merchant_id"],
-            "score": hit["_score"],
-        }
-        for hit in response["hits"]["hits"]
-    ]
+    # Safe parsing with KeyError protection
+    results = []
+    for hit in response.get("hits", {}).get("hits", []):
+        source = hit.get("_source", {})
+        results.append({
+            "sku": source.get("sku", ""),
+            "name": source.get("name", ""),
+            "price": source.get("price", 0.0),
+            "currency": source.get("currency", "USD"),
+            "stock": source.get("stock", 0),
+            "merchant_id": source.get("merchant_id"),
+            "score": hit.get("_score", 0.0),
+        })
 
     logger.info(f"Elasticsearch search returned {len(results)} results for query: '{query_string}'")
 

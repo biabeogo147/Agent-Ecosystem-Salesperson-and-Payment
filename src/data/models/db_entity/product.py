@@ -11,9 +11,9 @@ class Product(Base):
     price = Column(DECIMAL(18, 2), nullable=False)
     currency = Column(String, nullable=False, default="USD")
     stock = Column(Integer, nullable=False)
-    merchant_id = Column(Integer, ForeignKey('merchant.id'), nullable=True)
+    merchant_id = Column(Integer, ForeignKey('merchant.id'), nullable=True, index=True)  # Index for merchant filtering
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False, index=True)  # Index for sync queries
 
     def to_dict(self):
         return {

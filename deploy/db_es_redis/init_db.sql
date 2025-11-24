@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS product (
 
 CREATE INDEX IF NOT EXISTS idx_product_sku ON product(sku);
 CREATE INDEX IF NOT EXISTS idx_product_updated_at ON product(updated_at);
+CREATE INDEX IF NOT EXISTS idx_product_merchant_id ON product(merchant_id);
 
 -- Trigger function to auto-update updated_at
 CREATE OR REPLACE FUNCTION update_product_updated_at()

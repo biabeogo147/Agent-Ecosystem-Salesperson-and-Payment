@@ -5,8 +5,9 @@ from src.web_hook import webhook_logger as logger
 from src.utils.status import Status
 from src.utils.response_format import ResponseFormat
 
-from src.web_hook.schemas import DocumentCreate
-from src.web_hook.services import insert_document, get_product
+from src.web_hook.services.product_service import get_product
+from src.web_hook.schemas.document_schemas import DocumentCreate
+from src.web_hook.services.document_service import insert_document
 
 router = APIRouter(prefix="/webhook/documents", tags=["Documents"])
 

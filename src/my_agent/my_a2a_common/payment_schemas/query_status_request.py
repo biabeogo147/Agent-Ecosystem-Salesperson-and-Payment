@@ -11,6 +11,3 @@ class QueryStatusRequest(BaseModel):
     from_agent: str = Field(default="salesperson_agent")
     to_agent: str = Field(default="payment_agent")
     action: PaymentAction = Field(default=PaymentAction.QUERY_STATUS)
-
-
-__all__ = ["QueryStatusRequest"]

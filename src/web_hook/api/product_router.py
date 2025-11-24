@@ -3,8 +3,8 @@ from fastapi.responses import JSONResponse
 
 from src.utils.response_format import ResponseFormat
 from src.utils.status import Status
-from src.web_hook.schemas import ProductCreate, ProductUpdate
-from src.web_hook.services import (
+from src.web_hook.schemas.product_schemas import ProductCreate, ProductUpdate
+from src.web_hook.services.product_service import (
     create_product,
     update_product,
     get_product,

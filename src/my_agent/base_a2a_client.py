@@ -136,6 +136,3 @@ class BaseA2AClient:
             raise RuntimeError("Remote A2A agent response does not contain 'result'")
 
         return result
-
-
-__all__ = ["BaseA2AClient"]

@@ -34,10 +34,3 @@ QUERY_STATUS_SKILL = AgentSkill(
     output_modes=COMMON_MODES,
     examples=["Check if the payment with correlation ID ABC completed."],
 )
-
-__all__ = [
-    "CREATE_ORDER_SKILL",
-    "QUERY_STATUS_SKILL",
-    "CREATE_ORDER_SKILL_ID",
-    "QUERY_STATUS_SKILL_ID",
-]

@@ -1,9 +1,6 @@
 import json
 from typing import Any
 
-import json
-from typing import Any
-
 from mcp import types as mcp_types
 from google.adk.tools.mcp_tool import adk_to_mcp_tool_type
 from src.utils.logger import logger

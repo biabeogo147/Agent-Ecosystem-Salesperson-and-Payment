@@ -29,7 +29,6 @@ middleware = [
 ]
 
 a2a_app = Starlette(debug=False, routes=routes, middleware=middleware)
-__all__ = ["a2a_app"]
 
 
 if __name__ == "__main__":

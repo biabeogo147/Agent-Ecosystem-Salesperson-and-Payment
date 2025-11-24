@@ -15,6 +15,7 @@ salesperson_a2a_client.log
 build
 log
 
-deploy/db_es/volume
-deploy/db_es/logs
+deploy/db_es_redis/volume
+deploy/db_es_redis/logs
 deploy/milvus/volumes
+/.claude/

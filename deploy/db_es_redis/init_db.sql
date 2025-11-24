@@ -47,10 +47,29 @@ CREATE TABLE IF NOT EXISTS product (
     price DECIMAL(18, 2) NOT NULL,
     currency VARCHAR(5) NOT NULL DEFAULT 'USD',
     stock INTEGER NOT NULL,
-    merchant_id INTEGER REFERENCES merchant(id) ON DELETE SET NULL
+    merchant_id INTEGER REFERENCES merchant(id) ON DELETE SET NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_product_sku ON product(sku);
+CREATE INDEX IF NOT EXISTS idx_product_updated_at ON product(updated_at);
+
+-- Trigger function to auto-update updated_at
+CREATE OR REPLACE FUNCTION update_product_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger
+DROP TRIGGER IF EXISTS product_updated_at_trigger ON product;
+CREATE TRIGGER product_updated_at_trigger
+    BEFORE UPDATE ON product
+    FOR EACH ROW
+    EXECUTE FUNCTION update_product_updated_at();
 
 -- ==============================================
 -- Table: order

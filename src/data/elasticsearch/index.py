@@ -1,18 +1,30 @@
 from src.config import ELASTIC_INDEX
-from src.data.es_connection import es_connection
+from src.data.elasticsearch.connection import es_connection
 from src.utils.logger import logger
 
 
 def index_exists() -> bool:
-    """Check if the products index exists in Elasticsearch."""
+    """
+    Check if the products index exists in Elasticsearch.
+
+    Returns:
+        True if index exists, False otherwise
+    """
     es = es_connection.get_client()
     return es.indices.exists(index=ELASTIC_INDEX)
 
 
 def create_products_index():
-    """Create the products index in Elasticsearch with proper mapping and analyzers."""
+    """
+    Create the products index in Elasticsearch with proper mapping and analyzers.
+
+    The index includes:
+    - Text analyzer for full-text search
+    - Autocomplete analyzer with edge n-grams
+    - Proper field mappings for product attributes
+    """
     es = es_connection.get_client()
-    
+
     if es.indices.exists(index=ELASTIC_INDEX):
         logger.info(f"Index '{ELASTIC_INDEX}' already exists.")
         return
@@ -53,10 +65,12 @@ def create_products_index():
                 "price": {"type": "float"},
                 "currency": {"type": "keyword"},
                 "stock": {"type": "integer"},
-                "merchant_id": {"type": "integer"}
+                "merchant_id": {"type": "integer"},
+                "created_at": {"type": "date"},
+                "updated_at": {"type": "date"}
             }
         }
     }
 
     es.indices.create(index=ELASTIC_INDEX, body=settings)
-    logger.info(f"Index '{ELASTIC_INDEX}' created successfully.")
+    logger.info(f"✅ Index '{ELASTIC_INDEX}' created successfully.")

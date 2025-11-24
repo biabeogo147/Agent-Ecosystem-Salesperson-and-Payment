@@ -37,6 +37,11 @@ ELASTIC_HOST = os.getenv("ELASTIC_HOST", "localhost")
 ELASTIC_PORT = int(os.getenv("ELASTIC_PORT", "9200"))
 ELASTIC_INDEX = "products_index"
 
+REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
+REDIS_PASSWORD = os.getenv("REDIS_PASSWORD", None)
+REDIS_DB = int(os.getenv("REDIS_DB", "0"))
+
 MILVUS_HOST = os.getenv("MILVUS_HOST", "localhost:19530")
 MILVUS_USER = os.getenv("MILVUS_USER", "root")
 MILVUS_PASSWORD = os.getenv("MILVUS_PASSWORD", "Milvus")

@@ -1,13 +1,29 @@
+"""Elasticsearch search operations for products."""
+
 from src.config import ELASTIC_INDEX
-from src.data.db_connection import db_connection
-from src.data.es_connection import es_connection
-from src.data.models.db_entity.product import Product
+from src.data.elasticsearch.connection import es_connection
 from src.utils.logger import logger
 
 
-def find_products_list_by_substring(query_string: str, min_price: float = None, max_price: float = None):
+def find_products_by_text(
+    query_string: str,
+    min_price: float = None,
+    max_price: float = None,
+    merchant_id: int = None,
+    limit: int = 20
+) -> list[dict]:
     """
     Find products by fuzzy or full-text match using Elasticsearch.
+
+    Args:
+        query_string: Search query text
+        min_price: Minimum price filter (optional)
+        max_price: Maximum price filter (optional)
+        merchant_id: Filter by merchant ID (optional)
+        limit: Maximum number of results to return
+
+    Returns:
+        List of product dictionaries with relevance scores
     """
     es = es_connection.get_client()
 
@@ -26,9 +42,10 @@ def find_products_list_by_substring(query_string: str, min_price: float = None, 
                 "filter": []
             }
         },
-        "size": 20
+        "size": limit
     }
 
+    # Add price range filter
     if min_price or max_price:
         price_range = {}
         if min_price:
@@ -37,7 +54,12 @@ def find_products_list_by_substring(query_string: str, min_price: float = None, 
             price_range["lte"] = max_price
         query["query"]["bool"]["filter"].append({"range": {"price": price_range}})
 
+    # Add merchant filter
+    if merchant_id is not None:
+        query["query"]["bool"]["filter"].append({"term": {"merchant_id": merchant_id}})
+
     response = es.search(index=ELASTIC_INDEX, body=query)
+
     results = [
         {
             "sku": hit["_source"]["sku"],
@@ -51,36 +73,27 @@ def find_products_list_by_substring(query_string: str, min_price: float = None, 
         for hit in response["hits"]["hits"]
     ]
 
-    logger.info(f"Results from Elasticsearch ({len(results)}): {results}")
+    logger.info(f"Elasticsearch search returned {len(results)} results for query: '{query_string}'")
     return results
 
 
-def find_product_by_sku(sku: str) -> Product | None:
+def get_product_by_sku(sku: str) -> dict | None:
     """
-    Find a product by its SKU in DB.
-    """
-    session = db_connection.get_session()
-    try:
-        product = session.query(Product).filter(Product.sku == sku).first()
-        return product
-    finally:
-        session.close()
+    Get a single product from Elasticsearch by SKU.
 
+    Args:
+        sku: Product SKU
 
-def update_product_stock(sku: str, new_stock: int) -> bool:
+    Returns:
+        Product dictionary if found, None otherwise
     """
-    Update the stock of a product by its SKU in DB.
-    """
-    session = db_connection.get_session()
+    es = es_connection.get_client()
+
     try:
-        product = session.query(Product).filter(Product.sku == sku).first()
-        if not product:
-            return False
-        product.stock = new_stock
-        session.commit()
-        return True
-    except Exception:
-        session.rollback()
-        return False
-    finally:
-        session.close()
+        response = es.get(index=ELASTIC_INDEX, id=sku)
+        if response["found"]:
+            return response["_source"]
+    except Exception as e:
+        logger.warning(f"Product {sku} not found in Elasticsearch: {e}")
+
+    return None

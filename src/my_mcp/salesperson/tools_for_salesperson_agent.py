@@ -16,10 +16,10 @@ async def find_product(query: str) -> str:
     """
     Find product by SKU or substring of name.
     """
-    from src.data.operations.product_ops import find_products_list_by_substring
+    from src.data.elasticsearch.search_ops import find_products_by_text
 
     query = query.lower()
-    results = find_products_list_by_substring(query)
+    results = find_products_by_text(query)
 
     return ResponseFormat(data=results).to_json()
 
@@ -40,7 +40,7 @@ async def reserve_stock(sku: str, quantity: int) -> str:
     """
     Reserve stock for a given SKU and quantity.
     """
-    from src.data.operations.product_ops import find_product_by_sku, update_product_stock
+    from src.data.postgres.product_ops import find_product_by_sku, update_product_stock
 
     product = find_product_by_sku(sku)
 
@@ -82,7 +82,7 @@ async def search_product_documents(query: str, product_sku: str | None = None, l
         limit: Maximum number of results (default 5)
     Returns: List of matching documents
     """
-    from src.data.vs_connection import get_client_instance
+    from src.data.milvus.connection import get_client_instance
     from src.config import EMBED_VECTOR_DIM
     import random
 

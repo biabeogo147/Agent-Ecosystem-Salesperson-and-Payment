@@ -1,6 +1,6 @@
 from typing import Optional, List
 
-from src.data.db_connection import db_connection
+from src.data.postgres.connection import db_connection
 from src.data.models.db_entity.product import Product
 from src.web_hook.schemas.product_schemas import ProductCreate, ProductUpdate
 

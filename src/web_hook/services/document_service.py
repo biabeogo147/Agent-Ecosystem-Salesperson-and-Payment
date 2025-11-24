@@ -1,10 +1,9 @@
-from typing import Optional, List
-import hashlib
+from typing import List
 
 from pymilvus import MilvusException
 
 from src.utils.logger import logger
-from src.data.vs_connection import get_client_instance
+from src.data.milvus.connection import get_client_instance
 from src.web_hook.schemas.document_schemas import DocumentCreate
 from src.config import DEFAULT_EMBEDDING_FIELD, DEFAULT_TEXT_FIELD, EMBED_VECTOR_DIM
 
@@ -41,7 +40,7 @@ def insert_document(data: DocumentCreate, collection_name: str = "Document") -> 
         result = client.insert(collection_name=collection_name, data=[doc_data])
         logger.info(f"Document inserted successfully with ID {result}")
         return {
-            "id": result.ids[0],
+            "id": result.get("ids", [None])[0],
             "text": data.text,
             "title": data.title,
             "product_sku": data.product_sku,
@@ -52,5 +51,5 @@ def insert_document(data: DocumentCreate, collection_name: str = "Document") -> 
         logger.error(f"Failed to insert document: {e.message}")
         raise RuntimeError(f"Failed to insert document: MilvusException")
     except Exception as e:
-        logger.error(f"Failed to insert document: {e.message}")
-        raise RuntimeError(f"Failed to insert document: {e.message}")
+        logger.error(f"Failed to insert document: {e}")
+        raise RuntimeError(f"Failed to insert document: {e}")

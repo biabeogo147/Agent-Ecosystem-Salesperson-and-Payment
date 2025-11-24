@@ -16,8 +16,8 @@ from src.config import *
 from src.my_mcp.logging_middleware import LoggingMiddleware
 from src.my_mcp.salesperson.tools_for_salesperson_agent import *
 from src.my_mcp.utils import list_mcp_tools_with_dict, call_mcp_tool_with_dict
-from src.data.elasic_search.sync_db_to_es import sync_products_to_elastic
-from src.data.elasic_search.elastic_search_index import create_products_index, index_exists
+from src.data.elasticsearch.sync import sync_products_to_elastic
+from src.data.elasticsearch.index import create_products_index, index_exists
 
 my_mcp_server = Server("salesperson_mcp")
 

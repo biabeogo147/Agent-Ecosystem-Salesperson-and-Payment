@@ -25,22 +25,6 @@ Hệ thống sử dụng giao thức A2A để giao tiếp giữa **Salesperson 
 
 Yêu cầu thanh toán từ Salesperson Agent gửi đến Payment Agent.
 
-```python
-class PaymentRequest(BaseModel):
-    protocol: ProtocolVersion       # Phiên bản giao thức (A2A_V1)
-    context_id: str                 # ID giao dịch duy nhất
-    from_agent: str                 # "salesperson_agent"
-    to_agent: str                   # "payment_agent"
-    action: PaymentAction           # CREATE_ORDER / QUERY_STATUS / CANCEL
-
-    items: List[PaymentItem]        # Danh sách sản phẩm
-    customer: CustomerInfo          # Thông tin khách hàng
-    method: PaymentMethod           # Phương thức thanh toán
-
-    note: Optional[str]             # Ghi chú
-    metadata: Optional[Dict]        # Metadata bổ sung
-```
-
 **Ví dụ:**
 ```json
 {
@@ -117,175 +101,40 @@ Phản hồi từ Payment Agent trả về cho Salesperson Agent.
 
 ---
 
-### 4. QueryStatusRequest
-
-Yêu cầu tra cứu trạng thái thanh toán.
-
-**Ví dụ:**
-```json
-{
-    "protocol": "A2A_V1",
-    "context_id": "sale-abc-123",
-    "from_agent": "salesperson_agent",
-    "to_agent": "payment_agent",
-    "action": "QUERY_STATUS"
-}
-```
-
----
-
 ## Workflow
 
-### Flow Diagram
+```mermaid
+sequenceDiagram
+    autonumber
 
+    participant U as User/Client
+    participant S as Salesperson Agent
+    participant P as Payment Agent
+    participant G as Payment Gateway
+
+    rect rgb(220, 245, 255)
+        Note over U,S: Tạo đơn hàng
+
+        U ->> S: Chọn sản phẩm, nhập thông tin
+        S ->> P: PaymentRequest<br/>action=CREATE_ORDER
+        P ->> G: Validate request -> Tạo Order trong DB<br/>Gọi Payment Gateway
+        P -->> S: PaymentResponse<br/>status=PENDING<br/>next_action=REDIRECT
+        S -->> U: Redirect user đến pay_url
+    end
+
+    rect rgb(255, 240, 220)
+        Note over U,G: Thanh toán
+
+        U ->> G: User thanh toán trên Payment Gateway
+    end
+
+    rect rgb(230, 255, 230)
+        Note over P,G: Xác nhận trạng thái đơn hàng
+
+        G -->> P: Callback to return_url / notify_url
+        P ->> G: Query Order Status
+        G -->> P: Order Status<br/>status=SUCCESS / FAILED
+        P -->> S: PaymentResponse<br/>status=SUCCESS / FAILED
+        S -->> U: Hiển thị kết quả thanh toán
+    end
 ```
-┌─────────────────┐         ┌─────────────────┐         ┌─────────────────┐
-│   User/Client   │         │ Salesperson     │         │ Payment Agent   │
-│                 │         │ Agent           │         │                 │
-└────────┬────────┘         └────────┬────────┘         └────────┬────────┘
-         │                           │                           │
-         │ 1. Chọn sản phẩm,        │                           │
-         │    nhập thông tin        │                           │
-         │ ─────────────────────────>│                           │
-         │                           │                           │
-         │                           │ 2. PaymentRequest         │
-         │                           │   action=CREATE_ORDER     │
-         │                           │ ─────────────────────────>│
-         │                           │                           │
-         │                           │                           │ 3. Validate request
-         │                           │                           │    Tạo Order trong DB
-         │                           │                           │    Gọi Payment Gateway
-         │                           │                           │
-         │                           │ 4. PaymentResponse        │
-         │                           │   status=PENDING          │
-         │                           │   next_action=REDIRECT    │
-         │                           │ <─────────────────────────│
-         │                           │                           │
-         │ 5. Redirect user         │                           │
-         │    to pay_url            │                           │
-         │ <─────────────────────────│                           │
-         │                           │                           │
-         │ 6. User thực hiện        │                           │
-         │    thanh toán trên       │                           │
-         │    Payment Gateway       │                           │
-         │ ══════════════════════════════════════════════════════│
-         │                           │                           │
-         │ 7. Gateway callback      │                           │
-         │    to return_url         │                           │
-         │ ─────────────────────────>│                           │
-         │                           │                           │
-         │                           │ 8. QueryStatusRequest     │
-         │                           │   action=QUERY_STATUS     │
-         │                           │ ─────────────────────────>│
-         │                           │                           │
-         │                           │                           │ 9. Query DB/Gateway
-         │                           │                           │
-         │                           │ 10. PaymentResponse       │
-         │                           │    status=SUCCESS/FAILED  │
-         │                           │ <─────────────────────────│
-         │                           │                           │
-         │ 11. Hiển thị kết quả     │                           │
-         │     thanh toán           │                           │
-         │ <─────────────────────────│                           │
-```
-
----
-
-### Flow Steps
-
-#### Phase 1: Tạo đơn hàng (Create Order)
-
-| Step | Actor | Action |
-|------|-------|--------|
-| 1 | User | Chọn sản phẩm, nhập thông tin khách hàng |
-| 2 | Salesperson Agent | Tạo `PaymentRequest` với `action=CREATE_ORDER` |
-| 3 | Payment Agent | Validate request, tạo Order trong DB, gọi Payment Gateway |
-| 4 | Payment Agent | Trả về `PaymentResponse` với `status=PENDING`, `next_action` |
-| 5 | Salesperson Agent | Redirect user đến `pay_url` hoặc hiển thị QR code |
-
-#### Phase 2: Thanh toán (Payment)
-
-| Step | Actor | Action |
-|------|-------|--------|
-| 6 | User | Thực hiện thanh toán trên trang Payment Gateway |
-| 7 | Payment Gateway | Callback về `return_url` sau khi thanh toán |
-
-#### Phase 3: Xác nhận (Confirmation)
-
-| Step | Actor | Action |
-|------|-------|--------|
-| 8 | Salesperson Agent | Gửi `QueryStatusRequest` để kiểm tra trạng thái |
-| 9 | Payment Agent | Query DB hoặc Gateway để lấy trạng thái mới nhất |
-| 10 | Payment Agent | Trả về `PaymentResponse` với `status=SUCCESS/FAILED` |
-| 11 | Salesperson Agent | Hiển thị kết quả thanh toán cho user |
-
----
-
-## Payment Channels
-
-### 1. Redirect Channel
-
-Chuyển hướng user đến trang thanh toán của Payment Gateway.
-
-```
-User → Salesperson Agent → Payment Agent → Payment Gateway
-                                              ↓
-User ← Salesperson Agent ← return_url ← Payment Gateway
-```
-
-**Khi nào sử dụng:**
-- Web browser
-- Mobile app với WebView
-- Thanh toán thẻ tín dụng, ví điện tử
-
-### 2. QR Channel
-
-Hiển thị QR code để user quét và thanh toán.
-
-```
-User (scan QR) → Payment Gateway
-                      ↓
-User ← Salesperson Agent ← Webhook ← Payment Gateway
-```
-
-**Khi nào sử dụng:**
-- POS tại cửa hàng
-- Thanh toán qua app ngân hàng
-- VNPay QR, MoMo QR
-
----
-
-## Status Transitions
-
-```
-                    ┌──────────────┐
-                    │   PENDING    │
-                    └──────┬───────┘
-                           │
-           ┌───────────────┼───────────────┐
-           │               │               │
-           ▼               ▼               ▼
-    ┌──────────┐    ┌──────────┐    ┌──────────┐
-    │ SUCCESS  │    │  FAILED  │    │CANCELLED │
-    └──────────┘    └──────────┘    └──────────┘
-```
-
-| Status | Mô tả |
-|--------|-------|
-| `PENDING` | Đang chờ thanh toán |
-| `SUCCESS` | Thanh toán thành công |
-| `FAILED` | Thanh toán thất bại |
-| `CANCELLED` | User hủy thanh toán |
-
----
-
-## Error Handling
-
-| Error | Response |
-|-------|----------|
-| Product not found | `status=02`, message="Product not found" |
-| Order not found | `status=11`, message="Order not found" |
-| Invalid request | `status=08`, message="Invalid params" |
-| Gateway error | `status=99`, message="Unknown error" |
-
----

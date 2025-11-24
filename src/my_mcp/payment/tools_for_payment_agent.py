@@ -40,14 +40,15 @@ async def _stub_paygate_create(
     return {"order_id": oid, "qr_code_url": f"{QR_URL}/{oid}.png", "expires_at": exp}
 
 
+# TODO: Xem lại payload
 async def create_order(payload: dict[str, Any]) -> str:
     """
     Create a payment order and save to database.
     Args:
       payload: {
+        "context_id": "ctx_123",
         "product_sku": "SKU001",
         "quantity": 1,
-        "user_id": 123 (optional),
         "method": {"channel": "redirect|qr", "return_url", "cancel_url"}
       }
     Returns: PaymentResponse with order_id and next_action

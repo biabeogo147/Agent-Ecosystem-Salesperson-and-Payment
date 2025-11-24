@@ -25,9 +25,9 @@ def insert_document(data: DocumentCreate, collection_name: str = "Document") -> 
         DEFAULT_TEXT_FIELD: data.text,
         DEFAULT_EMBEDDING_FIELD: embedding,
         "title": data.title,
-        "product_sku": data.product_sku or "",
-        "chunk_id": data.chunk_id or 0,
-        "merchant_id": data.merchant_id or 0,
+        "product_sku": data.product_sku,
+        "chunk_id": data.chunk_id,
+        "merchant_id": data.merchant_id,
     }
 
     logger.info(f"Document text {data.text[:100]}")

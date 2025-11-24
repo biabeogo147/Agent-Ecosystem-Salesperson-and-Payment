@@ -18,18 +18,17 @@ async def create_document_endpoint(data: DocumentCreate):
     Use product_sku from the product creation response to link documents to products.
     """
     try:
-        if data.product_sku:
-            product = get_product(data.product_sku)
-            logger.info(f"Product found: {product.sku} - {product.name}")
-            if not product:
-                return JSONResponse(
-                    status_code=404,
-                    content=ResponseFormat(
-                        status=Status.PRODUCT_NOT_FOUND,
-                        message=f"Product with SKU '{data.product_sku}' not found. Create product first.",
-                        data=None
-                    ).to_dict()
-                )
+        product = get_product(data.product_sku, data.merchant_id)
+        if not product:
+            return JSONResponse(
+                status_code=404,
+                content=ResponseFormat(
+                    status=Status.PRODUCT_NOT_FOUND,
+                    message=f"Product with SKU '{data.product_sku}' not found. Create product first.",
+                    data=None
+                ).to_dict()
+            )
+        logger.info(f"Product found: {product.sku} - {product.name}")
 
         result = insert_document(data)
         return JSONResponse(

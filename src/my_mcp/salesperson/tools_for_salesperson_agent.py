@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 import random
+import asyncio
 
 from google.adk.tools import FunctionTool
 
@@ -22,10 +23,8 @@ async def find_product(query: str) -> str:
     """
     Find product by SKU or substring of name.
     """
-    import asyncio
-
     query = query.lower()
-    results = await asyncio.to_thread(find_products_by_text, query)
+    results = await find_products_by_text(query)
 
     return ResponseFormat(data=results).to_json()
 
@@ -46,9 +45,7 @@ async def reserve_stock(sku: str, quantity: int) -> str:
     """
     Reserve stock for a given SKU and quantity.
     """
-    import asyncio
-
-    product = await asyncio.to_thread(find_product_by_sku, sku, use_cache=False)
+    product = await find_product_by_sku(sku, use_cache=False)
 
     if not product:
         return ResponseFormat(status=Status.PRODUCT_NOT_FOUND, data=False, message=PRODUCT_NOT_FOUND).to_json()
@@ -56,7 +53,7 @@ async def reserve_stock(sku: str, quantity: int) -> str:
     if product.stock < quantity:
         return ResponseFormat(status=Status.QUANTITY_EXCEEDED, data=False, message=QUANTITY_EXCEEDED).to_json()
 
-    result = await asyncio.to_thread(update_product_stock, sku, product.stock - quantity)
+    result = await update_product_stock(sku, product.stock - quantity)
 
     return ResponseFormat(data=result).to_json()
 
@@ -88,12 +85,10 @@ async def search_product_documents(query: str, product_sku: str | None = None, l
         limit: Maximum number of results (default 5)
     Returns: List of matching documents
     """
-    import asyncio
-
     cache_key = CacheKeys.vector_search(query, product_sku, limit)
 
     try:
-        cached = await asyncio.to_thread(get_cached_value, cache_key)
+        cached = await get_cached_value(cache_key)
         if cached:
             salesperson_mcp_logger.debug(f"Cache HIT: {cache_key}")
             return ResponseFormat(data=cached).to_json()
@@ -117,7 +112,6 @@ async def search_product_documents(query: str, product_sku: str | None = None, l
             "output_fields": ["id", "text", "title", "product_sku", "chunk_id"],
         }
 
-        # Add filter if product_sku is provided
         if product_sku:
             search_params["filter"] = f'product_sku == "{product_sku}"'
 
@@ -136,7 +130,7 @@ async def search_product_documents(query: str, product_sku: str | None = None, l
                 })
 
         try:
-            await asyncio.to_thread(set_cached_value, cache_key, documents, ttl=TTL.VECTOR_SEARCH)
+            await set_cached_value(cache_key, documents, ttl=TTL.VECTOR_SEARCH)
             salesperson_mcp_logger.debug(f"Cached vector search results: {cache_key}")
         except Exception as e:
             salesperson_mcp_logger.warning(f"Failed to cache vector search results: {e}")

@@ -5,20 +5,20 @@ from src.utils.logger import get_current_logger
 logger = get_current_logger()
 
 
-def index_exists() -> bool:
+async def index_exists() -> bool:
     """
-    Check if the products index exists in Elasticsearch.
+    Check if the products index exists in Elasticsearch (async).
 
     Returns:
         True if index exists, False otherwise
     """
     es = es_connection.get_client()
-    return es.indices.exists(index=ELASTIC_INDEX)
+    return await es.indices.exists(index=ELASTIC_INDEX)
 
 
-def create_products_index():
+async def create_products_index():
     """
-    Create the products index in Elasticsearch with proper mapping and analyzers.
+    Create the products index in Elasticsearch with proper mapping and analyzers (async).
 
     The index includes:
     - Text analyzer for full-text search
@@ -27,7 +27,7 @@ def create_products_index():
     """
     es = es_connection.get_client()
 
-    if es.indices.exists(index=ELASTIC_INDEX):
+    if await es.indices.exists(index=ELASTIC_INDEX):
         logger.info(f"Index '{ELASTIC_INDEX}' already exists.")
         return
 
@@ -74,5 +74,5 @@ def create_products_index():
         }
     }
 
-    es.indices.create(index=ELASTIC_INDEX, body=settings)
+    await es.indices.create(index=ELASTIC_INDEX, body=settings)
     logger.info(f"✅ Index '{ELASTIC_INDEX}' created successfully.")

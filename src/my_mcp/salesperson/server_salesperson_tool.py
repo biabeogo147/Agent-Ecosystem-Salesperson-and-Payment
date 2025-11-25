@@ -63,11 +63,11 @@ async def sync_products_periodically():
             with set_app_context(AppLogger.SALESPERSON_MCP):
                 salesperson_mcp_logger.info("🔄 Starting periodic product sync to Elasticsearch...")
 
-                if not index_exists():
+                if not await index_exists():
                     salesperson_mcp_logger.warning("⚠️ Elasticsearch index not found. Creating index...")
-                    create_products_index()
+                    await create_products_index()
 
-                sync_products_to_elastic()
+                await sync_products_to_elastic()
                 salesperson_mcp_logger.info("✅ Periodic product sync completed successfully.")
         except Exception as e:
             salesperson_mcp_logger.error(f"❌ Error during periodic sync: {str(e)}")
@@ -78,9 +78,9 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     salesperson_mcp_logger.info("🚀 Starting Salesperson MCP server...")
     
     try:
-        if not index_exists():
+        if not await index_exists():
             salesperson_mcp_logger.info("📋 Creating Elasticsearch index for products...")
-            create_products_index()
+            await create_products_index()
         else:
             salesperson_mcp_logger.info("✅ Elasticsearch index already exists.")
     except Exception as e:

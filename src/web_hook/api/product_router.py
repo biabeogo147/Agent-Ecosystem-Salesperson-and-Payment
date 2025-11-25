@@ -19,7 +19,7 @@ router = APIRouter(prefix="/webhook/products", tags=["Products"])
 async def create_product_endpoint(data: ProductCreate):
     """Create a new product. Returns the created product with its SKU."""
     try:
-        product = create_product(data)
+        product = await create_product(data)
         return JSONResponse(
             status_code=201,
             content=ResponseFormat(
@@ -52,7 +52,7 @@ async def create_product_endpoint(data: ProductCreate):
 async def update_product_endpoint(sku: str, data: ProductUpdate):
     """Update an existing product by SKU."""
     try:
-        product = update_product(sku, data)
+        product = await update_product(sku, data)
         return JSONResponse(
             content=ResponseFormat(
                 status=Status.SUCCESS,
@@ -83,7 +83,7 @@ async def update_product_endpoint(sku: str, data: ProductUpdate):
 @router.get("/{sku}")
 async def get_product_endpoint(sku: str, merchant_id: int):
     """Get a product by SKU."""
-    product = get_product(sku, merchant_id)
+    product = await get_product(sku, merchant_id)
     if not product:
         return JSONResponse(
             status_code=404,
@@ -105,7 +105,7 @@ async def get_product_endpoint(sku: str, merchant_id: int):
 @router.get("")
 async def list_products_endpoint(merchant_id: int):
     """List all products."""
-    products = get_all_products(merchant_id)
+    products = await get_all_products(merchant_id)
     return JSONResponse(
         content=ResponseFormat(
             status=Status.SUCCESS,
@@ -119,7 +119,7 @@ async def list_products_endpoint(merchant_id: int):
 async def delete_product_endpoint(sku: str, merchant_id: int):
     """Delete a product by SKU. Requires merchant_id to verify ownership."""
     try:
-        if not delete_product(sku, merchant_id):
+        if not await delete_product(sku, merchant_id):
             return JSONResponse(
                 status_code=404,
                 content=ResponseFormat(

@@ -1,5 +1,5 @@
-import redis
-from redis.connection import ConnectionPool
+import redis.asyncio as redis
+from redis.asyncio.connection import ConnectionPool
 from src.config import REDIS_HOST, REDIS_PORT, REDIS_PASSWORD, REDIS_DB
 from src.utils.logger import get_current_logger
 
@@ -8,15 +8,15 @@ logger = get_current_logger()
 
 class RedisConnection:
     """
-    Redis connection manager with connection pooling.
+    Redis connection manager with async connection pooling.
 
-    Provides efficient connection pooling and automatic reconnection.
+    Provides efficient async connection pooling and automatic reconnection.
     """
 
     def __init__(self):
-        """Initialize Redis connection pool."""
+        """Initialize Redis async connection pool."""
         try:
-            # Create connection pool
+            # Create async connection pool
             self.pool = ConnectionPool(
                 host=REDIS_HOST,
                 port=REDIS_PORT,
@@ -29,26 +29,27 @@ class RedisConnection:
                 retry_on_timeout=True
             )
 
-            self.client = redis.Redis(connection_pool=self.pool)
-
-            # Test connection
-            self.client.ping()
-            logger.info(f"✅ Redis connected successfully: {REDIS_HOST}:{REDIS_PORT}")
+            self.client = None
+            logger.info(f"✅ Redis async connection pool initialized: {REDIS_HOST}:{REDIS_PORT}")
 
         except Exception as e:
-            logger.error(f"❌ Failed to connect to Redis: {e}")
+            logger.error(f"❌ Failed to initialize Redis connection pool: {e}")
             raise
 
-    def get_client(self) -> redis.Redis:
+    async def get_client(self) -> redis.Redis:
         """
-        Get Redis client instance.
+        Get Redis async client instance.
 
         Returns:
-            Redis client object
+            Redis async client object
         """
+        if self.client is None:
+            self.client = redis.Redis(connection_pool=self.pool)
+            await self.client.ping()
+            logger.info(f"✅ Redis async client connected successfully")
         return self.client
 
-    def health_check(self) -> bool:
+    async def health_check(self) -> bool:
         """
         Check Redis connection health.
 
@@ -56,10 +57,20 @@ class RedisConnection:
             True if connection is healthy, False otherwise
         """
         try:
-            return self.client.ping()
+            client = await self.get_client()
+            return await client.ping()
         except Exception as e:
             logger.error(f"Redis health check failed: {e}")
             return False
+
+    async def close(self):
+        """Close Redis connection and cleanup resources."""
+        if self.client:
+            await self.client.aclose()
+            self.client = None
+        if self.pool:
+            await self.pool.aclose()
+        logger.info("✅ Redis connection closed")
 
 
 redis_connection = RedisConnection()

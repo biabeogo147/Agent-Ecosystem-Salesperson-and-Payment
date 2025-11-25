@@ -6,9 +6,9 @@ from src.utils.logger import get_current_logger
 logger = get_current_logger()
 
 
-def get_cached_value(key: str) -> Any | None:
+async def get_cached_value(key: str) -> Any | None:
     """
-    Get value from Redis cache.
+    Get value from Redis cache (async).
 
     Args:
         key: Cache key
@@ -17,8 +17,8 @@ def get_cached_value(key: str) -> Any | None:
         Cached value or None if not found
     """
     try:
-        redis = redis_connection.get_client()
-        value = redis.get(key)
+        redis = await redis_connection.get_client()
+        value = await redis.get(key)
 
         if value is None:
             return None
@@ -34,9 +34,9 @@ def get_cached_value(key: str) -> Any | None:
         return None
 
 
-def set_cached_value(key: str, value: Any, ttl: int = None) -> bool:
+async def set_cached_value(key: str, value: Any, ttl: int = None) -> bool:
     """
-    Set value in Redis cache.
+    Set value in Redis cache (async).
 
     Args:
         key: Cache key
@@ -47,16 +47,16 @@ def set_cached_value(key: str, value: Any, ttl: int = None) -> bool:
         True if successful, False otherwise
     """
     try:
-        redis = redis_connection.get_client()
+        redis = await redis_connection.get_client()
 
         # Encode value as JSON if not string
         if not isinstance(value, str):
             value = json.dumps(value)
 
         if ttl:
-            redis.setex(key, ttl, value)
+            await redis.setex(key, ttl, value)
         else:
-            redis.set(key, value)
+            await redis.set(key, value)
 
         logger.debug(f"Cached value for key '{key}' (TTL: {ttl}s)")
         return True
@@ -66,9 +66,9 @@ def set_cached_value(key: str, value: Any, ttl: int = None) -> bool:
         return False
 
 
-def delete_cached_value(key: str) -> bool:
+async def delete_cached_value(key: str) -> bool:
     """
-    Delete value from Redis cache.
+    Delete value from Redis cache (async).
 
     Args:
         key: Cache key
@@ -77,8 +77,8 @@ def delete_cached_value(key: str) -> bool:
         True if deleted, False if not found or error
     """
     try:
-        redis = redis_connection.get_client()
-        result = redis.delete(key)
+        redis = await redis_connection.get_client()
+        result = await redis.delete(key)
         return result > 0
 
     except Exception as e:
@@ -86,9 +86,9 @@ def delete_cached_value(key: str) -> bool:
         return False
 
 
-def clear_pattern(pattern: str) -> int:
+async def clear_pattern(pattern: str) -> int:
     """
-    Delete all keys matching a pattern using SCAN (non-blocking).
+    Delete all keys matching a pattern using SCAN (async, non-blocking).
 
     Args:
         pattern: Redis key pattern (e.g., "user:*", "cache:product:*")
@@ -97,17 +97,17 @@ def clear_pattern(pattern: str) -> int:
         Number of keys deleted
     """
     try:
-        redis = redis_connection.get_client()
+        redis = await redis_connection.get_client()
         deleted = 0
         cursor = 0
 
         # Use SCAN instead of KEYS to avoid blocking Redis server
         # SCAN is cursor-based and works incrementally
         while True:
-            cursor, keys = redis.scan(cursor, match=pattern, count=100)
+            cursor, keys = await redis.scan(cursor, match=pattern, count=100)
 
             if keys:
-                deleted += redis.delete(*keys)
+                deleted += await redis.delete(*keys)
 
             if cursor == 0:
                 break

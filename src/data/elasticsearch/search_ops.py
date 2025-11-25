@@ -1,4 +1,4 @@
-"""Elasticsearch search operations for products."""
+"""Elasticsearch search operations for products (async)."""
 
 from src.config import ELASTIC_INDEX
 from src.data.elasticsearch.connection import es_connection
@@ -9,7 +9,7 @@ from src.utils.logger import get_current_logger
 logger = get_current_logger()
 
 
-def find_products_by_text(
+async def find_products_by_text(
     query_string: str,
     min_price: float = None,
     max_price: float = None,
@@ -17,7 +17,7 @@ def find_products_by_text(
     limit: int = 20
 ) -> list[dict]:
     """
-    Find products by fuzzy or full-text match using Elasticsearch.
+    Find products by fuzzy or full-text match using Elasticsearch (async).
 
     Args:
         query_string: Search query text
@@ -32,7 +32,7 @@ def find_products_by_text(
     cache_key = CacheKeys.search_products(query_string, min_price, max_price, merchant_id, limit)
 
     try:
-        cached = get_cached_value(cache_key)
+        cached = await get_cached_value(cache_key)
         if cached:
             logger.debug(f"Cache HIT: {cache_key}")
             return cached
@@ -60,7 +60,6 @@ def find_products_by_text(
         "size": limit
     }
 
-    # Add price range filter
     if min_price or max_price:
         price_range = {}
         if min_price:
@@ -69,13 +68,11 @@ def find_products_by_text(
             price_range["lte"] = max_price
         query["query"]["bool"]["filter"].append({"range": {"price": price_range}})
 
-    # Add merchant filter
     if merchant_id is not None:
         query["query"]["bool"]["filter"].append({"term": {"merchant_id": merchant_id}})
 
-    response = es.search(index=ELASTIC_INDEX, body=query)
+    response = await es.search(index=ELASTIC_INDEX, body=query)
 
-    # Safe parsing with KeyError protection
     results = []
     for hit in response.get("hits", {}).get("hits", []):
         source = hit.get("_source", {})
@@ -92,7 +89,7 @@ def find_products_by_text(
     logger.info(f"Elasticsearch search returned {len(results)} results for query: '{query_string}'")
 
     try:
-        set_cached_value(cache_key, results, ttl=TTL.SEARCH)
+        await set_cached_value(cache_key, results, ttl=TTL.SEARCH)
         logger.debug(f"Cached search results: {cache_key}")
     except Exception as e:
         logger.warning(f"Failed to cache search results: {e}")
@@ -100,9 +97,9 @@ def find_products_by_text(
     return results
 
 
-def get_product_by_sku(sku: str) -> dict | None:
+async def get_product_by_sku(sku: str) -> dict | None:
     """
-    Get a single product from Elasticsearch by SKU.
+    Get a single product from Elasticsearch by SKU (async).
 
     Args:
         sku: Product SKU
@@ -113,7 +110,7 @@ def get_product_by_sku(sku: str) -> dict | None:
     es = es_connection.get_client()
 
     try:
-        response = es.get(index=ELASTIC_INDEX, id=sku)
+        response = await es.get(index=ELASTIC_INDEX, id=sku)
         if response["found"]:
             return response["_source"]
     except Exception as e:

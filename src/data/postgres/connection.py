@@ -1,18 +1,20 @@
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 import src.config as config
+from src.utils.logger import get_current_logger
+
+logger = get_current_logger()
 
 
 class PostgresConnection:
     """
-    PostgreSQL connection manager using SQLAlchemy.
+    PostgreSQL async connection manager using SQLAlchemy.
 
-    Provides connection pooling and session management for database operations.
+    Provides async connection pooling and session management for database operations.
     """
 
     def __init__(self, database: str):
         """
-        Initialize PostgreSQL connection.
+        Initialize PostgreSQL async connection.
 
         Args:
             database: Database name to connect to
@@ -22,21 +24,33 @@ class PostgresConnection:
         host = config.POSTGRES_HOST
         port = config.POSTGRES_PORT
 
-        self.engine = create_engine(
-            f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{database}",
-            pool_size=20,
-            max_overflow=10
-        )
-        self.Session = sessionmaker(bind=self.engine)
 
-    def get_session(self):
+        self.engine = create_async_engine(
+            f"postgresql+asyncpg://{user}:{password}@{host}:{port}/{database}",
+            pool_size=20,
+            max_overflow=10,
+            echo=False,  # Set to True for SQL query logging
+        )
+        self.AsyncSessionLocal = async_sessionmaker(
+            self.engine,
+            class_=AsyncSession,
+            expire_on_commit=False
+        )
+        logger.info(f"✅ PostgreSQL async engine initialized: {host}:{port}/{database}")
+
+    def get_session(self) -> AsyncSession:
         """
-        Get a new database session.
+        Get a new async database session.
 
         Returns:
-            SQLAlchemy Session object
+            SQLAlchemy AsyncSession object
         """
-        return self.Session()
+        return self.AsyncSessionLocal()
+
+    async def close(self):
+        """Close database engine and cleanup resources."""
+        await self.engine.dispose()
+        logger.info("✅ PostgreSQL async engine disposed")
 
 
 db_connection = PostgresConnection(database=config.POSTGRES_DB)

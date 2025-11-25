@@ -1,4 +1,4 @@
-"""Redis-based sync state tracking for Elasticsearch sync optimization."""
+"""Redis-based sync state tracking for Elasticsearch sync optimization (async)."""
 
 from src.data.redis.connection import redis_connection
 from src.utils.logger import get_current_logger
@@ -9,9 +9,9 @@ logger = get_current_logger()
 SYNCED_SKUS_KEY = "elasticsearch:synced_skus"
 
 
-def mark_skus_as_synced(skus: list[str]) -> bool:
+async def mark_skus_as_synced(skus: list[str]) -> bool:
     """
-    Mark SKUs as synced to Elasticsearch by adding to Redis Set.
+    Mark SKUs as synced to Elasticsearch by adding to Redis Set (async).
 
     Args:
         skus: List of SKUs to mark as synced
@@ -23,9 +23,9 @@ def mark_skus_as_synced(skus: list[str]) -> bool:
         return True
 
     try:
-        redis = redis_connection.get_client()
+        redis = await redis_connection.get_client()
         # SADD is O(1) per element, very fast
-        redis.sadd(SYNCED_SKUS_KEY, *skus)
+        await redis.sadd(SYNCED_SKUS_KEY, *skus)
         logger.debug(f"Marked {len(skus)} SKUs as synced in Redis")
         return True
     except Exception as e:
@@ -33,9 +33,9 @@ def mark_skus_as_synced(skus: list[str]) -> bool:
         return False
 
 
-def is_sku_synced(sku: str) -> bool:
+async def is_sku_synced(sku: str) -> bool:
     """
-    Check if a SKU is already synced to Elasticsearch.
+    Check if a SKU is already synced to Elasticsearch (async).
 
     This is an O(1) operation in Redis Set.
 
@@ -46,23 +46,23 @@ def is_sku_synced(sku: str) -> bool:
         True if synced, False otherwise
     """
     try:
-        redis = redis_connection.get_client()
-        return redis.sismember(SYNCED_SKUS_KEY, sku)
+        redis = await redis_connection.get_client()
+        return await redis.sismember(SYNCED_SKUS_KEY, sku)
     except Exception as e:
         logger.error(f"Failed to check SKU sync status in Redis: {e}")
         return False
 
 
-def get_all_synced_skus() -> set[str]:
+async def get_all_synced_skus() -> set[str]:
     """
-    Get all synced SKUs from Redis.
+    Get all synced SKUs from Redis (async).
 
     Returns:
         Set of synced SKUs
     """
     try:
-        redis = redis_connection.get_client()
-        skus = redis.smembers(SYNCED_SKUS_KEY)
+        redis = await redis_connection.get_client()
+        skus = await redis.smembers(SYNCED_SKUS_KEY)
         logger.info(f"Retrieved {len(skus)} synced SKUs from Redis")
         return skus
     except Exception as e:
@@ -70,9 +70,9 @@ def get_all_synced_skus() -> set[str]:
         return set()
 
 
-def get_unsynced_skus(all_skus: list[str]) -> set[str]:
+async def get_unsynced_skus(all_skus: list[str]) -> set[str]:
     """
-    Get SKUs that are not yet synced from a list.
+    Get SKUs that are not yet synced from a list (async).
 
     This is much more efficient than checking Elasticsearch.
 
@@ -83,14 +83,14 @@ def get_unsynced_skus(all_skus: list[str]) -> set[str]:
         Set of SKUs that are not synced
     """
     try:
-        redis = redis_connection.get_client()
+        redis = await redis_connection.get_client()
 
         # Use pipeline for batch operations
         pipe = redis.pipeline()
         for sku in all_skus:
             pipe.sismember(SYNCED_SKUS_KEY, sku)
 
-        results = pipe.execute()
+        results = await pipe.execute()
 
         # Filter out SKUs that are already synced
         unsynced = [sku for sku, is_synced in zip(all_skus, results) if not is_synced]
@@ -104,9 +104,9 @@ def get_unsynced_skus(all_skus: list[str]) -> set[str]:
         return set(all_skus)
 
 
-def remove_synced_sku(sku: str) -> bool:
+async def remove_synced_sku(sku: str) -> bool:
     """
-    Remove a SKU from synced set (e.g., when product is deleted).
+    Remove a SKU from synced set (e.g., when product is deleted) (async).
 
     Args:
         sku: SKU to remove
@@ -115,8 +115,8 @@ def remove_synced_sku(sku: str) -> bool:
         True if successful, False otherwise
     """
     try:
-        redis = redis_connection.get_client()
-        redis.srem(SYNCED_SKUS_KEY, sku)
+        redis = await redis_connection.get_client()
+        await redis.srem(SYNCED_SKUS_KEY, sku)
         logger.debug(f"Removed SKU {sku} from synced set")
         return True
     except Exception as e:
@@ -124,9 +124,9 @@ def remove_synced_sku(sku: str) -> bool:
         return False
 
 
-def clear_sync_state() -> bool:
+async def clear_sync_state() -> bool:
     """
-    Clear all sync state from Redis.
+    Clear all sync state from Redis (async).
 
     Use this when forcing a full resync or resetting sync tracking.
 
@@ -134,8 +134,8 @@ def clear_sync_state() -> bool:
         True if successful, False otherwise
     """
     try:
-        redis = redis_connection.get_client()
-        redis.delete(SYNCED_SKUS_KEY)
+        redis = await redis_connection.get_client()
+        await redis.delete(SYNCED_SKUS_KEY)
         logger.info("Cleared all sync state from Redis")
         return True
     except Exception as e:
@@ -143,20 +143,20 @@ def clear_sync_state() -> bool:
         return False
 
 
-def get_sync_stats() -> dict:
+async def get_sync_stats() -> dict:
     """
-    Get statistics about sync state.
+    Get statistics about sync state (async).
 
     Returns:
         Dictionary with sync statistics
     """
     try:
-        redis = redis_connection.get_client()
-        synced_count = redis.scard(SYNCED_SKUS_KEY)
+        redis = await redis_connection.get_client()
+        synced_count = await redis.scard(SYNCED_SKUS_KEY)
 
         return {
             "total_synced": synced_count,
-            "redis_healthy": redis_connection.health_check()
+            "redis_healthy": await redis_connection.health_check()
         }
     except Exception as e:
         logger.error(f"Failed to get sync stats from Redis: {e}")

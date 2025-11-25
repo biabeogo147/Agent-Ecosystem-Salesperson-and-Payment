@@ -341,20 +341,19 @@ Gọi **Salesperson MCP Server** - Tool: `search_product_documents`
 ```mermaid
 flowchart LR
     SalesAgent["Salesperson Agent"]
-    MCP["Salesperson MCP Server - search_product_documents"]
-    Embed["Generate Query Embedding<br/>[0.123, -0.456, ...]"]
-    Milvus["Milvus Vector DB"]
+    MCP["Salesperson MCP Server"]
     Redis["Redis Cache<br/>(Check & Update)"]
     Result["Return to Agent"]
-
-    TopK["Top 5 Results<br/>by Similarity"]
-
+    
+    subgraph MilvusQuery["Milvus Query"]
+        direction TB
+        Embed["Generate Query Embedding<br/>[0.123, -0.456, ...]"]
+        TopK["Top 5 Results<br/>by Similarity"]
+        Embed --> |"- Collection: 'Document'<br/>- Filter: product_sku == 'IPHONE15PRO'"| TopK
+    end
+    
     SalesAgent -->|"MCP Protocol"| MCP
-    MCP --> Embed
-    Embed -->|"Vector Search"| Milvus
-
-    Milvus --> |"- Collection: 'Document'<br/>- Filter: product_sku == 'IPHONE15PRO'"| TopK
-
+    MCP --> |"search_product_documents"| MilvusQuery
     TopK -->|"Return Documents"| Redis
     Redis --> Result
 ```
@@ -430,15 +429,18 @@ Gọi **Salesperson MCP Server** - Tool: `reserve_stock`
 ```mermaid
 flowchart LR
     SA["Salesperson Agent"]
+    MCP["Salesperson MCP Server"]
+    Redis["Redis Cache<br/>(Check & Update)"]
+    Result["Return to Agent"]
+
     subgraph ReserveStock["Reserve Stock"]
         StockCheck["Check Current Stock"]
         StockUpdate["Update Stock"]
-        Cache["Invalidate Cache"]
     end
-    Result["Return Success"]
 
-    SA --> ReserveStock 
-    StockCheck --> StockUpdate --> Cache --> Result
+    SA --> |"MCP Tool"| MCP 
+    MCP --> |"reserve_stock"| ReserveStock
+    StockCheck --> StockUpdate --> Redis --> Result
 ```
 
 **Tool Response:**

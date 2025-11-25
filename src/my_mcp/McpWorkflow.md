@@ -352,54 +352,38 @@ Searches product documentation in vector database (Milvus).
 
 ## Workflow
 
-# TODO: Xem lại phần diagram này
 ```mermaid
 sequenceDiagram
-    participant Agent
+    participant Salesperson Agent
     participant Salesperson MCP
-    participant Payment MCP
+    participant Payment Agent
     participant Database
-    participant Payment Gateway
 
-    Agent->>Salesperson MCP: find_product("laptop")
+    Salesperson Agent->>Salesperson MCP: find_product("laptop")
     Salesperson MCP->>Database: Search products
     Database-->>Salesperson MCP: Product list
-    Salesperson MCP-->>Agent: Product details
+    Salesperson MCP-->>Salesperson Agent: Product details
 
-    Agent->>Salesperson MCP: calc_shipping(2.5kg, 100km)
-    Salesperson MCP-->>Agent: Shipping cost
+    Salesperson Agent->>Salesperson MCP: calc_shipping(2.5kg, 100km)
+    Salesperson MCP-->>Salesperson Agent: Shipping cost
 
-    Agent->>Salesperson MCP: reserve_stock("SKU001", 1)
+    Salesperson Agent->>Salesperson MCP: reserve_stock("SKU001", 1)
     Salesperson MCP->>Database: Update stock
     Database-->>Salesperson MCP: Success
-    Salesperson MCP-->>Agent: Reserved
+    Salesperson MCP-->>Salesperson Agent: Reserved
 
-    Agent->>Salesperson MCP: generate_context_id("order")
-    Salesperson MCP-->>Agent: context_id
+    Salesperson Agent->>Salesperson MCP: generate_context_id("order")
+    Salesperson MCP-->>Salesperson Agent: context_id
 
-    Agent->>Salesperson MCP: generate_return_url(context_id)
-    Salesperson MCP-->>Agent: return_url
+    Salesperson Agent->>Salesperson MCP: generate_return_url(context_id)
+    Salesperson MCP-->>Salesperson Agent: return_url
 
-    Agent->>Salesperson MCP: generate_cancel_url(context_id)
-    Salesperson MCP-->>Agent: cancel_url
+    Salesperson Agent->>Salesperson MCP: generate_cancel_url(context_id)
+    Salesperson MCP-->>Salesperson Agent: cancel_url
 
-    Agent->>Payment MCP: create_order(product, quantity, method)
-    Payment MCP->>Database: Create order
-    Payment MCP->>Payment Gateway: Create payment
-    Payment Gateway-->>Payment MCP: Payment URL/QR
-    Payment MCP-->>Agent: PaymentResponse with next_action
-
-    Agent->>Payment MCP: query_order_status(order_id)
-    Payment MCP->>Database: Get order
-    Database-->>Payment MCP: Order details
-    Payment MCP-->>Agent: Order status
-
-    Note over Payment Gateway,Database: User completes payment
-
-    Payment Gateway->>Payment MCP: Webhook: update_order_status
-    Payment MCP->>Database: Update status to "paid"
-    Payment MCP-->>Payment Gateway: Acknowledged
-
-    Agent->>Payment MCP: query_order_status(order_id)
-    Payment MCP-->>Agent: Status: SUCCESS
+    rect rgb(230, 255, 230)
+        Note over Salesperson Agent,Payment Agent: A2A Workflow
+        Salesperson Agent->>Payment Agent: create_order(product, quantity, method)
+        Salesperson Agent->>Payment Agent: query_order_status(order_id)
+    end
 ```

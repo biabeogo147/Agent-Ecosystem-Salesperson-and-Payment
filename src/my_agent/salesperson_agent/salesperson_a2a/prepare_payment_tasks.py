@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Tuple, List
+from typing import Any, Dict, Optional, List
 from uuid import uuid4
 
 from a2a.types import Task, TaskStatus, TaskState, Message, Role, Part, TextPart, DataPart, Artifact
@@ -15,21 +15,6 @@ from src.my_agent.salesperson_agent.salesperson_mcp_client import (
     SalespersonMcpClient,
     get_salesperson_mcp_client
 )
-
-
-async def _default_context_id_factory(prefix: str, *, client: SalespersonMcpClient | None = None) -> str:
-    """Fetch a correlation ID by delegating to the MCP server."""
-    client = client or get_salesperson_mcp_client()
-    return await client.generate_context_id(prefix=prefix)
-
-
-async def _default_url_factory(context_id: str, *, client: SalespersonMcpClient | None = None) -> Tuple[str, str]:
-    """Return the pair of return/cancel URLs used by the payment gateway."""
-    client = client or get_salesperson_mcp_client()
-    return (
-        await client.generate_return_url(context_id),
-        await client.generate_cancel_url(context_id),
-    )
 
 
 def _ensure_customer(customer: Any) -> CustomerInfo:
@@ -110,20 +95,13 @@ async def prepare_create_order_payload(
     client = get_salesperson_mcp_client()
     resolved_items = await _resolve_items_via_product_tool(items, client=client)
 
-    context_id = await _default_context_id_factory("payment", client=client)
-    return_url, cancel_url = await _default_url_factory(context_id, client=client)
-
-    method = PaymentMethod(
-        channel=channel,
-        return_url=return_url,
-        cancel_url=cancel_url,
-    )
+    context_id = await client.generate_context_id(prefix="payment")
 
     payment_request = PaymentRequest(
         context_id=context_id,
         items=resolved_items,
         customer=_ensure_customer(customer),
-        method=method,
+        channel=channel,
         note=note,
         metadata=metadata,
     )
@@ -133,7 +111,7 @@ async def prepare_create_order_payload(
     message = Message(
         message_id=str(uuid4()),
         role=Role.user,
-        context_id=payment_request.context_id,
+        context_id=context_id,
         parts=[
             Part(
                 root=TextPart(

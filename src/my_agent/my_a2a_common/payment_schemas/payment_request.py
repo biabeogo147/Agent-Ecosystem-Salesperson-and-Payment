@@ -5,7 +5,6 @@ from pydantic import BaseModel, Field, model_validator
 from src.my_agent.my_a2a_common.payment_schemas.payment_enums import *
 from src.my_agent.my_a2a_common.payment_schemas.payment_item import PaymentItem
 from src.my_agent.my_a2a_common.payment_schemas.customer_info import CustomerInfo
-from src.my_agent.my_a2a_common.payment_schemas.payment_method import PaymentMethod
 
 class PaymentRequest(BaseModel):
     protocol: ProtocolVersion = Field(default=ProtocolVersion.A2A_V1)
@@ -16,7 +15,7 @@ class PaymentRequest(BaseModel):
 
     items: List[PaymentItem]
     customer: CustomerInfo
-    method: PaymentMethod
+    channel: PaymentChannel
 
     note: Optional[str] = Field(default=None)
     metadata: Optional[Dict[str, str]] = Field(default=None)

@@ -108,6 +108,7 @@ class AppLogger(Enum):
     SALESPERSON_AGENT = "salesperson_agent"
     SALESPERSON_MCP = "salesperson_mcp"
     WEBHOOK = "webhook"
+    PAYMENT_CALLBACK = "payment_callback"
     DEFAULT = "app_logger"
 
 
@@ -147,6 +148,10 @@ def get_current_logger() -> logging.Logger:
     elif app_logger_type == AppLogger.WEBHOOK:
         from src.web_hook import webhook_logger
         return webhook_logger
+
+    elif app_logger_type == AppLogger.PAYMENT_CALLBACK:
+        from src.payment_callback import callback_logger
+        return callback_logger
 
     else:
         # Fallback to default logger defined above

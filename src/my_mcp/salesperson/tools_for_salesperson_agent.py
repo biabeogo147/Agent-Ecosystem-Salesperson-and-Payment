@@ -8,7 +8,7 @@ from google.adk.tools import FunctionTool
 
 from . import salesperson_mcp_logger
 
-from src.config import RETURN_URL, CANCEL_URL, EMBED_VECTOR_DIM
+from src.config import EMBED_VECTOR_DIM
 from src.utils.response_format import ResponseFormat
 from src.utils.status import Status
 from src.utils.app_string import *
@@ -71,18 +71,6 @@ async def generate_context_id(prefix: str) -> str:
     """Create a unique correlation identifier used to track payment requests."""
     context_id = f"{prefix}-{uuid.uuid4()}"
     return ResponseFormat(data=context_id).to_json()
-
-
-async def generate_return_url(context_id: str) -> str:
-    """Build the return URL that the payment gateway should redirect to."""
-    return_url = f"{RETURN_URL}?cid={context_id}"
-    return ResponseFormat(data=return_url).to_json()
-
-
-async def generate_cancel_url(context_id: str) -> str:
-    """Build the cancel URL that the payment gateway should redirect to."""
-    cancel_url = f"{CANCEL_URL}?cid={context_id}"
-    return ResponseFormat(data=cancel_url).to_json()
 
 
 async def search_product_documents(query: str, product_sku: str | None = None, limit: int = 5) -> str:
@@ -150,8 +138,6 @@ find_product_tool = FunctionTool(find_product)
 calc_shipping_tool = FunctionTool(calc_shipping)
 reserve_stock_tool = FunctionTool(reserve_stock)
 generate_context_id_tool = FunctionTool(generate_context_id)
-generate_return_url_tool = FunctionTool(generate_return_url)
-generate_cancel_url_tool = FunctionTool(generate_cancel_url)
 search_product_documents_tool = FunctionTool(search_product_documents)
 
 ADK_TOOLS_FOR_SALESPERSON = {
@@ -159,8 +145,6 @@ ADK_TOOLS_FOR_SALESPERSON = {
     calc_shipping_tool.name: calc_shipping_tool,
     reserve_stock_tool.name: reserve_stock_tool,
     generate_context_id_tool.name: generate_context_id_tool,
-    generate_return_url_tool.name: generate_return_url_tool,
-    generate_cancel_url_tool.name: generate_cancel_url_tool,
     search_product_documents_tool.name: search_product_documents_tool,
 }
 

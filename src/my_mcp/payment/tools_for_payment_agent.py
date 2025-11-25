@@ -32,15 +32,39 @@ def _map_order_status_to_payment_status(order_status: OrderStatus) -> PaymentSta
 
 async def _stub_paygate_create(
         channel: PaymentChannel, oid: int, total: float,
-        return_url: Optional[str], cancel_url: Optional[str]
+        return_url: Optional[str], cancel_url: Optional[str], notify_url: Optional[str] = None
 ) -> dict[str, Any]:
     exp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() + 15*60))
     if channel == PaymentChannel.REDIRECT.value:
-        return {"order_id": oid, "pay_url": f"{CHECKOUT_URL}/{oid}", "expires_at": exp}
-    return {"order_id": oid, "qr_code_url": f"{QR_URL}/{oid}.png", "expires_at": exp}
+        return {
+            "order_id": oid,
+            "pay_url": f"{CHECKOUT_URL}/{oid}",
+            "expires_at": exp,
+            "notify_url": notify_url
+        }
+    return {
+        "order_id": oid,
+        "qr_code_url": f"{QR_URL}/{oid}.png",
+        "expires_at": exp,
+        "notify_url": notify_url
+    }
 
 
-# TODO: Xem lại payload
+async def _stub_paygate_query(order_id: int) -> dict[str, Any]:
+    """
+    Stub query payment gateway for order status.
+    In production, this would call real VNPay query API.
+    """
+    # Stub: always return paid for demo
+    return {
+        "order_id": order_id,
+        "status": "paid",
+        "transaction_id": f"VNP{order_id}_{int(time.time())}",
+        "paid_amount": None,  # Would come from gateway
+        "gateway_response_code": "00"
+    }
+
+
 async def create_order(payload: dict[str, Any]) -> str:
     """
     Create a payment order and save to database.
@@ -49,12 +73,23 @@ async def create_order(payload: dict[str, Any]) -> str:
         "context_id": "ctx_123",
         "product_sku": "SKU001",
         "quantity": 1,
-        "method": {"channel": "redirect|qr", "return_url", "cancel_url"}
+        "method": {
+            "channel": "redirect|qr"
+        }
       }
-    Returns: PaymentResponse with order_id and next_action
+    Returns: PaymentResponse with order_id, context_id, and next_action
+
+    Note: context_id, return_url, cancel_url, and notify_url are auto-generated
+    by Payment Agent. Salesperson uses returned context_id for later queries.
     """
     session = db_connection.get_session()
     try:
+        context_id = payload.get("context_id")
+
+        if not context_id:
+            # Return ResponseFormat(status=Status.CTX_ID_NOT_FOUND).to_json()
+            pass
+
         # Get product info
         from src.data.models.db_entity.product import Product
         product = session.query(Product).filter(Product.sku == payload["product_sku"]).first()
@@ -77,12 +112,17 @@ async def create_order(payload: dict[str, Any]) -> str:
         session.commit()
         session.refresh(order)
 
-        # Call payment gateway
         method = payload.get("method", {})
         channel = method.get("channel", PaymentChannel.REDIRECT)
+
+        order_id = str(order.id)
+        return_url = f"{CALLBACK_SERVICE_URL}/return/vnpay?order_id={order_id}"
+        cancel_url = f"{CALLBACK_SERVICE_URL}/cancel/vnpay?order_id={order_id}"
+        notify_url = f"{CALLBACK_SERVICE_URL}/callback/vnpay?order_id={order_id}"
+
         paygate_response = await _stub_paygate_create(
             channel, order.id, total_amount,
-            method.get("return_url"), method.get("cancel_url")
+            return_url, cancel_url, notify_url
         )
 
         # Build next_action
@@ -100,10 +140,10 @@ async def create_order(payload: dict[str, Any]) -> str:
             )
 
         res = PaymentResponse(
-            context_id=str(order.id),
+            context_id=context_id,
             status=PaymentStatus.PENDING,
             provider_name=PAYGATE_PROVIDER,
-            order_id=str(order.id),
+            order_id=order_id,
             pay_url=paygate_response.get("pay_url"),
             qr_code_url=paygate_response.get("qr_code_url"),
             expires_at=paygate_response["expires_at"],
@@ -153,17 +193,22 @@ async def query_order_status(payload: dict[str, Any]) -> str:
         session.close()
 
 
-async def update_order_status(payload: dict[str, Any]) -> str:
+async def query_gateway_status(payload: dict[str, Any]) -> str:
     """
-    Update order status (called by payment webhook or manual update).
+    Query payment gateway for actual order status and update order in database.
+    This is called by Payment Agent after receiving callback notification from Redis.
+
+    Flow:
+    1. Query payment gateway for actual status
+    2. Update order status in database based on gateway response
+
     Args:
-      payload: {"order_id": "123", "status": "paid|failed|cancelled"}
-    Returns: Updated order
+      payload: {"order_id": "123"}
+    Returns: Gateway response with actual payment status and updated order
     """
     session = db_connection.get_session()
     try:
         order_id = payload.get("order_id")
-        new_status = payload.get("status")
 
         try:
             order_id_int = int(order_id)
@@ -173,23 +218,32 @@ async def update_order_status(payload: dict[str, Any]) -> str:
                 message=f"Invalid order_id format: {order_id}. Must be an integer."
             ).to_json()
 
+        # Step 1: Query payment gateway (stub)
+        gateway_response = await _stub_paygate_query(order_id_int)
+        actual_status = gateway_response.get("status", "failed")
+
+        # Step 2: Update order status in database
         order = session.query(Order).filter(Order.id == order_id_int).first()
         if not order:
             return ResponseFormat(status=Status.ORDER_NOT_FOUND, message="Order not found").to_json()
 
         try:
-            order.status = OrderStatus(new_status)
+            order.status = OrderStatus(actual_status)
         except ValueError:
             valid_statuses = [s.value for s in OrderStatus]
             return ResponseFormat(
                 status=Status.INVALID_PARAMS,
-                message=f"Invalid status: {new_status}. Must be one of: {', '.join(valid_statuses)}"
+                message=f"Invalid status from gateway: {actual_status}. Must be one of: {', '.join(valid_statuses)}"
             ).to_json()
 
         session.commit()
         session.refresh(order)
 
-        return ResponseFormat(data=order.to_dict()).to_json()
+        # Return combined response
+        return ResponseFormat(data={
+            "gateway_response": gateway_response,
+            "order": order.to_dict()
+        }).to_json()
     except Exception as e:
         session.rollback()
         return ResponseFormat(status=Status.UNKNOWN_ERROR, message=str(e)).to_json()
@@ -200,12 +254,12 @@ async def update_order_status(payload: dict[str, Any]) -> str:
 payment_mcp_logger.info("Initializing ADK tool for payment...")
 create_order_tool = FunctionTool(create_order)
 query_order_status_tool = FunctionTool(query_order_status)
-update_order_status_tool = FunctionTool(update_order_status)
+query_gateway_status_tool = FunctionTool(query_gateway_status)
 
 ADK_TOOLS_FOR_PAYMENT = {
     create_order_tool.name: create_order_tool,
     query_order_status_tool.name: query_order_status_tool,
-    update_order_status_tool.name: update_order_status_tool,
+    query_gateway_status_tool.name: query_gateway_status_tool,
 }
 
 for adk_tool in ADK_TOOLS_FOR_PAYMENT.values():

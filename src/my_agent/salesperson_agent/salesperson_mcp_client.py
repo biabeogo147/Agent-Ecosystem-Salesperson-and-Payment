@@ -34,22 +34,6 @@ class SalespersonMcpClient(BaseMcpClient):
             raise RuntimeError("MCP tool 'generate_context_id' returned non-string data")
         return data
 
-    async def generate_return_url(self, context_id: str) -> str:
-        """Request the return URL bound to ``context_id`` from MCP."""
-        payload = await self._call_tool_json("generate_return_url", {"context_id": context_id})
-        data = self._extract_success_data(payload, tool="generate_return_url")
-        if not isinstance(data, str):
-            raise RuntimeError("MCP tool 'generate_return_url' returned non-string data")
-        return data
-
-    async def generate_cancel_url(self, context_id: str) -> str:
-        """Request the cancel URL bound to ``context_id`` from MCP."""
-        payload = await self._call_tool_json("generate_cancel_url", {"context_id": context_id})
-        data = self._extract_success_data(payload, tool="generate_cancel_url")
-        if not isinstance(data, str):
-            raise RuntimeError("MCP tool 'generate_cancel_url' returned non-string data")
-        return data
-
     async def find_product(self, *, query: str) -> dict[str, Any]:
         """Look up products via the MCP ``find_product`` tool."""
         payload = await self._call_tool_json("find_product", {"query": query})

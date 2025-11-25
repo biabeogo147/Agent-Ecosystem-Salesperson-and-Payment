@@ -48,12 +48,26 @@ class PaymentMcpClient(BaseMcpClient):
             payload = json.loads(payload)
 
         if not isinstance(payload, dict):
-            raise TypeError("create_order(payload=...) expects a dict or JSON string")
+            raise TypeError("query_order_status(payload=...) expects a dict or JSON string")
 
         response = await self._call_tool_json("query_order_status", {"payload": payload})
         data = self._extract_success_data(response, tool="query_order_status")
         if not isinstance(data, dict):
             raise RuntimeError("MCP tool 'query_order_status' returned non-dict data payload")
+        return data
+
+    async def update_order_status(self, *, payload: dict[str, Any] | str) -> dict[str, Any]:
+        """Update order status using the shared MCP payment tool."""
+        if isinstance(payload, str):
+            payload = json.loads(payload)
+
+        if not isinstance(payload, dict):
+            raise TypeError("update_order_status(payload=...) expects a dict or JSON string")
+
+        response = await self._call_tool_json("update_order_status", {"payload": payload})
+        data = self._extract_success_data(response, tool="update_order_status")
+        if not isinstance(data, dict):
+            raise RuntimeError("MCP tool 'update_order_status' returned non-dict data payload")
         return data
 
 
@@ -80,5 +94,12 @@ async def query_order_status(payload: dict[str, Any]) -> dict[str, Any]:
     return await client.query_order_status(payload=payload)
 
 
+async def update_order_status(payload: dict[str, Any]) -> dict[str, Any]:
+    """Update order status using the shared MCP payment tool."""
+    client = get_payment_mcp_client()
+    return await client.update_order_status(payload=payload)
+
+
 create_order_tool = FunctionTool(create_order)
 query_order_status_tool = FunctionTool(query_order_status)
+update_order_status_tool = FunctionTool(update_order_status)

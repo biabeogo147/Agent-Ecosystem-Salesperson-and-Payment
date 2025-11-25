@@ -1,4 +1,4 @@
-"""Elasticsearch search operations for products (async)."""
+import asyncio
 
 from src.config import ELASTIC_INDEX
 from src.data.elasticsearch.connection import es_connection
@@ -7,6 +7,15 @@ from src.data.redis.cache_keys import CacheKeys, TTL
 from src.utils.logger import get_current_logger
 
 logger = get_current_logger()
+
+
+async def _cache_search_results(cache_key: str, results: list):
+    """Background task to cache search results."""
+    try:
+        await set_cached_value(cache_key, results, ttl=TTL.SEARCH)
+        logger.debug(f"Cached search results: {cache_key}")
+    except Exception as e:
+        logger.warning(f"Failed to cache search results: {e}")
 
 
 async def find_products_by_text(
@@ -88,11 +97,7 @@ async def find_products_by_text(
 
     logger.info(f"Elasticsearch search returned {len(results)} results for query: '{query_string}'")
 
-    try:
-        await set_cached_value(cache_key, results, ttl=TTL.SEARCH)
-        logger.debug(f"Cached search results: {cache_key}")
-    except Exception as e:
-        logger.warning(f"Failed to cache search results: {e}")
+    asyncio.create_task(_cache_search_results(cache_key, results))
 
     return results
 

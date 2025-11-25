@@ -44,6 +44,12 @@ class CacheKeys:
         """Cache key for vector search results."""
         return f"vector:search:{query}:{product_sku}:{limit}"
 
+    # Sync tracking keys
+    @staticmethod
+    def elasticsearch_synced_skus() -> str:
+        """Redis Set key for tracking SKUs synced to Elasticsearch."""
+        return "elasticsearch:synced_skus"
+
 
 class CachePatterns:
     """Cache key patterns for bulk operations (invalidation, clearing)."""

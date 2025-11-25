@@ -122,9 +122,3 @@ async def sync_products_to_elastic():
     except Exception as e:
         logger.error(f"❌ Failed to sync products to Elasticsearch: {str(e)}")
         raise
-
-
-# For backward compatibility with scripts that might call this non-async
-def sync_products_to_elastic_sync():
-    """Synchronous wrapper for async sync function."""
-    asyncio.run(sync_products_to_elastic())

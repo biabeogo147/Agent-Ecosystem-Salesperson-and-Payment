@@ -19,6 +19,15 @@ from src.data.postgres.product_ops import find_product_by_sku, update_product_st
 from src.data.milvus.connection import get_client_instance
 
 
+async def _cache_documents(cache_key: str, documents: list):
+    """Background task to cache vector search results."""
+    try:
+        await set_cached_value(cache_key, documents, ttl=TTL.VECTOR_SEARCH)
+        salesperson_mcp_logger.debug(f"Cached vector search results: {cache_key}")
+    except Exception as e:
+        salesperson_mcp_logger.warning(f"Failed to cache vector search results: {e}")
+
+
 async def find_product(query: str) -> str:
     """
     Find product by SKU or substring of name.
@@ -100,7 +109,7 @@ async def search_product_documents(query: str, product_sku: str | None = None, l
     try:
         client = await asyncio.to_thread(get_client_instance)
 
-        # Generate mock embedding for query (replace with real embedding in production)
+        # TODO: Replace with actual query embedding
         random.seed(hash(query) % (2**32))
         query_embedding = [random.uniform(-1, 1) for _ in range(EMBED_VECTOR_DIM)]
 
@@ -129,11 +138,7 @@ async def search_product_documents(query: str, product_sku: str | None = None, l
                     "score": hit.get("distance", 0),
                 })
 
-        try:
-            await set_cached_value(cache_key, documents, ttl=TTL.VECTOR_SEARCH)
-            salesperson_mcp_logger.debug(f"Cached vector search results: {cache_key}")
-        except Exception as e:
-            salesperson_mcp_logger.warning(f"Failed to cache vector search results: {e}")
+        asyncio.create_task(_cache_documents(cache_key, documents))
 
         return ResponseFormat(data=documents).to_json()
     except Exception as e:

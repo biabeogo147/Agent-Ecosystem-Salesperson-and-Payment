@@ -1,4 +1,6 @@
 from datetime import datetime
+import asyncio
+
 from sqlalchemy import select
 from src.data.postgres.connection import db_connection
 from src.data.models.db_entity.product import Product
@@ -7,6 +9,15 @@ from src.data.redis.cache_keys import CacheKeys, TTL
 from src.utils.logger import get_current_logger
 
 logger = get_current_logger()
+
+
+async def _set_product_cache(cache_key: str, product_dict: dict):
+    """Background task to cache product."""
+    try:
+        await set_cached_value(cache_key, product_dict, ttl=TTL.PRODUCT)
+        logger.debug(f"Cached product: {cache_key}")
+    except Exception as e:
+        logger.warning(f"Failed to cache product: {e}")
 
 
 async def find_product_by_sku(sku: str, use_cache: bool = True) -> Product | None:
@@ -41,11 +52,7 @@ async def find_product_by_sku(sku: str, use_cache: bool = True) -> Product | Non
             product = result.scalar_one_or_none()
 
             if product and use_cache:
-                try:
-                    await set_cached_value(cache_key, product.to_dict(), ttl=TTL.PRODUCT)
-                    logger.debug(f"Cached product: {cache_key}")
-                except Exception as e:
-                    logger.warning(f"Failed to cache product {sku}: {e}")
+                asyncio.create_task(_set_product_cache(cache_key, product.to_dict()))
 
             return product
     except Exception as e:
@@ -81,6 +88,8 @@ async def update_product_stock(sku: str, new_stock: int) -> bool:
             await session.commit()
             logger.info(f"Updated stock for {sku}: {new_stock}")
 
+            # IMPORTANT: KEEP await here - stock updates need immediate cache invalidation
+            # to prevent stale data and overselling
             try:
                 cache_key = CacheKeys.product_by_sku(sku)
                 await delete_cached_value(cache_key)

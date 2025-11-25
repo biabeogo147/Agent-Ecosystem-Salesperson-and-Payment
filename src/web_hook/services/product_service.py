@@ -1,4 +1,5 @@
 from typing import Optional, List
+import asyncio
 
 from sqlalchemy import select
 from src.data.postgres.connection import db_connection
@@ -7,6 +8,67 @@ from src.data.redis.cache_ops import get_cached_value, set_cached_value, delete_
 from src.data.redis.cache_keys import CacheKeys, CachePatterns, TTL
 from src.web_hook.schemas.product_schemas import ProductCreate, ProductUpdate
 from src.web_hook import webhook_logger as logger
+
+
+async def _invalidate_create_cache(merchant_id: int, sku: str):
+    """Background task to invalidate cache after product creation."""
+    try:
+        await asyncio.gather(
+            clear_pattern(CachePatterns.products_by_merchant_pattern(merchant_id)),
+            clear_pattern(CachePatterns.all_products_pattern()),
+            return_exceptions=True
+        )
+        logger.debug(f"Invalidated cache for new product: {sku}")
+    except Exception as e:
+        logger.warning(f"Failed to invalidate cache for new product {sku}: {e}")
+
+
+async def _invalidate_update_cache(sku: str, merchant_id: int):
+    """Background task to invalidate cache after product update."""
+    try:
+        await asyncio.gather(
+            delete_cached_value(CacheKeys.product_by_sku(sku)),
+            delete_cached_value(CacheKeys.product_by_merchant_and_sku(merchant_id, sku)),
+            clear_pattern(CachePatterns.products_by_merchant_pattern(merchant_id)),
+            clear_pattern(CachePatterns.search_products_pattern()),
+            return_exceptions=True
+        )
+        logger.debug(f"Invalidated cache for updated product: {sku}")
+    except Exception as e:
+        logger.warning(f"Failed to invalidate cache for updated product {sku}: {e}")
+
+
+async def _invalidate_delete_cache(sku: str, merchant_id: int):
+    """Background task to invalidate cache after product deletion."""
+    try:
+        await asyncio.gather(
+            delete_cached_value(CacheKeys.product_by_sku(sku)),
+            delete_cached_value(CacheKeys.product_by_merchant_and_sku(merchant_id, sku)),
+            clear_pattern(CachePatterns.products_by_merchant_pattern(merchant_id)),
+            clear_pattern(CachePatterns.all_products_pattern()),
+            return_exceptions=True
+        )
+        logger.debug(f"Invalidated cache for deleted product: {sku}")
+    except Exception as e:
+        logger.warning(f"Failed to invalidate cache for deleted product {sku}: {e}")
+
+
+async def _set_product_cache_bg(cache_key: str, product_dict: dict):
+    """Background task to cache product."""
+    try:
+        await set_cached_value(cache_key, product_dict, ttl=TTL.PRODUCT)
+        logger.debug(f"Cached product: {cache_key}")
+    except Exception as e:
+        logger.warning(f"Failed to cache product: {e}")
+
+
+async def _set_products_cache_bg(cache_key: str, products_dict: list):
+    """Background task to cache product list."""
+    try:
+        await set_cached_value(cache_key, products_dict, ttl=TTL.PRODUCT_LIST)
+        logger.debug(f"Cached products: {cache_key}")
+    except Exception as e:
+        logger.warning(f"Failed to cache products: {e}")
 
 
 async def create_product(data: ProductCreate) -> Product:
@@ -33,12 +95,7 @@ async def create_product(data: ProductCreate) -> Product:
             await session.commit()
             await session.refresh(product)
 
-            try:
-                await clear_pattern(CachePatterns.products_by_merchant_pattern(data.merchant_id))
-                await clear_pattern(CachePatterns.all_products_pattern())
-                logger.debug(f"Invalidated cache for new product: {data.sku}")
-            except Exception as e:
-                logger.warning(f"Failed to invalidate cache for new product {data.sku}: {e}")
+            asyncio.create_task(_invalidate_create_cache(data.merchant_id, data.sku))
 
             return product
     except Exception as e:
@@ -73,14 +130,7 @@ async def update_product(sku: str, data: ProductUpdate) -> Product:
             await session.commit()
             await session.refresh(product)
 
-            try:
-                await delete_cached_value(CacheKeys.product_by_sku(sku))
-                await delete_cached_value(CacheKeys.product_by_merchant_and_sku(product.merchant_id, sku))
-                await clear_pattern(CachePatterns.products_by_merchant_pattern(product.merchant_id))
-                await clear_pattern(CachePatterns.search_products_pattern())
-                logger.debug(f"Invalidated cache for updated product: {sku}")
-            except Exception as e:
-                logger.warning(f"Failed to invalidate cache for updated product {sku}: {e}")
+            asyncio.create_task(_invalidate_update_cache(sku, product.merchant_id))
 
             return product
     except Exception as e:
@@ -112,11 +162,7 @@ async def get_product(sku: str, merchant_id: int) -> Optional[Product]:
             product = result.scalar_one_or_none()
 
             if product:
-                try:
-                    await set_cached_value(cache_key, product.to_dict(), ttl=TTL.PRODUCT)
-                    logger.debug(f"Cached product: {cache_key}")
-                except Exception as e:
-                    logger.warning(f"Failed to cache product {sku}: {e}")
+                asyncio.create_task(_set_product_cache_bg(cache_key, product.to_dict()))
 
             return product
     except Exception as e:
@@ -148,12 +194,8 @@ async def get_all_products(merchant_id: int) -> List[Product]:
             result = await session.execute(query)
             products = result.scalars().all()
 
-            try:
-                products_dict = [p.to_dict() for p in products]
-                await set_cached_value(cache_key, products_dict, ttl=TTL.PRODUCT_LIST)
-                logger.debug(f"Cached products: {cache_key}")
-            except Exception as e:
-                logger.warning(f"Failed to cache products: {e}")
+            products_dict = [p.to_dict() for p in products]
+            asyncio.create_task(_set_products_cache_bg(cache_key, products_dict))
 
             return list(products)
     except Exception as e:
@@ -179,14 +221,7 @@ async def delete_product(sku: str, merchant_id: int) -> bool:
             await session.delete(product)
             await session.commit()
 
-            try:
-                await delete_cached_value(CacheKeys.product_by_sku(sku))
-                await delete_cached_value(CacheKeys.product_by_merchant_and_sku(merchant_id, sku))
-                await clear_pattern(CachePatterns.products_by_merchant_pattern(merchant_id))
-                await clear_pattern(CachePatterns.all_products_pattern())
-                logger.debug(f"Invalidated cache for deleted product: {sku}")
-            except Exception as e:
-                logger.warning(f"Failed to invalidate cache for deleted product {sku}: {e}")
+            asyncio.create_task(_invalidate_delete_cache(sku, merchant_id))
 
             return True
     except Exception as e:

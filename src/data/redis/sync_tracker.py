@@ -1,12 +1,10 @@
 """Redis-based sync state tracking for Elasticsearch sync optimization (async)."""
 
 from src.data.redis.connection import redis_connection
+from src.data.redis.cache_keys import CacheKeys
 from src.utils.logger import get_current_logger
 
 logger = get_current_logger()
-
-
-SYNCED_SKUS_KEY = "elasticsearch:synced_skus"
 
 
 async def mark_skus_as_synced(skus: list[str]) -> bool:
@@ -24,8 +22,8 @@ async def mark_skus_as_synced(skus: list[str]) -> bool:
 
     try:
         redis = await redis_connection.get_client()
-        # SADD is O(1) per element, very fast
-        await redis.sadd(SYNCED_SKUS_KEY, *skus)
+        synced_key = CacheKeys.elasticsearch_synced_skus()
+        await redis.sadd(synced_key, *skus)
         logger.debug(f"Marked {len(skus)} SKUs as synced in Redis")
         return True
     except Exception as e:
@@ -47,7 +45,8 @@ async def is_sku_synced(sku: str) -> bool:
     """
     try:
         redis = await redis_connection.get_client()
-        return await redis.sismember(SYNCED_SKUS_KEY, sku)
+        synced_key = CacheKeys.elasticsearch_synced_skus()
+        return await redis.sismember(synced_key, sku)
     except Exception as e:
         logger.error(f"Failed to check SKU sync status in Redis: {e}")
         return False
@@ -62,7 +61,8 @@ async def get_all_synced_skus() -> set[str]:
     """
     try:
         redis = await redis_connection.get_client()
-        skus = await redis.smembers(SYNCED_SKUS_KEY)
+        synced_key = CacheKeys.elasticsearch_synced_skus()
+        skus = await redis.smembers(synced_key)
         logger.info(f"Retrieved {len(skus)} synced SKUs from Redis")
         return skus
     except Exception as e:
@@ -84,15 +84,14 @@ async def get_unsynced_skus(all_skus: list[str]) -> set[str]:
     """
     try:
         redis = await redis_connection.get_client()
+        synced_key = CacheKeys.elasticsearch_synced_skus()
 
-        # Use pipeline for batch operations
         pipe = redis.pipeline()
         for sku in all_skus:
-            pipe.sismember(SYNCED_SKUS_KEY, sku)
+            pipe.sismember(synced_key, sku)
 
         results = await pipe.execute()
 
-        # Filter out SKUs that are already synced
         unsynced = [sku for sku, is_synced in zip(all_skus, results) if not is_synced]
 
         logger.info(f"Found {len(unsynced)}/{len(all_skus)} unsynced SKUs")
@@ -100,7 +99,6 @@ async def get_unsynced_skus(all_skus: list[str]) -> set[str]:
 
     except Exception as e:
         logger.error(f"Failed to get unsynced SKUs from Redis: {e}")
-        # Fallback: return all SKUs if Redis fails
         return set(all_skus)
 
 
@@ -116,7 +114,8 @@ async def remove_synced_sku(sku: str) -> bool:
     """
     try:
         redis = await redis_connection.get_client()
-        await redis.srem(SYNCED_SKUS_KEY, sku)
+        synced_key = CacheKeys.elasticsearch_synced_skus()
+        await redis.srem(synced_key, sku)
         logger.debug(f"Removed SKU {sku} from synced set")
         return True
     except Exception as e:
@@ -135,7 +134,8 @@ async def clear_sync_state() -> bool:
     """
     try:
         redis = await redis_connection.get_client()
-        await redis.delete(SYNCED_SKUS_KEY)
+        synced_key = CacheKeys.elasticsearch_synced_skus()
+        await redis.delete(synced_key)
         logger.info("Cleared all sync state from Redis")
         return True
     except Exception as e:
@@ -152,7 +152,8 @@ async def get_sync_stats() -> dict:
     """
     try:
         redis = await redis_connection.get_client()
-        synced_count = await redis.scard(SYNCED_SKUS_KEY)
+        synced_key = CacheKeys.elasticsearch_synced_skus()
+        synced_count = await redis.scard(synced_key)
 
         return {
             "total_synced": synced_count,

@@ -8,6 +8,8 @@ This service:
 
 Run with: python -m src.payment_callback.callback_app
 """
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -26,35 +28,29 @@ class AppContextMiddleware(BaseHTTPMiddleware):
         return response
 
 
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    """Lifespan event handler for startup and shutdown."""
+    # Startup
+    callback_logger.info(f"Payment Callback Service starting on {CALLBACK_SERVICE_HOST}:{CALLBACK_SERVICE_PORT}")
+    yield
+    # Shutdown
+    callback_logger.info("Payment Callback Service shutting down")
+
+
 app = FastAPI(
     title="Payment Callback Service",
     description="Receives payment gateway callbacks (IPN) and publishes to Redis",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
-# Add context middleware
 app.add_middleware(AppContextMiddleware)
 
-# Include routers
 app.include_router(callback_router)
-
-
-@app.on_event("startup")
-async def startup_event():
-    callback_logger.info(
-        f"Payment Callback Service starting on {CALLBACK_SERVICE_HOST}:{CALLBACK_SERVICE_PORT}"
-    )
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    callback_logger.info("Payment Callback Service shutting down")
 
 
 if __name__ == "__main__":
     import uvicorn
-
-    callback_logger.info(
-        f"Starting Payment Callback Service on {CALLBACK_SERVICE_HOST}:{CALLBACK_SERVICE_PORT}"
-    )
+    callback_logger.info(f"Starting Payment Callback Service on {CALLBACK_SERVICE_HOST}:{CALLBACK_SERVICE_PORT}")
     uvicorn.run(app, host=CALLBACK_SERVICE_HOST, port=CALLBACK_SERVICE_PORT)

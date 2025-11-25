@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
+
 from starlette.applications import Starlette
 from starlette.routing import Route
 from starlette.middleware import Middleware
@@ -24,6 +26,20 @@ class AppContextMiddleware(BaseHTTPMiddleware):
         return response
 
 
+@asynccontextmanager
+async def lifespan(_: Starlette):
+    """Lifespan event handler for startup and shutdown."""
+    # Startup
+    logger.info("Payment Agent A2A Server starting...")
+    start_subscriber_background()
+    logger.info("Payment callback subscriber started")
+    yield
+    # Shutdown
+    logger.info("Payment Agent A2A Server shutting down...")
+    await stop_subscriber()
+    logger.info("Payment callback subscriber stopped")
+
+
 routes = [
     Route("/.well-known/agent-card.json", PAYMENT_HANDLER.handle_agent_card, methods=["GET"]),
     Route("/", PAYMENT_HANDLER.handle_message_send, methods=["POST"]),
@@ -33,24 +49,7 @@ middleware = [
     Middleware(AppContextMiddleware)
 ]
 
-a2a_app = Starlette(debug=False, routes=routes, middleware=middleware)
-
-
-@a2a_app.on_event("startup")
-async def startup_event():
-    """Start background tasks on app startup."""
-    logger.info("Payment Agent A2A Server starting...")
-    # Start Redis callback subscriber as background task
-    start_subscriber_background()
-    logger.info("Payment callback subscriber started")
-
-
-@a2a_app.on_event("shutdown")
-async def shutdown_event():
-    """Cleanup on app shutdown."""
-    logger.info("Payment Agent A2A Server shutting down...")
-    await stop_subscriber()
-    logger.info("Payment callback subscriber stopped")
+a2a_app = Starlette(debug=False, routes=routes, middleware=middleware, lifespan=lifespan)
 
 
 if __name__ == "__main__":

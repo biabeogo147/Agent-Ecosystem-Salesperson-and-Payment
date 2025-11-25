@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+import datetime
 
 from src.config import REDIS_CHANNEL_PAYMENT_CALLBACK
 from src.data.redis.connection import redis_connection
@@ -22,7 +22,7 @@ async def publish_payment_callback(order_id: str) -> bool:
 
         message = {
             "order_id": order_id,
-            "timestamp": datetime.utcnow().isoformat() + "Z"
+            "timestamp": datetime.datetime.now(datetime.UTC).isoformat()
         }
 
         await redis_client.publish(REDIS_CHANNEL_PAYMENT_CALLBACK, json.dumps(message))

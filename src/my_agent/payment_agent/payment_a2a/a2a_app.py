@@ -9,7 +9,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from src.config import PAYMENT_AGENT_SERVER_PORT
 from src.my_agent.payment_agent import a2a_payment_logger as logger
-from src.my_agent.payment_agent.payment_a2a.payment_agent_handler import PAYMENT_HANDLER
+from src.my_agent.payment_agent.payment_a2a.payment_a2a_handler import PAYMENT_HANDLER
 from src.my_agent.payment_agent.payment_callback_subscriber import (
     start_subscriber_background,
     stop_subscriber

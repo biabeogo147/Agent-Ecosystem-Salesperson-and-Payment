@@ -27,7 +27,7 @@ from src.utils.response_format_jsonrpc import ResponseFormatJSONRPC
 from src.utils.status import Status
 
 
-class PaymentAgentHandler:
+class PaymentA2AHandler:
     """Route incoming tasks to business logic and guard the responses."""
 
     def __init__(
@@ -40,7 +40,7 @@ class PaymentAgentHandler:
         self._create_order_tool = create_order_tool
         self._query_status_tool = query_status_tool
         self._agent_card = agent_card
-        logger.info("PaymentAgentHandler initialised with skills: create_order, query_status, update_order_status")
+        logger.info("PaymentAgentHandler initialised with skills: create_order, query_status")
 
     async def handle_message_send(self, request: Request) -> Response:
         try:
@@ -298,7 +298,7 @@ def _build_payment_response_message(response: PaymentResponse) -> Message:
 
 
 _CARD_BASE_URL = f"http://{PAYMENT_AGENT_SERVER_HOST}:{PAYMENT_AGENT_SERVER_PORT}/"
-PAYMENT_HANDLER = PaymentAgentHandler(
+PAYMENT_HANDLER = PaymentA2AHandler(
     create_order_tool=create_order,
     query_status_tool=query_order_status,
     agent_card=build_payment_agent_card(_CARD_BASE_URL),

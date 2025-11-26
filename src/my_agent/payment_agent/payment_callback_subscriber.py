@@ -34,14 +34,12 @@ async def process_callback(callback_data: dict) -> bool:
         True if processed successfully, False otherwise
     """
     try:
-        # Parse callback message (simplified - only order_id + timestamp)
-        callback = CallbackMessage.model_validate(callback_data)
+        callback_message = CallbackMessage.model_validate(callback_data)
 
-        logger.info(f"Processing callback for order_id={callback.order_id}")
+        logger.info(f"Processing callback for order_id={callback_message.order_id}")
 
-        # Query gateway and update order status in one call
         result = await query_gateway_status(payload={
-            "order_id": callback.order_id
+            "order_id": callback_message.order_id
         })
 
         gateway_response = result.get("gateway_response", {})
@@ -50,7 +48,7 @@ async def process_callback(callback_data: dict) -> bool:
         transaction_id = gateway_response.get("transaction_id")
 
         logger.info(
-            f"Order {callback.order_id} processed: "
+            f"Order {callback_message.order_id} processed: "
             f"gateway_status={actual_status}, transaction_id={transaction_id}, "
             f"order_status={order.get('status')}"
         )
@@ -96,7 +94,6 @@ async def start_callback_subscriber() -> None:
         async for message in pubsub.listen():
             if message["type"] == "message":
                 try:
-                    # Parse message data
                     data = message["data"]
                     if isinstance(data, bytes):
                         data = data.decode("utf-8")
@@ -104,7 +101,6 @@ async def start_callback_subscriber() -> None:
                     callback_data = json.loads(data)
                     logger.debug(f"Received callback message: {callback_data}")
 
-                    # Process callback asynchronously
                     asyncio.create_task(process_callback(callback_data))
 
                 except json.JSONDecodeError as e:
@@ -122,7 +118,6 @@ async def start_callback_subscriber() -> None:
         logger.info("Callback subscriber stopped")
 
 
-# Background task reference for cleanup
 _subscriber_task: Optional[asyncio.Task] = None
 
 

@@ -28,7 +28,6 @@ class AppContextMiddleware(BaseHTTPMiddleware):
 
 @asynccontextmanager
 async def lifespan(_: Starlette):
-    """Lifespan event handler for startup and shutdown."""
     # Startup
     logger.info("Payment Agent A2A Server starting...")
     start_subscriber_background()

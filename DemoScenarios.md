@@ -5,7 +5,7 @@
 1. [Tổng Quan Hệ Thống](#1-tổng-quan-hệ-thống)
 2. [Scenario 1: Merchant Workflow](#2-scenario-1-merchant-workflow)
 3. [Scenario 2: Customer Purchase Journey](#3-scenario-2-customer-purchase-journey)
-5. [API Quick Reference](#4-api-quick-reference)
+4. [API Quick Reference](#4-api-quick-reference)
 
 ---
 

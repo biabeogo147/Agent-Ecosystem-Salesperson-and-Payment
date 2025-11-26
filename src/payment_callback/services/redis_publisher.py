@@ -1,7 +1,7 @@
 import json
 import datetime
 
-from src.config import REDIS_CHANNEL_PAYMENT_CALLBACK
+from data.redis.cache_keys import CacheKeys
 from src.data.redis.connection import redis_connection
 from src.payment_callback import callback_logger
 
@@ -25,7 +25,7 @@ async def publish_payment_callback(order_id: str) -> bool:
             "timestamp": datetime.datetime.now(datetime.UTC).isoformat()
         }
 
-        await redis_client.publish(REDIS_CHANNEL_PAYMENT_CALLBACK, json.dumps(message))
+        await redis_client.publish(CacheKeys.payment_callback(), json.dumps(message))
 
         callback_logger.info(f"Published callback to Redis: order_id={order_id}")
         return True

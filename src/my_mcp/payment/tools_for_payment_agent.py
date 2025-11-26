@@ -51,16 +51,11 @@ async def _stub_paygate_create(
 
 
 async def _stub_paygate_query(order_id: int) -> dict[str, Any]:
-    """
-    Stub query payment gateway for order status.
-    In production, this would call real VNPay query API.
-    """
-    # Stub: always return paid for demo
     return {
         "order_id": order_id,
         "status": "paid",
         "transaction_id": f"VNP{order_id}_{int(time.time())}",
-        "paid_amount": None,  # Would come from gateway
+        "paid_amount": None,
         "gateway_response_code": "00"
     }
 
@@ -73,9 +68,7 @@ async def create_order(payload: dict[str, Any]) -> str:
         "context_id": "ctx_123",
         "product_sku": "SKU001",
         "quantity": 1,
-        "method": {
-            "channel": "redirect|qr"
-        }
+        "channel": "redirect|qr"
       }
     Returns: PaymentResponse with order_id, context_id, and next_action
 
@@ -85,7 +78,11 @@ async def create_order(payload: dict[str, Any]) -> str:
     session = db_connection.get_session()
     try:
         context_id = payload.get("context_id")
+        product_sku = payload.get("product_sku")
+        quantity = payload.get("quantity")
+        channel = payload.get("channel")
 
+        # Check payload parameters
         if not context_id:
             # Return ResponseFormat(status=Status.CTX_ID_NOT_FOUND).to_json()
             pass
@@ -111,9 +108,6 @@ async def create_order(payload: dict[str, Any]) -> str:
         session.add(order)
         session.commit()
         session.refresh(order)
-
-        method = payload.get("method", {})
-        channel = method.get("channel", PaymentChannel.REDIRECT)
 
         order_id = str(order.id)
         return_url = f"{CALLBACK_SERVICE_URL}/return/vnpay?order_id={order_id}"
@@ -239,7 +233,6 @@ async def query_gateway_status(payload: dict[str, Any]) -> str:
         session.commit()
         session.refresh(order)
 
-        # Return combined response
         return ResponseFormat(data={
             "gateway_response": gateway_response,
             "order": order.to_dict()

@@ -19,7 +19,7 @@ async def create_document_endpoint(data: DocumentCreate):
     Use product_sku from the product creation response to link documents to products.
     """
     try:
-        product = get_product(data.product_sku, data.merchant_id)
+        product = await get_product(data.product_sku, data.merchant_id)
         if not product:
             return JSONResponse(
                 status_code=404,

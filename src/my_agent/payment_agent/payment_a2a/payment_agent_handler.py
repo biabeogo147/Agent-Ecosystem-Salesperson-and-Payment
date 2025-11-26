@@ -35,12 +35,10 @@ class PaymentAgentHandler:
         *,
         create_order_tool: Callable[[Dict[str, Any]], Awaitable[Dict[str, Any]]],
         query_status_tool: Callable[[Dict[str, Any]], Awaitable[Dict[str, Any]]],
-        update_order_status_tool: Callable[[Dict[str, Any]], Awaitable[Dict[str, Any]]],
         agent_card: AgentCard,
     ) -> None:
         self._create_order_tool = create_order_tool
         self._query_status_tool = query_status_tool
-        self._update_order_status_tool = update_order_status_tool
         self._agent_card = agent_card
         logger.info("PaymentAgentHandler initialised with skills: create_order, query_status, update_order_status")
 
@@ -303,6 +301,5 @@ _CARD_BASE_URL = f"http://{PAYMENT_AGENT_SERVER_HOST}:{PAYMENT_AGENT_SERVER_PORT
 PAYMENT_HANDLER = PaymentAgentHandler(
     create_order_tool=create_order,
     query_status_tool=query_order_status,
-    update_order_status_tool=update_order_status_tool,
     agent_card=build_payment_agent_card(_CARD_BASE_URL),
 )

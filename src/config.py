@@ -63,5 +63,3 @@ CALLBACK_SERVICE_URL = os.getenv("CALLBACK_SERVICE_URL", "http://localhost:8083"
 
 VNPAY_TMN_CODE = os.getenv("VNPAY_TMN_CODE", "")
 VNPAY_HASH_SECRET = os.getenv("VNPAY_HASH_SECRET", "")
-
-REDIS_CHANNEL_PAYMENT_CALLBACK = "payment:callback"

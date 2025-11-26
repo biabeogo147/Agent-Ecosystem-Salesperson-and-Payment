@@ -12,7 +12,7 @@ import asyncio
 import json
 from typing import Optional
 
-from src.config import REDIS_CHANNEL_PAYMENT_CALLBACK
+from data.redis.cache_keys import CacheKeys
 from src.data.redis.connection import redis_connection
 from src.my_agent.payment_agent import a2a_payment_logger as logger
 from src.my_agent.payment_agent.payment_mcp_client import query_gateway_status
@@ -84,14 +84,14 @@ async def start_callback_subscriber() -> None:
     This function subscribes to the payment:callback channel and processes
     messages indefinitely. It should be run as a background task.
     """
-    logger.info(f"Starting payment callback subscriber on channel: {REDIS_CHANNEL_PAYMENT_CALLBACK}")
+    logger.info(f"Starting payment callback subscriber on channel: {CacheKeys.payment_callback()}")
 
     try:
         redis_client = await redis_connection.get_client()
         pubsub = redis_client.pubsub()
 
-        await pubsub.subscribe(REDIS_CHANNEL_PAYMENT_CALLBACK)
-        logger.info(f"Subscribed to Redis channel: {REDIS_CHANNEL_PAYMENT_CALLBACK}")
+        await pubsub.subscribe(CacheKeys.payment_callback())
+        logger.info(f"Subscribed to Redis channel: {CacheKeys.payment_callback()}")
 
         async for message in pubsub.listen():
             if message["type"] == "message":

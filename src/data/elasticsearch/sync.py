@@ -36,7 +36,6 @@ async def sync_products_to_elastic():
 
     try:
         # Get products updated in last 60 seconds (to catch recent changes)
-        # This query is super fast thanks to index on updated_at
         one_minute_ago = datetime.datetime.now(datetime.UTC)
         from datetime import timedelta
         one_minute_ago = one_minute_ago - timedelta(seconds=60)

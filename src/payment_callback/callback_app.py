@@ -1,13 +1,3 @@
-"""
-Payment Callback Service - Receives callbacks from payment gateways.
-
-This service:
-1. Receives IPN (Instant Payment Notification) from VNPay
-2. Verifies the callback signature
-3. Publishes the callback data to Redis for Payment Agent to process
-
-Run with: python -m src.payment_callback.callback_app
-"""
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -30,7 +20,6 @@ class AppContextMiddleware(BaseHTTPMiddleware):
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    """Lifespan event handler for startup and shutdown."""
     # Startup
     callback_logger.info(f"Payment Callback Service starting on {CALLBACK_SERVICE_HOST}:{CALLBACK_SERVICE_PORT}")
     yield

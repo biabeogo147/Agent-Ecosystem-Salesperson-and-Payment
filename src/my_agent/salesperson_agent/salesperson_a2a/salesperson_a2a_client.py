@@ -30,7 +30,7 @@ class SalespersonA2AClient(BaseA2AClient):
             logger=logger,
             **kwargs,
         )
-        self._logger.info("SalespersonA2AClient initialised (base_url=%s)", base_url or PAYMENT_AGENT_BASE_URL)
+        self.logger.info("SalespersonA2AClient initialised (base_url=%s)", base_url or PAYMENT_AGENT_BASE_URL)
 
     async def create_order(
         self,
@@ -43,7 +43,7 @@ class SalespersonA2AClient(BaseA2AClient):
     ) -> ResponseFormatJSONRPC:
         """Create an order by preparing the payload and forwarding it to A2A."""
         try:
-            self._logger.debug(
+            self.logger.debug(
                 "create_order start (items=%d, channel=%s, note=%s, has_metadata=%s)",
                 len(items), channel.value, bool(note), bool(metadata),
             )
@@ -56,7 +56,7 @@ class SalespersonA2AClient(BaseA2AClient):
             )
             message = await self.send_task(payload)
             response = _extract_payment_response(message)
-            self._logger.info(
+            self.logger.info(
                 "create_order ok (context_id=%s, status=%s, channel=%s, items=%d)",
                 response.context_id, response.status.value, channel.value, len(items),
             )
@@ -68,17 +68,17 @@ class SalespersonA2AClient(BaseA2AClient):
                 }
             )
         except Exception:
-            self._logger.exception("create_order failed")
+            self.logger.exception("create_order failed")
             raise
 
     async def query_status(self, context_id: str) -> ResponseFormatJSONRPC:
         """Query the payment agent for the status of a previously created order."""
         try:
-            self._logger.info("query_status start (context_id=%s)", context_id)
+            self.logger.info("query_status start (context_id=%s)", context_id)
             payload = await prepare_query_status_payload(context_id)
             message = await self.send_task(payload)
             response = _extract_payment_response(message)
-            self._logger.info(
+            self.logger.info(
                 "query_status ok (context_id=%s, status=%s)",
                 response.context_id, response.status.value,
             )
@@ -90,7 +90,7 @@ class SalespersonA2AClient(BaseA2AClient):
                 }
             )
         except Exception:
-            self._logger.exception("query_status failed (context_id=%s)", context_id)
+            self.logger.exception("query_status failed (context_id=%s)", context_id)
             raise
 
 
@@ -103,7 +103,7 @@ async def _create_payment_order(
     metadata: Dict[str, str],
 ) -> Dict[str, Any]:
     async with SalespersonA2AClient() as client:
-        client._logger.debug("tool _create_payment_order invoked (items=%d, channel=%s)", len(items), channel)
+        client.logger.debug("tool _create_payment_order invoked (items=%d, channel=%s)", len(items), channel)
         response = await client.create_order(
             items=items,
             customer=customer,
@@ -116,7 +116,7 @@ async def _create_payment_order(
 
 async def _query_payment_order_status(context_id: str) -> dict[str, Any]:
     async with SalespersonA2AClient() as client:
-        client._logger.debug("tool _query_payment_order_status invoked (context_id=%s)", context_id)
+        client.logger.debug("tool _query_payment_order_status invoked (context_id=%s)", context_id)
         response = await client.query_status(context_id)
     return response.to_dict()
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Literal, List
+from typing import Any, Dict, Literal, List, Optional
 
 from a2a.types import Message, DataPart
 from google.adk.tools import FunctionTool
@@ -71,16 +71,25 @@ class SalespersonA2AClient(BaseA2AClient):
             self.logger.exception("create_order failed")
             raise
 
-    async def query_status(self, context_id: str) -> ResponseFormatJSONRPC:
-        """Query the payment agent for the status of a previously created order."""
+    async def query_status(
+        self,
+        context_id: str,
+        order_id: Optional[str] = None
+    ) -> ResponseFormatJSONRPC:
+        """Query the payment agent for the status of a previously created order.
+
+        Args:
+            context_id: Correlation ID of the original payment request
+            order_id: Optional specific order ID to query (if not provided, returns all orders for context_id)
+        """
         try:
-            self.logger.info("query_status start (context_id=%s)", context_id)
-            payload = await prepare_query_status_payload(context_id)
+            self.logger.info("query_status start (context_id=%s, order_id=%s)", context_id, order_id)
+            payload = await prepare_query_status_payload(context_id, order_id=order_id)
             message = await self.send_task(payload)
             response = _extract_payment_response(message)
             self.logger.info(
-                "query_status ok (context_id=%s, status=%s)",
-                response.context_id, response.status.value,
+                "query_status ok (context_id=%s, order_id=%s, status=%s)",
+                response.context_id, order_id, response.status.value,
             )
 
             return ResponseFormatJSONRPC(
@@ -90,7 +99,7 @@ class SalespersonA2AClient(BaseA2AClient):
                 }
             )
         except Exception:
-            self.logger.exception("query_status failed (context_id=%s)", context_id)
+            self.logger.exception("query_status failed (context_id=%s, order_id=%s)", context_id, order_id)
             raise
 
 
@@ -114,10 +123,22 @@ async def _create_payment_order(
     return response.to_dict()
 
 
-async def _query_payment_order_status(context_id: str) -> dict[str, Any]:
+async def _query_payment_order_status(
+    context_id: str,
+    order_id: Optional[str] = None
+) -> dict[str, Any]:
+    """Query payment order status.
+
+    Args:
+        context_id: Correlation ID of the original payment request
+        order_id: Optional specific order ID to query (if not provided, returns all orders for context_id)
+    """
     async with SalespersonA2AClient() as client:
-        client.logger.debug("tool _query_payment_order_status invoked (context_id=%s)", context_id)
-        response = await client.query_status(context_id)
+        client.logger.debug(
+            "tool _query_payment_order_status invoked (context_id=%s, order_id=%s)",
+            context_id, order_id
+        )
+        response = await client.query_status(context_id, order_id=order_id)
     return response.to_dict()
 
 

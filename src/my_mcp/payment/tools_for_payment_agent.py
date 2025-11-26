@@ -1,5 +1,6 @@
 import time
-from typing import Optional, Any
+from decimal import Decimal
+from typing import Optional, Any, List
 
 from google.adk.tools import FunctionTool
 
@@ -8,6 +9,8 @@ from . import payment_mcp_logger
 from src.config import *
 
 from src.data.models.db_entity.order import Order
+from src.data.models.db_entity.order_item import OrderItem
+from src.data.models.db_entity.product import Product
 from src.data.postgres.connection import db_connection
 from src.data.models.enum.order_status import OrderStatus
 
@@ -62,50 +65,125 @@ async def _stub_paygate_query(order_id: int) -> dict[str, Any]:
 
 async def create_order(payload: dict[str, Any]) -> str:
     """
-    Create a payment order and save to database.
+    Create a payment order with multiple items and save to database.
+
     Args:
       payload: {
-        "context_id": "ctx_123",
-        "product_sku": "SKU001",
-        "quantity": 1,
-        "channel": "redirect|qr"
+        "context_id": "payment_abc123",
+        "items": [
+          {"sku": "SKU001", "name": "Product A", "quantity": 2, "unit_price": 100.0, "currency": "USD"},
+          {"sku": "SKU002", "name": "Product B", "quantity": 1, "unit_price": 50.0, "currency": "USD"}
+        ],
+        "customer": {"name": "John", "email": "john@example.com", "phone": "...", "shipping_address": "..."},
+        "channel": "redirect|qr",
+        "note": "optional note",
+        "metadata": {"key": "value"}
       }
-    Returns: PaymentResponse with order_id, context_id, and next_action
 
-    Note: context_id, return_url, cancel_url, and notify_url are auto-generated
-    by Payment Agent. Salesperson uses returned context_id for later queries.
+    Returns: PaymentResponse with order_id, context_id, and next_action
     """
     session = db_connection.get_session()
     try:
         context_id = payload.get("context_id")
-        product_sku = payload.get("product_sku")
-        quantity = payload.get("quantity")
+        items = payload.get("items", [])
+        customer = payload.get("customer", {})
         channel = payload.get("channel")
+        note = payload.get("note")
 
-        # Check payload parameters
+        # Validate required fields
         if not context_id:
-            # Return ResponseFormat(status=Status.CTX_ID_NOT_FOUND).to_json()
-            pass
+            return ResponseFormat(
+                status=Status.INVALID_PARAMS,
+                message="context_id is required"
+            ).to_json()
 
-        # Get product info
-        from src.data.models.db_entity.product import Product
-        product = session.query(Product).filter(Product.sku == payload["product_sku"]).first()
-        if not product:
-            return ResponseFormat(status=Status.PRODUCT_NOT_FOUND, message="Product not found").to_json()
+        if not items:
+            return ResponseFormat(
+                status=Status.INVALID_PARAMS,
+                message="items list is required and cannot be empty"
+            ).to_json()
 
-        quantity = payload.get("quantity", 1)
-        total_amount = float(product.price) * quantity
+        if not channel:
+            return ResponseFormat(
+                status=Status.INVALID_PARAMS,
+                message="channel is required (redirect or qr)"
+            ).to_json()
 
-        # Create order in DB
+        order_items = []
+        total_amount = Decimal("0")
+        currency = "USD"
+
+        for item in items:
+            sku = item.get("sku")
+            quantity = item.get("quantity", 1)
+            unit_price = item.get("unit_price")
+            item_currency = item.get("currency", "USD")
+            item_name = item.get("name")
+
+            # If unit_price not provided, lookup from product database
+            if unit_price is None:
+                if not sku:
+                    return ResponseFormat(
+                        status=Status.INVALID_PARAMS,
+                        message="Each item must have either 'sku' or 'unit_price'"
+                    ).to_json()
+                product = session.query(Product).filter(Product.sku == sku).first()
+                if not product:
+                    return ResponseFormat(
+                        status=Status.PRODUCT_NOT_FOUND,
+                        message=f"Product with SKU '{sku}' not found"
+                    ).to_json()
+                unit_price = float(product.price)
+                item_currency = product.currency
+                if not item_name:
+                    item_name = product.name
+
+            # Validate item data
+            if not item_name:
+                item_name = sku or "Unknown Product"
+
+            if quantity <= 0:
+                return ResponseFormat(
+                    status=Status.INVALID_PARAMS,
+                    message=f"Invalid quantity for item '{item_name}': must be > 0"
+                ).to_json()
+
+            # Create OrderItem (will be added after Order is created)
+            order_items.append({
+                "product_sku": sku or "CUSTOM",
+                "product_name": item_name,
+                "quantity": quantity,
+                "unit_price": Decimal(str(unit_price)),
+                "currency": item_currency
+            })
+
+            total_amount += Decimal(str(unit_price)) * quantity
+            currency = item_currency  # Use last item's currency (should be consistent)
+
+        # Create Order
         order = Order(
+            context_id=context_id,
             user_id=payload.get("user_id"),
-            product_sku=payload["product_sku"],
-            quantity=quantity,
             total_amount=total_amount,
-            currency=product.currency,
-            status=OrderStatus.PENDING
+            currency=currency,
+            status=OrderStatus.PENDING,
+            note=note
         )
         session.add(order)
+        session.flush()  # Get order.id without committing
+
+        # Create OrderItems
+        for item_data in order_items:
+            order_item = OrderItem(
+                order_id=order.id,
+                product_sku=item_data["product_sku"],
+                product_name=item_data["product_name"],
+                quantity=item_data["quantity"],
+                unit_price=item_data["unit_price"],
+                currency=item_data["currency"]
+            )
+            session.add(order_item)
+
         session.commit()
         session.refresh(order)
 
@@ -115,12 +193,12 @@ async def create_order(payload: dict[str, Any]) -> str:
         notify_url = f"{CALLBACK_SERVICE_URL}/callback/vnpay?order_id={order_id}"
 
         paygate_response = await _stub_paygate_create(
-            channel, order.id, total_amount,
+            channel, order.id, float(total_amount),
             return_url, cancel_url, notify_url
         )
 
-        # Build next_action
-        if channel == PaymentChannel.REDIRECT:
+        # Build next_action based on channel
+        if channel == PaymentChannel.REDIRECT.value or channel == "redirect":
             next_action = NextAction(
                 type=NextActionType.REDIRECT,
                 url=paygate_response["pay_url"],
@@ -143,9 +221,17 @@ async def create_order(payload: dict[str, Any]) -> str:
             expires_at=paygate_response["expires_at"],
             next_action=next_action,
         )
+
+        payment_mcp_logger.info(
+            f"Order created: order_id={order_id}, context_id={context_id}, "
+            f"items={len(order_items)}, total={total_amount} {currency}"
+        )
+
         return ResponseFormat(data=res.model_dump()).to_json()
+
     except Exception as e:
         session.rollback()
+        payment_mcp_logger.error(f"Failed to create order: {e}")
         return ResponseFormat(status=Status.UNKNOWN_ERROR, message=str(e)).to_json()
     finally:
         session.close()
@@ -153,35 +239,86 @@ async def create_order(payload: dict[str, Any]) -> str:
 
 async def query_order_status(payload: dict[str, Any]) -> str:
     """
-    Query order status from database.
+    Query order status from database by context_id and/or order_id.
+
     Args:
-      payload: {"order_id": "123"}
-    Returns: Order details with current status
+      payload: {
+        "context_id": "payment_abc123",  # Required
+        "order_id": "123"                # Optional - if provided, query specific order
+      }
+
+    Returns:
+      - If order_id provided: Single order with that ID (verified against context_id)
+      - If only context_id: All orders for that context_id
     """
     session = db_connection.get_session()
     try:
+        context_id = payload.get("context_id")
         order_id = payload.get("order_id")
 
-        try:
-            order_id_int = int(order_id)
-        except (TypeError, ValueError):
+        if not context_id:
             return ResponseFormat(
                 status=Status.INVALID_PARAMS,
-                message=f"Invalid order_id format: {order_id}. Must be an integer."
+                message="context_id is required"
             ).to_json()
 
-        order = session.query(Order).filter(Order.id == order_id_int).first()
+        if order_id:
+            # Query specific order by order_id, verify it belongs to context_id
+            try:
+                order_id_int = int(order_id)
+            except (TypeError, ValueError):
+                return ResponseFormat(
+                    status=Status.INVALID_PARAMS,
+                    message=f"Invalid order_id format: {order_id}. Must be an integer."
+                ).to_json()
 
-        if not order:
-            return ResponseFormat(status=Status.ORDER_NOT_FOUND, message="Order not found").to_json()
+            order = session.query(Order).filter(
+                Order.id == order_id_int,
+                Order.context_id == context_id
+            ).first()
 
-        res = PaymentResponse(
-            context_id=str(order.id),
-            status=_map_order_status_to_payment_status(order.status),
-            order_id=str(order.id),
-        )
-        return ResponseFormat(data={**res.model_dump(), "order": order.to_dict()}).to_json()
+            if not order:
+                return ResponseFormat(
+                    status=Status.ORDER_NOT_FOUND,
+                    message=f"Order {order_id} not found for context_id {context_id}"
+                ).to_json()
+
+            res = PaymentResponse(
+                context_id=order.context_id,
+                status=_map_order_status_to_payment_status(order.status),
+                order_id=str(order.id),
+            )
+            return ResponseFormat(data={**res.model_dump(), "order": order.to_dict()}).to_json()
+
+        else:
+            # Query all orders for context_id
+            orders = session.query(Order).filter(Order.context_id == context_id).all()
+
+            if not orders:
+                return ResponseFormat(
+                    status=Status.ORDER_NOT_FOUND,
+                    message=f"No orders found for context_id {context_id}"
+                ).to_json()
+
+            # Return list of orders
+            orders_data = [order.to_dict() for order in orders]
+
+            # For backward compatibility, also return PaymentResponse for the first/latest order
+            latest_order = orders[-1]
+            res = PaymentResponse(
+                context_id=context_id,
+                status=_map_order_status_to_payment_status(latest_order.status),
+                order_id=str(latest_order.id),
+            )
+
+            return ResponseFormat(data={
+                **res.model_dump(),
+                "orders": orders_data,
+                "total_orders": len(orders)
+            }).to_json()
+
     except Exception as e:
+        payment_mcp_logger.error(f"Failed to query order status: {e}")
         return ResponseFormat(status=Status.UNKNOWN_ERROR, message=str(e)).to_json()
     finally:
         session.close()

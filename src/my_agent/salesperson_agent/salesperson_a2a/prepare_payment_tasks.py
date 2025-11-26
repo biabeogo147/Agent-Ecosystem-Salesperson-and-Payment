@@ -17,6 +17,15 @@ from src.my_agent.salesperson_agent.salesperson_mcp_client import (
 )
 
 
+def generate_context_id(prefix: str = "ctx") -> str:
+    """Generate context_id locally at salesperson agent.
+
+    This is generated locally without calling MCP to avoid unnecessary network calls.
+    The context_id is used to correlate payment requests across agents.
+    """
+    return f"{prefix}_{uuid4().hex[:12]}"
+
+
 def _ensure_customer(customer: Any) -> CustomerInfo:
     if isinstance(customer, CustomerInfo):
         return customer
@@ -95,7 +104,8 @@ async def prepare_create_order_payload(
     client = get_salesperson_mcp_client()
     resolved_items = await _resolve_items_via_product_tool(items, client=client)
 
-    context_id = await client.generate_context_id(prefix="payment")
+    # Generate context_id locally (no MCP call needed)
+    context_id = generate_context_id(prefix="payment")
 
     payment_request = PaymentRequest(
         context_id=context_id,
@@ -163,9 +173,17 @@ async def prepare_create_order_payload(
     }
 
 
-async def prepare_query_status_payload(context_id: str) -> Dict[str, Any]:
-    """Build the task and payload needed for the payment status skill."""
-    status_request = QueryStatusRequest(context_id=context_id)
+async def prepare_query_status_payload(
+    context_id: str,
+    order_id: Optional[str] = None
+) -> Dict[str, Any]:
+    """Build the task and payload needed for the payment status skill.
+
+    Args:
+        context_id: Correlation ID of the original payment request
+        order_id: Optional specific order ID to query (if not provided, returns all orders for context_id)
+    """
+    status_request = QueryStatusRequest(context_id=context_id, order_id=order_id)
     status_request_json = status_request.model_dump(mode="json")
 
     message = Message(
@@ -204,6 +222,8 @@ async def prepare_query_status_payload(context_id: str) -> Dict[str, Any]:
         "skill_id": QUERY_STATUS_SKILL_ID,
         "context_id": context_id,
     }
+    if order_id:
+        task_metadata["order_id"] = order_id
 
     task = Task(
         id=str(uuid4()),
@@ -216,6 +236,7 @@ async def prepare_query_status_payload(context_id: str) -> Dict[str, Any]:
 
     return {
         "context_id": status_request.context_id,
+        "order_id": order_id,
         "status_request": status_request.model_dump(mode="json"),
         "task": task.model_dump(mode="json"),
     }

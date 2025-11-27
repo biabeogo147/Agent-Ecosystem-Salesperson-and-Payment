@@ -270,9 +270,8 @@ curl -X POST http://localhost:8082/webhook/documents \
 flowchart LR
 
     SalesAgent["Salesperson Agent"]
-    MCP["Salesperson MCP Server"]
 
-    subgraph ESQuery["Elasticsearch Query"]
+    subgraph ESQuery["find_product"]
         direction TB
         Step1["Index: products"]
         Step2["Query: 'iPhone 15'"]
@@ -284,8 +283,7 @@ flowchart LR
     Redis["Redis Cache<br/>(Check & Update)"]
     Result["Return to Agent"]
 
-    SalesAgent -->|"MCP Protocol"| MCP
-    MCP -->|"find_product"| ESQuery
+    SalesAgent -->|"MCP Tool Call"| ESQuery
     ESQuery -->|"Return results"| Redis
     Redis --> Result
 
@@ -334,26 +332,20 @@ flowchart LR
 
 **Salesperson Agent Action:**
 
-Gọi **Salesperson MCP Server** - Tool: `search_product_documents`
-
-**Internal Flow:**
-
 ```mermaid
 flowchart LR
     SalesAgent["Salesperson Agent"]
-    MCP["Salesperson MCP Server"]
     Redis["Redis Cache<br/>(Check & Update)"]
     Result["Return to Agent"]
     
-    subgraph MilvusQuery["Milvus Query"]
+    subgraph MilvusQuery["search_product_documents"]
         direction TB
         Embed["Generate Query Embedding<br/>[0.123, -0.456, ...]"]
         TopK["Top 5 Results<br/>by Similarity"]
         Embed --> |"- Collection: 'Document'<br/>- Filter: product_sku == 'IPHONE15PRO'"| TopK
     end
     
-    SalesAgent -->|"MCP Protocol"| MCP
-    MCP --> |"search_product_documents"| MilvusQuery
+    SalesAgent -->|"MCP Tool Call"| MilvusQuery
     TopK -->|"Return Documents"| Redis
     Redis --> Result
 ```
@@ -429,17 +421,15 @@ Gọi **Salesperson MCP Server** - Tool: `reserve_stock`
 ```mermaid
 flowchart LR
     SA["Salesperson Agent"]
-    MCP["Salesperson MCP Server"]
     Redis["Redis Cache<br/>(Check & Update)"]
     Result["Return to Agent"]
 
-    subgraph ReserveStock["Reserve Stock"]
+    subgraph ReserveStock["reserve_stock"]
         StockCheck["Check Current Stock"]
         StockUpdate["Update Stock"]
     end
 
-    SA --> |"MCP Tool"| MCP 
-    MCP --> |"reserve_stock"| ReserveStock
+    SA --> |"MCP Tool Call"| ReserveStock 
     StockCheck --> StockUpdate --> Redis --> Result
 ```
 
@@ -578,7 +568,7 @@ flowchart LR
         Rcv --> Extract --> Route
     end
 
-    subgraph MCPFlow["Create Order Tool"]
+    subgraph MCPFlow["create_order"]
         direction TB
         
         Calc["Calculate total:<br/>949.99 × 1 = 949.99"]
@@ -596,7 +586,7 @@ flowchart LR
 
     SalesReturn["Return to Salesperson Agent"]
 
-    SalesPersonAgent --> |"A2A"| PaymentAgent --> |"MCP tool call"| MCPFlow --> |"MCP Response"| Finalize --> |"A2A"| SalesReturn
+    SalesPersonAgent --> |"A2A"| PaymentAgent --> |"MCP Tool Call"| MCPFlow --> |"MCP Response"| Finalize --> |"A2A"| SalesReturn
 ```
 
 **A2A Response:**
@@ -655,6 +645,241 @@ flowchart LR
 
 ### Query Payment Status (After Gateway Callback)
 
+Sau khi user hoàn thành hoặc hủy thanh toán trên cổng thanh toán, hệ thống sẽ tự động thông báo kết quả qua luồng callback.
+
+**Flow Tổng Quan:**
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant GW as VNPay Gateway
+    participant CB as Callback Service
+    participant R as Redis Pub/Sub
+    participant PA as Payment Agent
+    participant SA as Salesperson Agent
+
+    alt
+        U ->> CB: [1] Redirect (Success/Cancel)
+    else 
+        GW ->> CB: [1] Server Notification
+    end
+    CB ->> R: [2] Publish "payment:callback"
+    R ->> PA: [3] Subscriber receives callback
+    PA ->> GW: [4] query_gateway_status Tool
+    GW -->> PA: [5] Gateway response
+    PA ->> R: [6] Publish "salesperson:notification"
+    R ->> SA: [7] Salesperson Subscriber
+    SA ->> PA: [8] payment.query-status (A2A)
+    PA -->> SA: [9] Order Status (A2A)
+    SA ->> U: [10] Final Payment Result
+```
+
+---
+
+#### Bước 1: Payment Gateway Callback
+
+Khi user hoàn thành thanh toán hoặc hủy, Payment Gateway sẽ:
+
+1. **Redirect user** về `return_url` (success) hoặc `cancel_url` (cancel)
+2. **Gọi notify_url** để thông báo backend bất đồng bộ
+
+**Callback URLs được tạo khi create order:**
+```
+return_url: http://localhost:8083/return/vnpay?order_id=123
+cancel_url: http://localhost:8083/cancel/vnpay?order_id=123
+notify_url: http://localhost:8083/callback/vnpay?order_id=123
+```
+
+---
+
+#### Bước 2: Callback Service Xử Lý
+
+**Endpoint:** `GET /callback/vnpay?order_id={order_id}`
+
+Callback Service nhận request và publish message lên Redis:
+
+```python
+# Publish to Redis channel "payment:callback"
+message = {
+    "order_id": "123",
+    "timestamp": "2025-01-15T11:20:00+00:00"
+}
+await redis_client.publish("payment:callback", json.dumps(message))
+```
+
+**Response to Gateway:**
+```json
+{
+  "status": "00",
+  "message": "Callback received successfully"
+}
+```
+
+---
+
+#### Bước 3: Payment Agent Xử Lý
+
+```mermaid
+flowchart LR
+    Redis["Redis Channel:<br/>payment:callback"]
+    Sub["Payment Agent"]
+    DB[(PostgreSQL)]
+    
+    subgraph query_gateway_status
+        QueryGW["Query Payment Gateway<br/>for Order Status"]
+        UpdateDB["Update Order Status"]
+    end
+
+    Redis -->|"Subscribe"| Sub
+    Sub --> |"MCP Tool Call"| query_gateway_status
+    QueryGW --> UpdateDB
+    UpdateDB --> DB
+```
+
+**Gateway Query Response:**
+```json
+{
+  "gateway_response": {
+    "status": "SUCCESS",
+    "transaction_id": "VNP14210123456789",
+    "amount": 949.99,
+    "currency": "USD",
+    "paid_at": "2025-01-15T11:18:30+00:00"
+  },
+  "order": {
+    "id": 123,
+    "context_id": "payment-550e8400-e29b-41d4-a716-446655440000",
+    "status": "SUCCESS",
+    "total_amount": 949.99,
+    "currency": "USD"
+  }
+}
+```
+
+---
+
+#### Bước 4: Payment Agent Notify Salesperson Agent
+
+Sau khi xác nhận order đã kết thúc (SUCCESS hoặc CANCELLED), Payment Agent publish notification:
+
+**Redis Channel:** `salesperson:notification`
+
+**Message Format:**
+```json
+{
+  "order_id": "123",
+  "context_id": "payment-550e8400-e29b-41d4-a716-446655440000",
+  "status": "SUCCESS",
+  "transaction_id": "VNP14210123456789",
+  "timestamp": "2025-01-15T11:20:05+00:00"
+}
+```
+
+---
+
+#### Bước 5: Salesperson Agent Query Order Status
+
+Salesperson Agent nhận notification từ Redis và gọi A2A request đến Payment Agent để lấy chi tiết order:
+
+**A2A Request (JSON-RPC 2.0):**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": "req-status-456",
+  "method": "message.send",
+  "params": {
+    "message": {
+      "message_id": "msg-uuid-status-1",
+      "role": "user",
+      "context_id": "payment-550e8400-e29b-41d4-a716-446655440000",
+      "parts": [
+        {
+          "root": {
+            "type": "TextPart",
+            "text": "Query payment status for context_id"
+          }
+        },
+        {
+          "root": {
+            "type": "DataPart",
+            "data": {
+              "protocol": "A2A_V1",
+              "context_id": "payment-550e8400-e29b-41d4-a716-446655440000",
+              "order_id": "123",
+              "from_agent": "salesperson_agent",
+              "to_agent": "payment_agent",
+              "action": "QUERY_STATUS"
+            }
+          }
+        }
+      ]
+    },
+    "metadata": {
+      "task": {
+        "metadata": {
+          "skill_id": "payment.query-status"
+        }
+      }
+    }
+  }
+}
+```
+
+**A2A Response (Success):**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": "req-status-456",
+  "result": {
+    "message": {
+      "role": "agent",
+      "parts": [
+        {
+          "root": {
+            "type": "DataPart",
+            "data": {
+              "context_id": "payment-550e8400-e29b-41d4-a716-446655440000",
+              "status": "SUCCESS",
+              "provider_name": "vnpay",
+              "order_id": "123",
+              "transaction_id": "VNP14210123456789",
+              "order": {
+                "id": 123,
+                "context_id": "payment-550e8400-e29b-41d4-a716-446655440000",
+                "total_amount": 949.99,
+                "currency": "USD",
+                "status": "SUCCESS",
+                "items": [
+                  {
+                    "product_sku": "IPHONE15PRO",
+                    "product_name": "iPhone 15 Pro 256GB Titanium",
+                    "quantity": 1,
+                    "unit_price": 949.99
+                  }
+                ],
+                "created_at": "2025-01-15T11:00:00+00:00",
+                "updated_at": "2025-01-15T11:20:05+00:00"
+              },
+              "next_action": {
+                "type": "NONE"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+---
+
+#### Kết Quả: Agent Response to User
+
+**Case 1: Thanh toán thành công**
+
 **User returns via:** `http://localhost:3000/return?cid=payment-550e8400-...`
 
 **Agent Response to User:**
@@ -665,10 +890,66 @@ flowchart LR
 > - Sản phẩm: iPhone 15 Pro 256GB Titanium
 > - Số lượng: 1
 > - Tổng tiền: $949.99
+> - Mã giao dịch: VNP14210123456789
 > - Trạng thái: ✅ Đã thanh toán
 > - Địa chỉ giao hàng: 123 Main St, Hanoi
 >
 > Cảm ơn bạn đã mua hàng! 🙏"
+
+---
+
+**Case 2: Thanh toán bị hủy**
+
+**User returns via:** `http://localhost:3000/cancel?cid=payment-550e8400-...`
+
+**A2A Response (Cancelled):**
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": "req-status-789",
+  "result": {
+    "message": {
+      "role": "agent",
+      "parts": [
+        {
+          "root": {
+            "type": "DataPart",
+            "data": {
+              "context_id": "payment-550e8400-e29b-41d4-a716-446655440000",
+              "status": "CANCELLED",
+              "provider_name": "vnpay",
+              "order_id": "123",
+              "order": {
+                "id": 123,
+                "status": "CANCELLED",
+                "total_amount": 949.99,
+                "currency": "USD"
+              },
+              "next_action": {
+                "type": "ASK_USER",
+                "message": "Payment was cancelled. Would you like to try again?"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+**Agent Response to User:**
+
+> "❌ **Thanh toán đã bị hủy**
+>
+> **Đơn hàng #123:**
+> - Sản phẩm: iPhone 15 Pro 256GB Titanium
+> - Số lượng: 1
+> - Tổng tiền: $949.99
+> - Trạng thái: 🚫 Đã hủy
+>
+> Bạn có muốn thử thanh toán lại không? Tôi có thể tạo link thanh toán mới cho bạn."
 
 ---
 
@@ -702,20 +983,17 @@ flowchart LR
 
 ### 4.3. MCP Servers
 
-#### Salesperson MCP (Port 8001)
+#### Salesperson MCP
 
 **Tools:**
 - `find_product` - Search products (Elasticsearch)
 - `calc_shipping` - Calculate shipping cost
 - `reserve_stock` - Reserve inventory
-- `generate_context_id` - Generate correlation ID
-- `generate_return_url` - Generate return URL
-- `generate_cancel_url` - Generate cancel URL
 - `search_product_documents` - Semantic search (Milvus)
 
-#### Payment MCP (Port 8000)
+#### Payment MCP
 
 **Tools:**
 - `create_order` - Create payment order
 - `query_order_status` - Query order status
-- `update_order_status` - Update order status
+- `query_gateway_status` - Query payment gateway status

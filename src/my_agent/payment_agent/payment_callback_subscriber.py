@@ -7,8 +7,11 @@ callback messages from the Payment Callback Service.
 Simplified flow:
 1. Receive order_id from Redis (published by Callback Service)
 2. Call query_gateway_status which queries gateway AND updates order status
+3. Notify Salesperson Agent via Redis Pub/Sub (only order_id + context_id)
+4. Salesperson Agent will query order status via A2A (payment.query-status)
 """
 import asyncio
+import datetime
 import json
 from typing import Optional
 
@@ -53,8 +56,12 @@ async def process_callback(callback_data: dict) -> bool:
             f"order_status={order.get('status')}"
         )
 
-        # Placeholder: Notify Salesperson Agent (future implementation)
-        # await notify_salesperson(callback.order_id, actual_status)
+        # Notify Salesperson Agent about the callback
+        # Salesperson will query order status via A2A (payment.query-status)
+        await notify_salesperson(
+            order_id=callback_message.order_id,
+            context_id=order.get("context_id", "")
+        )
 
         return True
 
@@ -63,16 +70,41 @@ async def process_callback(callback_data: dict) -> bool:
         return False
 
 
-async def notify_salesperson(order_id: str, status: str) -> None:
+async def notify_salesperson(order_id: str, context_id: str) -> bool:
     """
-    Placeholder: Notify Salesperson Agent about payment status change.
+    Notify Salesperson Agent about payment callback via Redis Pub/Sub.
 
-    This will be implemented when Salesperson Agent notification is needed.
-    Will use Redis Pub/Sub to publish to salesperson:notification channel.
+    Publishes a simple notification message to the salesperson:notification channel.
+    Salesperson Agent will then query order status via A2A (payment.query-status).
+
+    Args:
+        order_id: The order ID
+        context_id: The context ID linking to Salesperson Agent session
+
+    Returns:
+        True if notification was published successfully, False otherwise
     """
-    # TODO: Implement when needed
-    logger.debug(f"Placeholder: Would notify Salesperson about order {order_id} status={status}")
-    pass
+    try:
+        redis_client = await redis_connection.get_client()
+
+        message = {
+            "order_id": order_id,
+            "context_id": context_id,
+            "timestamp": datetime.datetime.now(datetime.UTC).isoformat()
+        }
+
+        await redis_client.publish(
+            CacheKeys.salesperson_notification(),
+            json.dumps(message)
+        )
+        logger.info(
+            f"Published notification to Salesperson: "
+            f"order_id={order_id}, context_id={context_id}"
+        )
+        return True
+    except Exception as e:
+        logger.error(f"Failed to notify Salesperson: {e}")
+        return False
 
 
 async def start_callback_subscriber() -> None:

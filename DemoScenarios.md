@@ -456,29 +456,7 @@ flowchart LR
 
 **User Input:** "Thanh toán qua thẻ tín dụng"
 
-#### 5a. Generate Context ID
-
-**Salesperson MCP Tool:** `generate_context_id`
-
-```json
-{
-  "status": "00",
-  "data": "payment-550e8400-e29b-41d4-a716-446655440000"
-}
-```
-
-#### 5b. Generate URLs
-
-**Tools:** `generate_return_url`, `generate_cancel_url`
-
-```
-return_url: http://localhost:3000/return?cid=payment-550e8400-e29b-41d4-a716-446655440000
-cancel_url: http://localhost:3000/cancel?cid=payment-550e8400-e29b-41d4-a716-446655440000
-```
-
-#### 5c. Prepare & Send A2A Request
-
-**Salesperson Agent → Payment Agent**
+**Salesperson Agent → Payment Agent**: Send A2A Request
 
 **HTTP Request:**
 
@@ -528,12 +506,7 @@ Content-Type: application/json
                 "phone": "+1234567890",
                 "shipping_address": "123 Main St, Hanoi"
               },
-              "method": {
-                "type": "PAYGATE",
-                "channel": "redirect",
-                "return_url": "http://localhost:3000/return?cid=...",
-                "cancel_url": "http://localhost:3000/cancel?cid=..."
-              }
+              "channel": "redirect"
             }
           }
         }
@@ -570,13 +543,14 @@ flowchart LR
 
     subgraph MCPFlow["create_order"]
         direction TB
-        
+
         Calc["Calculate total:<br/>949.99 × 1 = 949.99"]
         OrderID["Insert order with id 123"]
-        Gateway["Call Payment Gateway"]
+        GenURLs["Generate callback URLs:<br/>return_url, cancel_url, notify_url"]
+        Gateway["Call Payment Gateway<br/>(with callback URLs)"]
         GatewayResp["Return pay_url:<br/>http://localhost:3000/checkout/123"]
 
-        Calc --> OrderID --> Gateway --> GatewayResp
+        Calc --> OrderID --> GenURLs --> Gateway --> GatewayResp
     end
 
     subgraph Finalize["Payment Agent"]
@@ -760,26 +734,26 @@ flowchart LR
 
 #### Bước 4: Payment Agent Notify Salesperson Agent
 
-Sau khi xác nhận order đã kết thúc (SUCCESS hoặc CANCELLED), Payment Agent publish notification:
+Sau khi xử lý callback, Payment Agent publish notification cho Salesperson Agent:
 
 **Redis Channel:** `salesperson:notification`
 
-**Message Format:**
+**Message Format:** (chỉ chứa order_id và context_id, không có status)
 ```json
 {
   "order_id": "123",
   "context_id": "payment-550e8400-e29b-41d4-a716-446655440000",
-  "status": "SUCCESS",
-  "transaction_id": "VNP14210123456789",
   "timestamp": "2025-01-15T11:20:05+00:00"
 }
 ```
+
+**Lưu ý:** Status KHÔNG được gửi trong notification. Salesperson Agent sẽ tự query status qua A2A.
 
 ---
 
 #### Bước 5: Salesperson Agent Query Order Status
 
-Salesperson Agent nhận notification từ Redis và gọi A2A request đến Payment Agent để lấy chi tiết order:
+Salesperson Agent nhận notification từ Redis (chỉ có order_id + context_id), sau đó gọi A2A request đến Payment Agent để lấy **actual status** và chi tiết order:
 
 **A2A Request (JSON-RPC 2.0):**
 

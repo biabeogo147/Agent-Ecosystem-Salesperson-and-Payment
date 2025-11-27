@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import uuid
 import random
 import asyncio
 
@@ -67,12 +66,6 @@ async def reserve_stock(sku: str, quantity: int) -> str:
     return ResponseFormat(data=result).to_json()
 
 
-async def generate_context_id(prefix: str) -> str:
-    """Create a unique correlation identifier used to track payment requests."""
-    context_id = f"{prefix}-{uuid.uuid4()}"
-    return ResponseFormat(data=context_id).to_json()
-
-
 async def search_product_documents(query: str, product_sku: str | None = None, limit: int = 5) -> str:
     """
     Search product documents in vector database.
@@ -137,14 +130,12 @@ salesperson_mcp_logger.info("Initializing ADK tool for salesperson...")
 find_product_tool = FunctionTool(find_product)
 calc_shipping_tool = FunctionTool(calc_shipping)
 reserve_stock_tool = FunctionTool(reserve_stock)
-generate_context_id_tool = FunctionTool(generate_context_id)
 search_product_documents_tool = FunctionTool(search_product_documents)
 
 ADK_TOOLS_FOR_SALESPERSON = {
     find_product_tool.name: find_product_tool,
     calc_shipping_tool.name: calc_shipping_tool,
     reserve_stock_tool.name: reserve_stock_tool,
-    generate_context_id_tool.name: generate_context_id_tool,
     search_product_documents_tool.name: search_product_documents_tool,
 }
 

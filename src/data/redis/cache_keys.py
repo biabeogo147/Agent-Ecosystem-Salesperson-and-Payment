@@ -51,8 +51,13 @@ class CacheKeys:
 
     @staticmethod
     def payment_callback() -> str:
-        """Redis List key for payment callback."""
+        """Redis channel key for payment callback."""
         return "payment:callback"
+
+    @staticmethod
+    def salesperson_notification() -> str:
+        """Redis channel key for salesperson notifications."""
+        return "salesperson:notification"
 
 
 class CachePatterns:

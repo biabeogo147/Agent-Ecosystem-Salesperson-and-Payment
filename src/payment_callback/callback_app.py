@@ -5,7 +5,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from src.config import CALLBACK_SERVICE_HOST, CALLBACK_SERVICE_PORT
 from src.payment_callback import callback_logger
-from src.payment_callback.api.callback_router import router as callback_router
+from src.payment_callback.api.callback_router import router as callback_router, redirect_router
 from src.utils.logger import set_app_context, AppLogger
 
 
@@ -37,6 +37,7 @@ app = FastAPI(
 app.add_middleware(AppContextMiddleware)
 
 app.include_router(callback_router)
+app.include_router(redirect_router)
 
 
 if __name__ == "__main__":

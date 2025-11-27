@@ -31,9 +31,9 @@ async def find_product(query: str) -> str:
     """
     Find product by SKU or substring of name.
     """
+    salesperson_mcp_logger.info(f"Find product: {query}")
     query = query.lower()
     results = await find_products_by_text(query)
-
     return ResponseFormat(data=results).to_json()
 
 
@@ -41,6 +41,7 @@ async def calc_shipping(weight: float, distance: float) -> str:
     """
     Calculate shipping cost based on weight (kg) and distance (km).
     """
+    salesperson_mcp_logger.info(f"Calculate shipping cost: weight={weight}, distance={distance}")
     base_cost = 5.0         # USD
     weight_factor = 1.0     # Kg
     distance_factor = 0.5   # Km
@@ -53,6 +54,7 @@ async def reserve_stock(sku: str, quantity: int) -> str:
     """
     Reserve stock for a given SKU and quantity.
     """
+    salesperson_mcp_logger.info(f"Reserve stock: sku={sku}, quantity={quantity}")
     product = await find_product_by_sku(sku, use_cache=False)
 
     if not product:
@@ -75,6 +77,7 @@ async def search_product_documents(query: str, product_sku: str | None = None, l
         limit: Maximum number of results (default 5)
     Returns: List of matching documents
     """
+    salesperson_mcp_logger.info(f"Search product documents: query={query}, product_sku={product_sku}, limit={limit}")
     cache_key = CacheKeys.vector_search(query, product_sku, limit)
 
     try:

@@ -51,34 +51,72 @@ async def find_products_by_text(
     logger.debug(f"Cache MISS: {cache_key}")
     es = es_connection.get_client()
 
+    normalized_query = (query_string or "").strip()
+    sku_candidate = normalized_query.replace(" ", "").upper()
+
+    filters: list[dict] = []
+
+    if min_price is not None or max_price is not None:
+        price_range: dict = {}
+        if min_price is not None:
+            price_range["gte"] = min_price
+        if max_price is not None:
+            price_range["lte"] = max_price
+        filters.append({"range": {"price": price_range}})
+
+    if merchant_id is not None:
+        filters.append({"term": {"merchant_id": merchant_id}})
+
+    # 4. Build should clauses: name + sku
+    should_clauses: list[dict] = []
+
+    # 4.1. Full-text trên name + name.autocomplete
+    if normalized_query:
+        should_clauses.append(
+            {
+                "multi_match": {
+                    "query": normalized_query,
+                    "fields": [
+                        "name^3",               # name được boost
+                        "name.autocomplete^4",  # autocomplete được boost mạnh hơn
+                    ],
+                    "type": "best_fields",
+                    "fuzziness": "AUTO",
+                    "operator": "and",       # bắt "iphone 15 pro" đầy đủ hơn
+                }
+            }
+        )
+
+    # 4.2. Exact SKU (case-insensitive, bỏ khoảng trắng)
+    # Điều kiện độ dài ≥ 4 để tránh query linh tinh (vd: "ip")
+    if sku_candidate and len(sku_candidate) >= 4:
+        should_clauses.append(
+            {
+                "term": {
+                    "sku": sku_candidate 
+                }
+            }
+        )
+
+    # Nếu muốn cho phép match SKU kiểu *IPHONE15PRO* thì có thể thêm:
+    # should_clauses.append(
+    #     {
+    #         "wildcard": {
+    #             "sku": f"*{sku_candidate}*"
+    #         }
+    #     }
+    # )
+
     query = {
         "query": {
             "bool": {
-                "must": [
-                    {
-                        "multi_match": {
-                            "query": query_string,
-                            "fields": ["name^3", "sku^2"],
-                            "fuzziness": "AUTO"
-                        }
-                    }
-                ],
-                "filter": []
+                "filter": filters,
+                "should": should_clauses,
+                "minimum_should_match": 1
             }
         },
         "size": limit
     }
-
-    if min_price or max_price:
-        price_range = {}
-        if min_price:
-            price_range["gte"] = min_price
-        if max_price:
-            price_range["lte"] = max_price
-        query["query"]["bool"]["filter"].append({"range": {"price": price_range}})
-
-    if merchant_id is not None:
-        query["query"]["bool"]["filter"].append({"term": {"merchant_id": merchant_id}})
 
     response = await es.search(index=ELASTIC_INDEX, body=query)
 

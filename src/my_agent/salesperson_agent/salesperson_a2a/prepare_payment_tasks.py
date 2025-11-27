@@ -11,6 +11,7 @@ from src.my_agent.my_a2a_common.constants import SALESPERSON_AGENT_NAME, PAYMENT
     PAYMENT_STATUS_ARTIFACT_NAME
 
 from src.my_agent.payment_agent.payment_a2a.payment_agent_skills import CREATE_ORDER_SKILL_ID, QUERY_STATUS_SKILL_ID
+from src.my_agent.salesperson_agent import salesperson_agent_logger
 from src.my_agent.salesperson_agent.salesperson_mcp_client import (
     SalespersonMcpClient,
     get_salesperson_mcp_client
@@ -104,8 +105,14 @@ async def prepare_create_order_payload(
     client = get_salesperson_mcp_client()
     resolved_items = await _resolve_items_via_product_tool(items, client=client)
 
-    # Generate context_id locally (no MCP call needed)
     context_id = generate_context_id(prefix="payment")
+
+    salesperson_agent_logger.info(f"context_id: {context_id}")
+    salesperson_agent_logger.info(f"Resolved items: {resolved_items}")
+    salesperson_agent_logger.info(f"Customer: {customer}")
+    salesperson_agent_logger.info(f"Channel: {channel}")
+    salesperson_agent_logger.info(f"Note: {note}")
+    salesperson_agent_logger.info(f"Metadata: {metadata}")
 
     payment_request = PaymentRequest(
         context_id=context_id,

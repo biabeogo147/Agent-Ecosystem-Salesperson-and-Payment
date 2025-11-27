@@ -7,7 +7,9 @@ Core duties
     "context_id": str,
     "items": [ {"sku": str, "name": str, "quantity": int, "unit_price": number} ],
     "customer": {"name": str, "email": str, "phone_number": str},
-    "method": {"channel": "redirect" | "qr", "return_url": str, "cancel_url": str}
+    "channel": "redirect|qr",
+    "note": "optional note",
+    "metadata": {"key": "value"}
   }
 - After invoking `create_order`, return the tool's JSON response to the requesting agent without modification.
 - To check an existing order, call `query_status({"context_id": str})` and return the tool result.

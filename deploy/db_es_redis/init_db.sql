@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS product (
     sku VARCHAR(255) PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     price DECIMAL(18, 2) NOT NULL,
-    currency VARCHAR(5) NOT NULL DEFAULT 'USD',
+    currency VARCHAR(255) NOT NULL DEFAULT 'USD',
     stock INTEGER NOT NULL,
     merchant_id INTEGER REFERENCES merchant(id) ON DELETE SET NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
@@ -51,7 +51,6 @@ CREATE INDEX IF NOT EXISTS idx_product_sku ON product(sku);
 CREATE INDEX IF NOT EXISTS idx_product_updated_at ON product(updated_at);
 CREATE INDEX IF NOT EXISTS idx_product_merchant_id ON product(merchant_id);
 
--- Trigger function to auto-update updated_at
 CREATE OR REPLACE FUNCTION update_product_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -60,7 +59,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Create trigger
+-- Create trigger for product
 DROP TRIGGER IF EXISTS product_updated_at_trigger ON product;
 CREATE TRIGGER product_updated_at_trigger
     BEFORE UPDATE ON product
@@ -73,14 +72,30 @@ CREATE TRIGGER product_updated_at_trigger
 -- ==============================================
 CREATE TABLE IF NOT EXISTS "order" (
     id SERIAL PRIMARY KEY,
+    context_id VARCHAR(255) NOT NULL,
     user_id INTEGER REFERENCES "user"(id) ON DELETE SET NULL,
-    product_sku VARCHAR(255) NOT NULL REFERENCES product(sku) ON DELETE CASCADE,
-    quantity INTEGER NOT NULL DEFAULT 1,
     total_amount DECIMAL(18, 2) NOT NULL,
-    currency VARCHAR(5) NOT NULL DEFAULT 'USD',
+    currency VARCHAR(255) NOT NULL DEFAULT 'USD',
     status order_status_enum NOT NULL DEFAULT 'PENDING',
+    note VARCHAR(255),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE
+);
+
+CREATE INDEX IF NOT EXISTS idx_order_context_id ON "order"(context_id);
+
+-- ==============================================
+-- Table: order_item
+-- Description: Order line items - represents individual products in an order
+-- ==============================================
+CREATE TABLE IF NOT EXISTS order_item (
+    id SERIAL PRIMARY KEY,
+    order_id INTEGER NOT NULL REFERENCES "order"(id) ON DELETE CASCADE,
+    product_sku VARCHAR(255) NOT NULL REFERENCES product(sku),
+    product_name VARCHAR(255) NOT NULL,
+    quantity INTEGER NOT NULL DEFAULT 1,
+    unit_price DECIMAL(18, 2) NOT NULL,
+    currency VARCHAR(255) NOT NULL DEFAULT 'USD'
 );
 
 -- ==============================================
@@ -121,6 +136,7 @@ INSERT INTO merchant (name) VALUES
 ON CONFLICT DO NOTHING;
 
 -- Insert sample users
+-- Password for both users: 'password123' (hashed with bcrypt)
 INSERT INTO "user" (username, email, full_name, hashed_password, role) VALUES
     ('admin', 'admin@example.com', 'System Administrator', '$2b$12$KIXxPz7VFjakaZPiQ6KVWO2Y.A8LWrEwLmY0yJQp9EfGJO78KKJmS', 'admin'),
     ('testuser', 'test@example.com', 'Test User', '$2b$12$KIXxPz7VFjakaZPiQ6KVWO2Y.A8LWrEwLmY0yJQp9EfGJO78KKJmS', 'user')

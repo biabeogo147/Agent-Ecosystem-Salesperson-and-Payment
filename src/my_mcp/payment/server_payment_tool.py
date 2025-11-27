@@ -97,7 +97,7 @@ app.add_middleware(AppContextMiddleware)
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
-        "server_payment_tool:app",
+        app,
         host="0.0.0.0",
         port=MCP_SERVER_PORT_PAYMENT,
         reload=False,

@@ -61,5 +61,12 @@ CALLBACK_SERVICE_HOST = os.getenv("CALLBACK_SERVICE_HOST", "0.0.0.0")
 CALLBACK_SERVICE_PORT = int(os.getenv("CALLBACK_SERVICE_PORT", "8083"))
 CALLBACK_SERVICE_URL = os.getenv("CALLBACK_SERVICE_URL", "http://localhost:8083")
 
+WS_SERVER_HOST = os.getenv("WS_SERVER_HOST", "0.0.0.0")
+WS_SERVER_PORT = int(os.getenv("WS_SERVER_PORT", "8084"))
+
+CHAT_UI_HOST = os.getenv("CHAT_UI_HOST", "0.0.0.0")
+CHAT_UI_PORT = int(os.getenv("CHAT_UI_PORT", "8085"))
+ADK_AGENT_URL = os.getenv("ADK_AGENT_URL", "http://localhost:8000")
+
 VNPAY_TMN_CODE = os.getenv("VNPAY_TMN_CODE", "")
 VNPAY_HASH_SECRET = os.getenv("VNPAY_HASH_SECRET", "")

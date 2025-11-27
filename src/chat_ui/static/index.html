@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salesperson Chat</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1>Salesperson Assistant</h1>
+            <div class="connection-status">
+                <span id="ws-status" class="status-dot disconnected"></span>
+                <span id="ws-status-text">Disconnected</span>
+            </div>
+        </header>
+
+        <!-- Main content -->
+        <main class="main">
+            <!-- Chat area -->
+            <div class="chat-container">
+                <div id="chat-messages" class="chat-messages">
+                    <!-- Messages will be added here -->
+                    <div class="message agent">
+                        <div class="message-content">
+                            Xin chao! Toi la tro ly ban hang. Toi co the giup gi cho ban?
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input area -->
+                <div class="chat-input-container">
+                    <input
+                        type="text"
+                        id="message-input"
+                        class="chat-input"
+                        placeholder="Nhap tin nhan..."
+                        autocomplete="off"
+                    >
+                    <button id="send-btn" class="send-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Notification panel -->
+            <div class="notification-panel">
+                <h3>Payment Notifications</h3>
+                <div id="notifications" class="notifications-list">
+                    <!-- Notifications will be added here -->
+                    <div class="empty-state">
+                        Chua co thong bao thanh toan
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Context ID display -->
+        <footer class="footer">
+            <span>Context ID: <code id="context-id">-</code></span>
+            <button id="new-session-btn" class="new-session-btn">New Session</button>
+        </footer>
+    </div>
+
+    <!-- Toast container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="/static/chat.js"></script>
+</body>
+</html>

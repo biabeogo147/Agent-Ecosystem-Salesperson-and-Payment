@@ -7,17 +7,25 @@ notification messages from the Payment Agent.
 Simplified flow:
 1. Receive notification from Redis (order_id + context_id only)
 2. Query order status via A2A (payment.query-status) to get actual status
-3. Process notification (log or notify user via frontend integration)
+3. Push notification to WebSocket clients via callback
+
+Callback signature: async def callback(context_id: str, message: dict) -> None
 """
 import asyncio
 import json
-from typing import Optional
+from typing import Awaitable, Callable, Optional
 
 from pydantic import BaseModel
 
 from data.redis.cache_keys import CacheKeys
 from src.data.redis.connection import redis_connection
 from src.my_agent.salesperson_agent import salesperson_agent_logger as logger
+
+# Type alias for notification callback
+NotificationCallback = Callable[[str, dict], Awaitable[None]]
+
+# Global callback reference
+_notification_callback: NotificationCallback | None = None
 
 
 class SalespersonNotification(BaseModel):
@@ -34,7 +42,7 @@ async def process_notification(notification_data: dict) -> bool:
     Flow:
     1. Parse notification message (order_id + context_id)
     2. Query order status via A2A (payment.query-status)
-    3. Log the result (actual user notification depends on frontend integration)
+    3. Push status to WebSocket clients via callback
 
     Args:
         notification_data: Notification message data from Redis
@@ -42,6 +50,8 @@ async def process_notification(notification_data: dict) -> bool:
     Returns:
         True if processed successfully, False otherwise
     """
+    global _notification_callback
+
     try:
         notification = SalespersonNotification.model_validate(notification_data)
 
@@ -61,12 +71,13 @@ async def process_notification(notification_data: dict) -> bool:
             order_id=notification.order_id
         )
 
-        # Log result based on queried status
+        # Extract status from response
         status = payment_response.status.value if payment_response.status else "unknown"
         logger.info(
             f"Order {notification.order_id} status queried via A2A: status={status}"
         )
 
+        # Log based on status
         if status == "SUCCESS":
             logger.info(f"Payment SUCCESS for order {notification.order_id}")
         elif status == "CANCELLED":
@@ -76,8 +87,18 @@ async def process_notification(notification_data: dict) -> bool:
         else:
             logger.info(f"Payment status '{status}' for order {notification.order_id}")
 
-        # TODO: Integrate with frontend/WebSocket to notify user in real-time
-        # This depends on how the frontend is implemented (WebSocket, SSE, polling, etc.)
+        # Push to WebSocket clients via callback
+        if _notification_callback:
+            message = {
+                "type": "payment_status",
+                "order_id": notification.order_id,
+                "status": status,
+                "timestamp": notification.timestamp
+            }
+            await _notification_callback(notification.context_id, message)
+            logger.info(f"Notification pushed via callback for context: {notification.context_id}")
+        else:
+            logger.debug("No callback registered, skipping push notification")
 
         return True
 
@@ -137,7 +158,7 @@ _subscriber_task: Optional[asyncio.Task] = None
 
 def start_subscriber_background() -> asyncio.Task:
     """
-    Start the notification subscriber as a background task.
+    Start the notification subscriber as a background task (without callback).
 
     Returns:
         The asyncio Task running the subscriber
@@ -148,9 +169,33 @@ def start_subscriber_background() -> asyncio.Task:
     return _subscriber_task
 
 
+def start_subscriber_with_callback(callback: NotificationCallback) -> asyncio.Task:
+    """
+    Start the notification subscriber with a callback for pushing notifications.
+
+    This is the preferred method when integrating with WebSocket server.
+    The callback will be called for each processed notification with:
+    - context_id: str - The context/conversation ID
+    - message: dict - The notification message to push
+
+    Args:
+        callback: Async function to call when notification is processed
+
+    Returns:
+        The asyncio Task running the subscriber
+    """
+    global _subscriber_task, _notification_callback
+
+    _notification_callback = callback
+    _subscriber_task = asyncio.create_task(start_notification_subscriber())
+    logger.info("Salesperson notification subscriber started with callback")
+    return _subscriber_task
+
+
 async def stop_subscriber() -> None:
     """Stop the notification subscriber background task."""
-    global _subscriber_task
+    global _subscriber_task, _notification_callback
+
     if _subscriber_task and not _subscriber_task.done():
         _subscriber_task.cancel()
         try:
@@ -158,4 +203,6 @@ async def stop_subscriber() -> None:
         except asyncio.CancelledError:
             pass
         logger.info("Salesperson notification subscriber stopped")
+
     _subscriber_task = None
+    _notification_callback = None

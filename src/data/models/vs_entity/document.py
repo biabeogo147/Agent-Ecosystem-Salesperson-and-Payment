@@ -1,8 +1,7 @@
 import datetime
-
-from pymilvus import CollectionSchema, DataType
-from pydantic import BaseModel, Field
 from typing import List, Optional
+
+from pydantic import BaseModel, Field
 
 
 class Document(BaseModel):

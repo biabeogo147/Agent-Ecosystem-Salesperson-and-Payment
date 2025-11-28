@@ -8,6 +8,7 @@ from google.adk.tools.mcp_tool.mcp_session_manager import MCPSessionManager
 
 from src.my_mcp.mcp_connect_params import get_mcp_streamable_http_connect_params
 from src.utils.status import Status
+from src.utils.logger import get_current_logger
 
 
 class BaseMcpClient:
@@ -29,13 +30,20 @@ class BaseMcpClient:
     async def _call_tool(
         self, name: str, arguments: Optional[dict[str, Any]] = None
     ) -> mcp_types.CallToolResult:
-        session = await self._session_manager.create_session()
-        result = await session.call_tool(name, arguments)
-        if result.isError:
-            raise RuntimeError(
-                f"MCP tool '{name}' returned an error payload: {result}"
-            )
-        return result
+        logger = get_current_logger()
+        logger.debug(f"[MCP] Calling tool '{name}' with arguments: {arguments}")
+        try:
+            session = await self._session_manager.create_session()
+            logger.debug(f"[MCP] Session created for tool '{name}'")
+            result = await session.call_tool(name, arguments)
+            if result.isError:
+                logger.error(f"[MCP] Tool '{name}' returned error payload: {result}")
+                raise RuntimeError(f"MCP tool '{name}' returned an error payload: {result}")
+            logger.debug(f"[MCP] Tool '{name}' returned successfully: {result}")
+            return result
+        except Exception as e:
+            logger.exception(f"[MCP] Exception while calling tool '{name}'")
+            raise
 
     async def _call_tool_text(
         self, name: str, arguments: Optional[dict[str, Any]] = None

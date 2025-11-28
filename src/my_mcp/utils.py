@@ -1,13 +1,15 @@
 import json
 from typing import Any
 
+from src.utils.logger import get_current_logger
+
 from mcp import types as mcp_types
 from google.adk.tools.mcp_tool import adk_to_mcp_tool_type
-from src.utils.logger import logger
 
 
 async def list_mcp_tools_with_dict(tool_lists: dict) -> list[mcp_types.Tool]:
     """Expose ADK tools to MCP as mcp_types.Tool list."""
+    logger = get_current_logger()
     logger.info("MCP Server: Received list_tools request.")
     exposed: list[mcp_types.Tool] = []
 
@@ -25,6 +27,7 @@ async def list_mcp_tools_with_dict(tool_lists: dict) -> list[mcp_types.Tool]:
 
 async def call_mcp_tool_with_dict(name: str, arguments: dict | None, tool_lists: dict) -> list[mcp_types.Content]:
     """Execute an exposed ADK tool by name and return MCP Content parts."""
+    logger = get_current_logger()
     logger.info(f"MCP Server: Received call_tool request for '{name}' with args: {arguments}")
 
     arguments = arguments or {}

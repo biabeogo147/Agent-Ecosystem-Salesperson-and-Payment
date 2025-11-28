@@ -3,8 +3,6 @@ from redis.asyncio.connection import ConnectionPool
 from src.config import REDIS_HOST, REDIS_PORT, REDIS_PASSWORD, REDIS_DB
 from src.utils.logger import get_current_logger
 
-logger = get_current_logger()
-
 
 class RedisConnection:
     """
@@ -15,6 +13,7 @@ class RedisConnection:
 
     def __init__(self):
         """Initialize Redis async connection pool."""
+        logger = get_current_logger()
         try:
             # Create async connection pool
             self.pool = ConnectionPool(
@@ -43,6 +42,7 @@ class RedisConnection:
         Returns:
             Redis async client object
         """
+        logger = get_current_logger()
         if self.client is None:
             self.client = redis.Redis(connection_pool=self.pool)
             await self.client.ping()
@@ -56,6 +56,7 @@ class RedisConnection:
         Returns:
             True if connection is healthy, False otherwise
         """
+        logger = get_current_logger()
         try:
             client = await self.get_client()
             return await client.ping()
@@ -65,6 +66,7 @@ class RedisConnection:
 
     async def close(self):
         """Close Redis connection and cleanup resources."""
+        logger = get_current_logger()
         if self.client:
             await self.client.aclose()
             self.client = None

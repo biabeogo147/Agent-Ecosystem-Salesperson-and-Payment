@@ -8,11 +8,10 @@ from src.data.redis.cache_ops import get_cached_value, set_cached_value, delete_
 from src.data.redis.cache_keys import CacheKeys, TTL
 from src.utils.logger import get_current_logger
 
-logger = get_current_logger()
-
 
 async def _set_product_cache(cache_key: str, product_dict: dict):
     """Background task to cache product."""
+    logger = get_current_logger()
     try:
         await set_cached_value(cache_key, product_dict, ttl=TTL.PRODUCT)
         logger.debug(f"Cached product: {cache_key}")
@@ -31,6 +30,7 @@ async def find_product_by_sku(sku: str, use_cache: bool = True) -> Product | Non
     Returns:
         Product object if found, None otherwise
     """
+    logger = get_current_logger()
     cache_key = CacheKeys.product_by_sku(sku)
 
     if use_cache:
@@ -72,6 +72,7 @@ async def update_product_stock(sku: str, new_stock: int) -> bool:
     Returns:
         True if updated successfully, False otherwise
     """
+    logger = get_current_logger()
     session = db_connection.get_session()
     try:
         async with session:
@@ -115,6 +116,7 @@ async def get_all_products(limit: int = None, offset: int = 0) -> list[Product]:
     Returns:
         List of Product objects
     """
+    logger = get_current_logger()
     session = db_connection.get_session()
     try:
         async with session:
@@ -143,6 +145,7 @@ async def get_products_updated_since(timestamp: datetime) -> list[Product]:
     Returns:
         List of Product objects updated since timestamp
     """
+    logger = get_current_logger()
     session = db_connection.get_session()
     try:
         async with session:
@@ -167,6 +170,7 @@ async def get_products_by_merchant(merchant_id: int) -> list[Product]:
     Returns:
         List of Product objects for the merchant
     """
+    logger = get_current_logger()
     session = db_connection.get_session()
     try:
         async with session:

@@ -6,11 +6,10 @@ from src.data.redis.cache_ops import get_cached_value, set_cached_value
 from src.data.redis.cache_keys import CacheKeys, TTL
 from src.utils.logger import get_current_logger
 
-logger = get_current_logger()
-
 
 async def _cache_search_results(cache_key: str, results: list):
     """Background task to cache search results."""
+    logger = get_current_logger()
     try:
         await set_cached_value(cache_key, results, ttl=TTL.SEARCH)
         logger.debug(f"Cached search results: {cache_key}")
@@ -38,6 +37,7 @@ async def find_products_by_text(
     Returns:
         List of product dictionaries with relevance scores
     """
+    logger = get_current_logger()
     cache_key = CacheKeys.search_products(query_string, min_price, max_price, merchant_id, limit)
 
     try:
@@ -150,6 +150,7 @@ async def get_product_by_sku(sku: str) -> dict | None:
     Returns:
         Product dictionary if found, None otherwise
     """
+    logger = get_current_logger()
     es = es_connection.get_client()
 
     try:

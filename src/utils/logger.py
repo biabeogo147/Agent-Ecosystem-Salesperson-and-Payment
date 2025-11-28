@@ -93,10 +93,6 @@ def setup_logger(name: str = "app_logger", log_level: int = logging.INFO, log_fi
     return logger
 
 
-# Default logger instance
-logger = setup_logger()
-
-
 # ============================================================================
 # Context-Aware Logging for Multi-App Architecture
 # ============================================================================
@@ -128,7 +124,6 @@ def get_current_logger() -> logging.Logger:
     """
     app_logger_type = _current_app_logger.get()
 
-    # Import loggers lazily to avoid circular imports
     if app_logger_type == AppLogger.A2A_PAYMENT:
         from src.my_agent.payment_agent import a2a_payment_logger
         return a2a_payment_logger
@@ -154,8 +149,7 @@ def get_current_logger() -> logging.Logger:
         return callback_logger
 
     else:
-        # Fallback to default logger defined above
-        return logger
+        raise RuntimeError(f"Unknown app logger type: {app_logger_type}")
 
 
 class set_app_context:

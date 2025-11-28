@@ -6,8 +6,6 @@ from src.config import RENEW_VS, VS_NAME
 
 from src.utils.logger import get_current_logger
 
-logger = get_current_logger()
-
 
 def setup_vector_store(client: MilvusClient):
     """Set up the vector store by initializing the database and collections."""
@@ -18,6 +16,7 @@ def setup_vector_store(client: MilvusClient):
 
 def init_vs(client: MilvusClient, db_name: str):
     """Initialize the database and index with LlamaIndex."""
+    logger = get_current_logger()
     try:
         databases = client.list_databases()
         if db_name not in databases:
@@ -38,6 +37,7 @@ def create_vs(client: MilvusClient, db_name: str):
     database.max.collections (integer): The maximum number of collections allowed in the specified database.
     database.force.deny.writing (boolean): Whether to force the specified database to deny writing operations.
     database.force.deny.reading (boolean): Whether to force the specified database to deny reading operations."""
+    logger = get_current_logger()
     client.create_database(
         db_name=db_name,
         properties=None,
@@ -50,6 +50,7 @@ def create_vs(client: MilvusClient, db_name: str):
 
 def drop_vs(client: MilvusClient, db_name: str):
     """Drop the database and all its collections."""
+    logger = get_current_logger()
     try:
         if db_name not in client.list_databases():
             logger.warning(f"Database {db_name} does not exist.")
@@ -114,6 +115,7 @@ def create_index_params(client: MilvusClient) -> IndexParams:
 
 
 def create_collection(client: MilvusClient, collection_name: str):
+    logger = get_current_logger()
     schema = create_schema()
     index_params = create_index_params(client)
     client.create_collection(
@@ -125,6 +127,7 @@ def create_collection(client: MilvusClient, collection_name: str):
 
 
 def drop_collection(client: MilvusClient, collection_name: str):
+    logger = get_current_logger()
     try:
         if collection_name not in client.list_collections():
             logger.warning(f"Collection {collection_name} does not exist.")
@@ -137,6 +140,7 @@ def drop_collection(client: MilvusClient, collection_name: str):
 
 
 def insert_data(client: MilvusClient, collection_name: str, data: list[dict]):
+    logger = get_current_logger()
     try:
         client.insert(collection_name=collection_name, data=data)
         logger.info(f"Inserted {len(data)} data into collection {collection_name}.")

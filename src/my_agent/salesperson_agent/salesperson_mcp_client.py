@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from google.adk.tools import FunctionTool
 from google.adk.tools.mcp_tool.mcp_session_manager import MCPSessionManager

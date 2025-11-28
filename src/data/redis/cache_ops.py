@@ -3,8 +3,6 @@ from typing import Any
 from src.data.redis.connection import redis_connection
 from src.utils.logger import get_current_logger
 
-logger = get_current_logger()
-
 
 async def get_cached_value(key: str) -> Any | None:
     """
@@ -16,6 +14,7 @@ async def get_cached_value(key: str) -> Any | None:
     Returns:
         Cached value or None if not found
     """
+    logger = get_current_logger()
     try:
         redis = await redis_connection.get_client()
         value = await redis.get(key)
@@ -46,6 +45,7 @@ async def set_cached_value(key: str, value: Any, ttl: int = None) -> bool:
     Returns:
         True if successful, False otherwise
     """
+    logger = get_current_logger()
     try:
         redis = await redis_connection.get_client()
 
@@ -76,6 +76,7 @@ async def delete_cached_value(key: str) -> bool:
     Returns:
         True if deleted, False if not found or error
     """
+    logger = get_current_logger()
     try:
         redis = await redis_connection.get_client()
         result = await redis.delete(key)
@@ -96,6 +97,7 @@ async def clear_pattern(pattern: str) -> int:
     Returns:
         Number of keys deleted
     """
+    logger = get_current_logger()
     try:
         redis = await redis_connection.get_client()
         deleted = 0

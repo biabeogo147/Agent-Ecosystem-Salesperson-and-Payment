@@ -2,8 +2,6 @@ from src.config import ELASTIC_INDEX
 from src.data.elasticsearch.connection import es_connection
 from src.utils.logger import get_current_logger
 
-logger = get_current_logger()
-
 
 async def index_exists() -> bool:
     """
@@ -25,6 +23,7 @@ async def create_products_index():
     - Autocomplete analyzer with edge n-grams
     - Proper field mappings for product attributes
     """
+    logger = get_current_logger()
     es = es_connection.get_client()
 
     if await es.indices.exists(index=ELASTIC_INDEX):

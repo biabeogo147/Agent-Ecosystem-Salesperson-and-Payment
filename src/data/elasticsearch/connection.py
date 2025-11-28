@@ -2,8 +2,6 @@ from elasticsearch import AsyncElasticsearch
 from src.config import ELASTIC_HOST, ELASTIC_PORT
 from src.utils.logger import get_current_logger
 
-logger = get_current_logger()
-
 
 class ElasticConnection:
     """
@@ -14,6 +12,7 @@ class ElasticConnection:
 
     def __init__(self):
         """Initialize Elasticsearch async connection with optimized pooling and retry settings."""
+        logger = get_current_logger()
         self.es = AsyncElasticsearch(
             hosts=[{"host": ELASTIC_HOST, "port": ELASTIC_PORT, "scheme": "http"}],
             verify_certs=False,
@@ -35,6 +34,7 @@ class ElasticConnection:
 
     async def close(self):
         """Close Elasticsearch connection and cleanup resources."""
+        logger = get_current_logger()
         await self.es.close()
         logger.info("✅ Elasticsearch connection closed")
 

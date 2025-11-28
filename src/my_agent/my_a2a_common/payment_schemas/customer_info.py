@@ -1,6 +1,9 @@
 from __future__ import annotations
-from typing import Optional, Dict
+
+from typing import Optional
+
 from pydantic import BaseModel, Field, EmailStr
+
 
 class CustomerInfo(BaseModel):
     name: Optional[str] = Field(default=None)

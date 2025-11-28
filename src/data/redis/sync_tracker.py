@@ -2,8 +2,6 @@ from src.data.redis.connection import redis_connection
 from src.data.redis.cache_keys import CacheKeys
 from src.utils.logger import get_current_logger
 
-logger = get_current_logger()
-
 
 async def mark_skus_as_synced(skus: list[str]) -> bool:
     """
@@ -15,6 +13,7 @@ async def mark_skus_as_synced(skus: list[str]) -> bool:
     Returns:
         True if successful, False otherwise
     """
+    logger = get_current_logger()
     if not skus:
         return True
 
@@ -41,6 +40,7 @@ async def get_unsynced_skus(all_skus: list[str]) -> set[str]:
     Returns:
         Set of SKUs that are not synced
     """
+    logger = get_current_logger()
     try:
         redis = await redis_connection.get_client()
         synced_key = CacheKeys.elasticsearch_synced_skus()
@@ -68,6 +68,7 @@ async def get_sync_stats() -> dict:
     Returns:
         Dictionary with sync statistics
     """
+    logger = get_current_logger()
     try:
         redis = await redis_connection.get_client()
         synced_key = CacheKeys.elasticsearch_synced_skus()

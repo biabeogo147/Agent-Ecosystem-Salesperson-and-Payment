@@ -4,13 +4,12 @@ from src.data.milvus.milvus_ops import create_collection
 from src.data.models.vs_entity import list_vs_entity
 from src.utils.logger import get_current_logger
 
-logger = get_current_logger()
-
 
 def ensure_all_vs_models(client: MilvusClient):
     """
     Ensure that all models declared in vs_entity.list_vs_entity have corresponding Milvus collections.
     """
+    logger = get_current_logger()
     if not list_vs_entity:
         logger.warning("⚠️ No models found in list_vs_entity.")
         return
@@ -28,6 +27,7 @@ def ensure_collection(client: MilvusClient, collection_name: str):
     """
     Check if the collection exists; if not, create it.
     """
+    logger = get_current_logger()
     collections = client.list_collections()
 
     if collection_name not in collections:

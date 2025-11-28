@@ -8,9 +8,11 @@ from google.adk.tools.mcp_tool.mcp_session_manager import MCPSessionManager
 
 from src.config import MCP_PAYMENT_TOKEN, MCP_SERVER_HOST_PAYMENT, MCP_SERVER_PORT_PAYMENT
 from src.my_agent.base_mcp_client import BaseMcpClient
+from src.utils.logger import get_current_logger
 
 mcp_sse_url = f"http://{MCP_SERVER_HOST_PAYMENT}:{MCP_SERVER_PORT_PAYMENT}/sse"
 mcp_streamable_http_url = f"http://{MCP_SERVER_HOST_PAYMENT}:{MCP_SERVER_PORT_PAYMENT}/mcp"
+
 
 class PaymentMcpClient(BaseMcpClient):
     """Small wrapper around :class:`MCPSessionManager` for payment tools."""
@@ -30,45 +32,69 @@ class PaymentMcpClient(BaseMcpClient):
 
     async def create_order(self, *, payload: dict[str, Any] | str) -> dict[str, Any]:
         """Create an order using the shared MCP payment tool."""
+        logger = get_current_logger()
+        logger.debug(f"[PaymentMcpClient] create_order called with payload: {payload}")
         if isinstance(payload, str):
             payload = json.loads(payload)
 
         if not isinstance(payload, dict):
             raise TypeError("create_order(payload=...) expects a dict or JSON string")
 
-        response = await self._call_tool_json("create_order", {"payload": payload})
-        data = self._extract_success_data(response, tool="create_order")
-        if not isinstance(data, dict):
-            raise RuntimeError("MCP tool 'create_order' returned non-dict data payload")
-        return data
+        try:
+            response = await self._call_tool_json("create_order", {"payload": payload})
+            logger.debug(f"[PaymentMcpClient] create_order raw response: {response}")
+            data = self._extract_success_data(response, tool="create_order")
+            if not isinstance(data, dict):
+                raise RuntimeError("MCP tool 'create_order' returned non-dict data payload")
+            logger.info(f"[PaymentMcpClient] create_order success, order_id: {data.get('order_id')}")
+            return data
+        except Exception as e:
+            logger.exception(f"[PaymentMcpClient] create_order failed")
+            raise
 
     async def query_order_status(self, *, payload: dict[str, Any] | str) -> dict[str, Any]:
         """Query order status using the shared MCP payment tool."""
+        logger = get_current_logger()
+        logger.debug(f"[PaymentMcpClient] query_order_status called with payload: {payload}")
         if isinstance(payload, str):
             payload = json.loads(payload)
 
         if not isinstance(payload, dict):
             raise TypeError("query_order_status(payload=...) expects a dict or JSON string")
 
-        response = await self._call_tool_json("query_order_status", {"payload": payload})
-        data = self._extract_success_data(response, tool="query_order_status")
-        if not isinstance(data, dict):
-            raise RuntimeError("MCP tool 'query_order_status' returned non-dict data payload")
-        return data
+        try:
+            response = await self._call_tool_json("query_order_status", {"payload": payload})
+            logger.debug(f"[PaymentMcpClient] query_order_status raw response: {response}")
+            data = self._extract_success_data(response, tool="query_order_status")
+            if not isinstance(data, dict):
+                raise RuntimeError("MCP tool 'query_order_status' returned non-dict data payload")
+            logger.info(f"[PaymentMcpClient] query_order_status success")
+            return data
+        except Exception as e:
+            logger.exception(f"[PaymentMcpClient] query_order_status failed")
+            raise
 
     async def query_gateway_status(self, *, payload: dict[str, Any] | str) -> dict[str, Any]:
         """Query payment gateway for actual order status."""
+        logger = get_current_logger()
+        logger.debug(f"[PaymentMcpClient] query_gateway_status called with payload: {payload}")
         if isinstance(payload, str):
             payload = json.loads(payload)
 
         if not isinstance(payload, dict):
             raise TypeError("query_gateway_status(payload=...) expects a dict or JSON string")
 
-        response = await self._call_tool_json("query_gateway_status", {"payload": payload})
-        data = self._extract_success_data(response, tool="query_gateway_status")
-        if not isinstance(data, dict):
-            raise RuntimeError("MCP tool 'query_gateway_status' returned non-dict data payload")
-        return data
+        try:
+            response = await self._call_tool_json("query_gateway_status", {"payload": payload})
+            logger.debug(f"[PaymentMcpClient] query_gateway_status raw response: {response}")
+            data = self._extract_success_data(response, tool="query_gateway_status")
+            if not isinstance(data, dict):
+                raise RuntimeError("MCP tool 'query_gateway_status' returned non-dict data payload")
+            logger.info(f"[PaymentMcpClient] query_gateway_status success")
+            return data
+        except Exception as e:
+            logger.exception(f"[PaymentMcpClient] query_gateway_status failed")
+            raise
 
 
 _client: PaymentMcpClient | None = None

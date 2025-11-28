@@ -2,8 +2,6 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 import src.config as config
 from src.utils.logger import get_current_logger
 
-logger = get_current_logger()
-
 
 class PostgresConnection:
     """
@@ -19,6 +17,7 @@ class PostgresConnection:
         Args:
             database: Database name to connect to
         """
+        logger = get_current_logger()
         user = config.POSTGRES_USER
         password = config.POSTGRES_PASSWORD
         host = config.POSTGRES_HOST
@@ -49,6 +48,7 @@ class PostgresConnection:
 
     async def close(self):
         """Close database engine and cleanup resources."""
+        logger = get_current_logger()
         await self.engine.dispose()
         logger.info("✅ PostgreSQL async engine disposed")
 

@@ -6,19 +6,17 @@ from starlette.responses import Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import Message
 
-from src.utils.logger import setup_logger
-
+from utils.logger import get_current_logger
 
 MAX_LOG_BYTES = 4096
 
 
 class LoggingMiddleware(BaseHTTPMiddleware):
-    def __init__(self, app, logger: logging.Logger = None):
+    def __init__(self, app):
         super().__init__(app)
-        self.logger = logger if logger else setup_logger("mcp_middleware", logging.DEBUG)
 
     async def dispatch(self, request: Request, call_next):
-        logger = self.logger
+        logger = get_current_logger()
 
         client_ip = request.client.host if request.client else "unknown"
         client_port = request.client.port if request.client else "unknown"

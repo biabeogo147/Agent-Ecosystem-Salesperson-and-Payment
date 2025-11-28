@@ -20,11 +20,12 @@ class BaseA2AClient:
         client: httpx.AsyncClient | None = None,
         timeout: float = 10.0,
         endpoint_path: str = "/",
-        logger: logging.Logger | None = None,
+        logger: logging.Logger,
     ) -> None:
+        self.logger = logger
+
         self._base_url = base_url
         self._endpoint_path = endpoint_path
-        self.logger = logger or logging.getLogger(__name__)
 
         if client is None:
             self._client = httpx.AsyncClient(base_url=base_url, timeout=timeout)

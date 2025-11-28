@@ -1,22 +1,20 @@
-import asyncio
 import contextlib
 from collections.abc import AsyncIterator
 
 from fastapi import FastAPI
-from starlette.routing import Mount
-from starlette.types import Scope, Receive, Send
-
 from mcp import types as mcp_types
 from mcp.server.lowlevel import Server
 from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.routing import Mount
+from starlette.types import Scope, Receive, Send
 
 from src.config import *
+from src.data.elasticsearch.index import create_products_index, index_exists
+from src.data.elasticsearch.sync import sync_products_to_elastic
 from src.my_mcp.logging_middleware import LoggingMiddleware
 from src.my_mcp.salesperson.tools_for_salesperson_agent import *
 from src.my_mcp.utils import list_mcp_tools_with_dict, call_mcp_tool_with_dict
-from src.data.elasticsearch.sync import sync_products_to_elastic
-from src.data.elasticsearch.index import create_products_index, index_exists
 from src.utils.logger import set_app_context, AppLogger
 
 

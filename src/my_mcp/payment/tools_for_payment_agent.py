@@ -1,25 +1,21 @@
 import time
 from decimal import Decimal
-from typing import Optional, Any, List
+from typing import Optional, Any
 
 from google.adk.tools import FunctionTool
 
-from . import payment_mcp_logger
-
 from src.config import *
-
 from src.data.models.db_entity.order import Order
 from src.data.models.db_entity.order_item import OrderItem
 from src.data.models.db_entity.product import Product
-from src.data.postgres.connection import db_connection
 from src.data.models.enum.order_status import OrderStatus
-
-from src.my_agent.my_a2a_common.payment_schemas.payment_enums import *
+from src.data.postgres.connection import db_connection
 from src.my_agent.my_a2a_common.payment_schemas.next_action import NextAction
+from src.my_agent.my_a2a_common.payment_schemas.payment_enums import *
 from src.my_agent.my_a2a_common.payment_schemas.payment_response import PaymentResponse
-
-from src.utils.status import Status
 from src.utils.response_format import ResponseFormat
+from src.utils.status import Status
+from . import payment_mcp_logger
 
 
 def _map_order_status_to_payment_status(order_status: OrderStatus) -> PaymentStatus:
@@ -231,7 +227,7 @@ async def create_order(payload: dict[str, Any]) -> str:
 
     except Exception as e:
         session.rollback()
-        payment_mcp_logger.error(f"Failed to create order: {e}")
+        payment_mcp_logger.exception(f"Failed to create order with payload: {payload}")
         return ResponseFormat(status=Status.UNKNOWN_ERROR, message=str(e)).to_json()
     finally:
         session.close()
@@ -318,7 +314,7 @@ async def query_order_status(payload: dict[str, Any]) -> str:
             }).to_json()
 
     except Exception as e:
-        payment_mcp_logger.error(f"Failed to query order status: {e}")
+        payment_mcp_logger.exception(f"Failed to query order status with payload: {payload}")
         return ResponseFormat(status=Status.UNKNOWN_ERROR, message=str(e)).to_json()
     finally:
         session.close()
@@ -376,6 +372,7 @@ async def query_gateway_status(payload: dict[str, Any]) -> str:
         }).to_json()
     except Exception as e:
         session.rollback()
+        payment_mcp_logger.exception(f"Failed to query gateway status with payload: {payload}")
         return ResponseFormat(status=Status.UNKNOWN_ERROR, message=str(e)).to_json()
     finally:
         session.close()

@@ -1,18 +1,16 @@
 import datetime
-import asyncio
 
 from sqlalchemy import select
-from src.data.postgres.connection import db_connection
+
+from src.config import ELASTIC_INDEX
 from src.data.elasticsearch.connection import es_connection
+from src.data.postgres.connection import db_connection
 from src.data.redis.sync_tracker import (
     get_unsynced_skus,
     mark_skus_as_synced,
     get_sync_stats
 )
-from src.config import ELASTIC_INDEX
 from src.utils.logger import get_current_logger
-
-logger = get_current_logger()
 
 
 async def sync_products_to_elastic():
@@ -31,6 +29,7 @@ async def sync_products_to_elastic():
     - No timestamp file management
     - Persistent state in Redis
     """
+    logger = get_current_logger()
     pg = db_connection
     es = es_connection.get_client()
 

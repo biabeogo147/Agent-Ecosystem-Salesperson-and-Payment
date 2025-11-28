@@ -10,7 +10,8 @@ from mcp.server.lowlevel import Server
 from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from src.my_mcp.payment.tools_for_payment_agent import *
+from config import MCP_SERVER_PORT_PAYMENT
+from src.my_mcp.payment import payment_mcp_logger
 from src.my_mcp.logging_middleware import LoggingMiddleware
 from src.my_mcp.utils import list_mcp_tools_with_dict, call_mcp_tool_with_dict
 from src.utils.logger import set_app_context, AppLogger
@@ -29,11 +30,13 @@ my_mcp_server = Server("payment_mcp")
 
 @my_mcp_server.list_tools()
 async def list_mcp_tools() -> list[mcp_types.Tool]:
+    from src.my_mcp.payment.tools_for_payment_agent import ADK_TOOLS_FOR_PAYMENT
     return await list_mcp_tools_with_dict(ADK_TOOLS_FOR_PAYMENT)
 
 
 @my_mcp_server.call_tool()
 async def call_mcp_tool(name: str, arguments: dict | None) -> list[mcp_types.Content]:
+    from src.my_mcp.payment.tools_for_payment_agent import ADK_TOOLS_FOR_PAYMENT
     return await call_mcp_tool_with_dict(name, arguments, ADK_TOOLS_FOR_PAYMENT)
 
 

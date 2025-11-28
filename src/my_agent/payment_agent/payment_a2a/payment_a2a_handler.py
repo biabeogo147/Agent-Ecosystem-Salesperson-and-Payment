@@ -33,6 +33,7 @@ class PaymentA2AHandler:
     def __init__(
         self,
         *,
+        # TODO: replace tool with mcp client instance
         create_order_tool: Callable[[Dict[str, Any]], Awaitable[Dict[str, Any]]],
         query_status_tool: Callable[[Dict[str, Any]], Awaitable[Dict[str, Any]]],
         agent_card: AgentCard,
@@ -147,6 +148,7 @@ class PaymentA2AHandler:
             logger.debug("create_order: context_id=%s", request.context_id)
 
             payload = request.model_dump(mode="json")
+            # TODO: define detail params instead of generic payload
             raw_response = await self._create_order_tool(payload)
             response = PaymentResponse.model_validate(raw_response)
             validate_payment_response(
@@ -163,6 +165,7 @@ class PaymentA2AHandler:
             logger.debug("query_status: context_id=%s", status_request.context_id)
 
             payload = status_request.model_dump(mode="json")
+            # TODO: define detail params instead of generic payload
             raw_response = await self._query_status_tool(payload)
             response = PaymentResponse.model_validate(raw_response)
             validate_payment_response(

@@ -59,6 +59,7 @@ async def _stub_paygate_query(order_id: int) -> dict[str, Any]:
     }
 
 
+# TODO: define detail params instead of generic payload
 async def create_order(payload: dict[str, Any]) -> str:
     """
     Create a payment order with multiple items and save to database.

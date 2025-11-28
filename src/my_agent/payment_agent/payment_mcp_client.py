@@ -106,6 +106,7 @@ def get_payment_mcp_client() -> PaymentMcpClient:
     return _client
 
 
+# TODO: define detail params instead of generic payload
 async def create_order(payload: dict[str, Any]) -> dict[str, Any]:
     """Create an order using the shared MCP payment tool."""
     client = get_payment_mcp_client()

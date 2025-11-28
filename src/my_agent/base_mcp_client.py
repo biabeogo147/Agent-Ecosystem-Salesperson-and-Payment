@@ -17,12 +17,11 @@ class BaseMcpClient:
     def __init__(
         self,
         *,
-        default_base_url: str,
+        base_url: str,
         token: str,
-        base_url: str | None = None,
         session_manager: MCPSessionManager | None = None,
     ) -> None:
-        self._base_url = base_url or default_base_url
+        self._base_url = base_url
         self._session_manager = session_manager or MCPSessionManager(
             get_mcp_streamable_http_connect_params(self._base_url, token)
         )
@@ -44,19 +43,6 @@ class BaseMcpClient:
         except Exception as e:
             logger.exception(f"[MCP] Exception while calling tool '{name}'")
             raise
-
-    async def _call_tool_text(
-        self, name: str, arguments: Optional[dict[str, Any]] = None
-    ) -> str:
-        result = await self._call_tool(name, arguments)
-        for part in result.content:
-            if isinstance(part, mcp_types.TextContent):
-                return part.text
-        if result.structuredContent is not None:
-            return json.dumps(result.structuredContent)
-        raise RuntimeError(
-            f"MCP tool '{name}' returned no textual content to interpret."
-        )
 
     async def _call_tool_json(
         self, name: str, arguments: Optional[dict[str, Any]] = None

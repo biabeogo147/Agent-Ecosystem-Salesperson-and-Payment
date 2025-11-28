@@ -20,14 +20,12 @@ class PaymentMcpClient(BaseMcpClient):
     def __init__(
         self,
         *,
-        base_url: str | None = None,
         session_manager: MCPSessionManager | None = None,
     ) -> None:
         super().__init__(
-            base_url=base_url,
-            session_manager=session_manager,
-            default_base_url=mcp_streamable_http_url,
+            base_url=mcp_streamable_http_url,
             token=MCP_PAYMENT_TOKEN,
+            session_manager=session_manager,
         )
 
     async def create_order(self, *, payload: dict[str, Any] | str) -> dict[str, Any]:

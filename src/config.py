@@ -11,8 +11,6 @@ IS_LLM_AGENT = os.getenv("IS_LLM_AGENT", "false").lower() == "true"
 MCP_SERVER_HOST_PAYMENT = os.getenv("MCP_SERVER_HOST_PAYMENT", "localhost")
 MCP_SERVER_PORT_PAYMENT = int(os.getenv("MCP_SERVER_PORT_PAYMENT", "8000"))
 MCP_PAYMENT_TOKEN = os.getenv("MCP_PAYMENT_TOKEN", "secret-token")
-RETURN_URL=os.getenv("RETURN_URL", "http://localhost:3000/return")
-CANCEL_URL=os.getenv("CANCEL_URL", "http://localhost:3000/cancel")
 CHECKOUT_URL=os.getenv("CHECKOUT_URL", "http://localhost:3000/checkout")
 QR_URL=os.getenv("QR_URL", "http://localhost:3000/qr")
 
@@ -67,6 +65,3 @@ WS_SERVER_PORT = int(os.getenv("WS_SERVER_PORT", "8084"))
 CHAT_UI_HOST = os.getenv("CHAT_UI_HOST", "0.0.0.0")
 CHAT_UI_PORT = int(os.getenv("CHAT_UI_PORT", "8085"))
 ADK_AGENT_URL = os.getenv("ADK_AGENT_URL", "http://localhost:8000")
-
-VNPAY_TMN_CODE = os.getenv("VNPAY_TMN_CODE", "")
-VNPAY_HASH_SECRET = os.getenv("VNPAY_HASH_SECRET", "")

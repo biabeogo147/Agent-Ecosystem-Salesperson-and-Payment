@@ -86,10 +86,10 @@ flowchart TB
 flowchart TB
     Customer["Customer (User)"]
     SalesAgent["Salesperson Agent"]
-    SalesServer["Salesperson MCP Server<br/>(Port 8001)"]
+    SalesServer["Salesperson MCP Server"]
 
     PaymentAgent["Payment Agent"]
-    PaymentServer["Payment MCP Server<br/>(Port 8000)"]
+    PaymentServer["Payment MCP Server"]
 
     subgraph DataLayer["DATA LAYER"]
         ES[(Elasticsearch<br/>Product Search)]

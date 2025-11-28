@@ -11,7 +11,6 @@ from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from config import MCP_SERVER_PORT_PAYMENT
-from src.my_mcp.payment import payment_mcp_logger
 from src.my_mcp.logging_middleware import LoggingMiddleware
 from src.my_mcp.utils import list_mcp_tools_with_dict, call_mcp_tool_with_dict
 from src.utils.logger import set_app_context, AppLogger
@@ -60,10 +59,7 @@ app = FastAPI(title="Payment MCP", lifespan=lifespan)
 app.routes.append(Mount("/mcp", app=handle_streamable_http))
 
 # Add middlewares in reverse order (last added = first executed)
-app.add_middleware(
-    LoggingMiddleware,
-    logger=payment_mcp_logger
-)
+app.add_middleware(LoggingMiddleware)
 app.add_middleware(AppContextMiddleware)
 
 

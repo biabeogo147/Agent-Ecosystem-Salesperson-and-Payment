@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Callable, Dict, Awaitable
 from uuid import uuid4
 
 from a2a.types import Message, Task, AgentCard, MessageSendParams, AgentCapabilities, Part, TextPart, Role, DataPart
@@ -21,7 +20,7 @@ from src.my_agent.my_a2a_common.payment_schemas.payment_enums import (
 
 from src.my_agent.payment_agent.payment_a2a.payment_agent_skills import CREATE_ORDER_SKILL_ID, QUERY_STATUS_SKILL_ID, \
     CREATE_ORDER_SKILL, QUERY_STATUS_SKILL
-from src.my_agent.payment_agent.payment_mcp_client import create_order, query_order_status
+from src.my_agent.payment_agent.payment_mcp_client import PaymentMcpClient, get_payment_mcp_client
 from src.my_agent.payment_agent import a2a_payment_logger as logger
 from src.utils.response_format_jsonrpc import ResponseFormatJSONRPC
 from src.utils.status import Status
@@ -33,15 +32,12 @@ class PaymentA2AHandler:
     def __init__(
         self,
         *,
-        # TODO: replace tool with mcp client instance
-        create_order_tool: Callable[[Dict[str, Any]], Awaitable[Dict[str, Any]]],
-        query_status_tool: Callable[[Dict[str, Any]], Awaitable[Dict[str, Any]]],
+        payment_client: PaymentMcpClient,
         agent_card: AgentCard,
     ) -> None:
-        self._create_order_tool = create_order_tool
-        self._query_status_tool = query_status_tool
+        self._payment_client = payment_client
         self._agent_card = agent_card
-        logger.info("PaymentAgentHandler initialised with skills: create_order, query_status")
+        logger.info("PaymentAgentHandler initialised with PaymentMcpClient")
 
     async def handle_message_send(self, request: Request) -> Response:
         try:
@@ -147,9 +143,19 @@ class PaymentA2AHandler:
             request = _extract_payment_request(task)
             logger.debug("create_order: context_id=%s", request.context_id)
 
-            payload = request.model_dump(mode="json")
-            # TODO: define detail params instead of generic payload
-            raw_response = await self._create_order_tool(payload)
+            items_list = [item.model_dump(mode="json") for item in request.items]
+            
+            raw_response = await self._payment_client.create_order(
+                context_id=request.context_id,
+                items=items_list,
+                channel=request.channel.value if hasattr(request.channel, 'value') else request.channel,
+                customer_name=request.customer.name or "",
+                customer_email=request.customer.email or "",
+                customer_phone=request.customer.phone or "",
+                customer_shipping_address=request.customer.shipping_address or "",
+                note=request.note or "",
+                user_id=user_id
+            )
             response = PaymentResponse.model_validate(raw_response)
             validate_payment_response(
                 response,
@@ -164,9 +170,10 @@ class PaymentA2AHandler:
             status_request = _extract_status_request(task)
             logger.debug("query_status: context_id=%s", status_request.context_id)
 
-            payload = status_request.model_dump(mode="json")
-            # TODO: define detail params instead of generic payload
-            raw_response = await self._query_status_tool(payload)
+            raw_response = await self._payment_client.query_order_status(
+                context_id=status_request.context_id,
+                order_id=status_request.order_id
+            )
             response = PaymentResponse.model_validate(raw_response)
             validate_payment_response(
                 response,
@@ -302,7 +309,6 @@ def _build_payment_response_message(response: PaymentResponse) -> Message:
 
 _CARD_BASE_URL = f"http://{PAYMENT_AGENT_SERVER_HOST}:{PAYMENT_AGENT_SERVER_PORT}/"
 PAYMENT_HANDLER = PaymentA2AHandler(
-    create_order_tool=create_order,
-    query_status_tool=query_order_status,
+    payment_client=get_payment_mcp_client(),
     agent_card=build_payment_agent_card(_CARD_BASE_URL),
 )

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from typing import Any, Dict
 
 from google.adk.tools import FunctionTool
@@ -16,9 +17,11 @@ class SalespersonMcpClient(BaseMcpClient):
     def __init__(
         self,
         *,
+        logger: logging.Logger,
         session_manager: MCPSessionManager | None = None,
     ) -> None:
         super().__init__(
+            logger=logger,
             base_url=mcp_streamable_http_url,
             token=MCP_SALESPERSON_TOKEN,
             session_manager=session_manager,
@@ -58,14 +61,30 @@ class SalespersonMcpClient(BaseMcpClient):
         )
         return self._ensure_response_format(payload, tool="search_product_documents")
 
+    async def get_current_user_id(self, *, context_id: str) -> int | None:
+        """
+        Get the current authenticated user ID for the given context.
+        
+        Args:
+            context_id: The payment context identifier
+            
+        Returns:
+            user_id if found, None otherwise
+        """
+        payload = await self._call_tool_json(
+            "get_current_user_id", {"context_id": context_id}
+        )
+        return self._ensure_response_format(payload, tool="get_current_user_id")
+
 
 _client: SalespersonMcpClient | None = None
 
 
 def get_salesperson_mcp_client() -> SalespersonMcpClient:
+    from src.my_agent.salesperson_agent import a2a_salesperson_logger
     global _client
     if _client is None:
-        _client = SalespersonMcpClient()
+        _client = SalespersonMcpClient(logger=a2a_salesperson_logger)
     return _client
 
 

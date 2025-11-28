@@ -8,7 +8,6 @@ from google.adk.tools.mcp_tool.mcp_session_manager import MCPSessionManager
 
 from src.my_mcp.mcp_connect_params import get_mcp_streamable_http_connect_params
 from src.utils.status import Status
-from src.utils.logger import get_current_logger
 
 
 class BaseMcpClient:
@@ -17,10 +16,12 @@ class BaseMcpClient:
     def __init__(
         self,
         *,
+        logger: logging.Logger,
         base_url: str,
         token: str,
         session_manager: MCPSessionManager | None = None,
     ) -> None:
+        self._logger = logger
         self._base_url = base_url
         self._session_manager = session_manager or MCPSessionManager(
             get_mcp_streamable_http_connect_params(self._base_url, token)
@@ -29,19 +30,18 @@ class BaseMcpClient:
     async def _call_tool(
         self, name: str, arguments: Optional[dict[str, Any]] = None
     ) -> mcp_types.CallToolResult:
-        logger = get_current_logger()
-        logger.debug(f"[MCP] Calling tool '{name}' with arguments: {arguments}")
+        self._logger.debug(f"[MCP] Calling tool '{name}' with arguments: {arguments}")
         try:
             session = await self._session_manager.create_session()
-            logger.debug(f"[MCP] Session created for tool '{name}'")
+            self._logger.debug(f"[MCP] Session created for tool '{name}'")
             result = await session.call_tool(name, arguments)
             if result.isError:
-                logger.error(f"[MCP] Tool '{name}' returned error payload: {result}")
+                self._logger.error(f"[MCP] Tool '{name}' returned error payload: {result}")
                 raise RuntimeError(f"MCP tool '{name}' returned an error payload: {result}")
-            logger.debug(f"[MCP] Tool '{name}' returned successfully: {result}")
+            self._logger.debug(f"[MCP] Tool '{name}' returned successfully: {result}")
             return result
         except Exception as e:
-            logger.exception(f"[MCP] Exception while calling tool '{name}'")
+            self._logger.exception(f"[MCP] Exception while calling tool '{name}'")
             raise
 
     async def _call_tool_json(

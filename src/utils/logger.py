@@ -36,9 +36,6 @@ LOG_DIR = "logs"
 if not os.path.exists(LOG_DIR):
     os.makedirs(LOG_DIR)
 
-LOG_FILE = os.path.join(LOG_DIR, "app.log")
-ERROR_LOG_FILE = os.path.join(LOG_DIR, "error.log")
-
 
 def setup_logger(name: str = "app_logger", log_level: int = logging.INFO, log_file: str = None):
     """
@@ -110,6 +107,7 @@ class AppLogger(Enum):
 
 # Context variable to track current app logger
 _current_app_logger: ContextVar[AppLogger] = ContextVar('current_app_logger', default=AppLogger.DEFAULT)
+logger = setup_logger("app_logger", logging.DEBUG, "app_logger") # Default logger
 
 
 def get_current_logger() -> logging.Logger:
@@ -149,7 +147,7 @@ def get_current_logger() -> logging.Logger:
         return callback_logger
 
     else:
-        raise RuntimeError(f"Unknown app logger type: {app_logger_type}")
+        return logger
 
 
 class set_app_context:

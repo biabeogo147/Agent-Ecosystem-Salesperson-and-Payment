@@ -87,6 +87,14 @@ async def _resolve_items_via_product_tool(
     return resolved_items
 
 
+async def _get_current_user_id(client: SalespersonMcpClient) -> Optional[int]:
+    user_payload = await client.get_current_user()
+    users = (user_payload or {}).get("data", None)
+    if not users:
+        raise ValueError("No user information returned.")
+    return users.get("user_id")
+
+
 async def prepare_create_order_payload(
     items: List[Dict],
     customer: Dict[str, str],
@@ -104,6 +112,7 @@ async def prepare_create_order_payload(
     """
     client = get_salesperson_mcp_client()
     resolved_items = await _resolve_items_via_product_tool(items, client=client)
+    user_id = await _get_current_user_id(client=client)
 
     context_id = generate_context_id(prefix="payment")
 
@@ -120,6 +129,7 @@ async def prepare_create_order_payload(
         customer=_ensure_customer(customer),
         channel=channel,
         note=note,
+        user_id=user_id,
         metadata=metadata,
     )
 

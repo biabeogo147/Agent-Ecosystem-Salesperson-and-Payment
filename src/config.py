@@ -9,7 +9,7 @@ OPENAI_API_BASE = os.environ.get("OPENAI_API_BASE")
 IS_LLM_AGENT = os.getenv("IS_LLM_AGENT", "false").lower() == "true"
 
 MCP_SERVER_HOST_PAYMENT = os.getenv("MCP_SERVER_HOST_PAYMENT", "localhost")
-MCP_SERVER_PORT_PAYMENT = int(os.getenv("MCP_SERVER_PORT_PAYMENT", "8000"))
+MCP_SERVER_PORT_PAYMENT = int(os.getenv("MCP_SERVER_PORT_PAYMENT", "8002"))
 MCP_PAYMENT_TOKEN = os.getenv("MCP_PAYMENT_TOKEN", "secret-token")
 CHECKOUT_URL=os.getenv("CHECKOUT_URL", "http://localhost:3000/checkout")
 QR_URL=os.getenv("QR_URL", "http://localhost:3000/qr")

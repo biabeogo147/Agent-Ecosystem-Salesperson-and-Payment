@@ -59,34 +59,41 @@ async def _stub_paygate_query(order_id: int) -> dict[str, Any]:
     }
 
 
-# TODO: define detail params instead of generic payload
-async def create_order(payload: dict[str, Any]) -> str:
+async def create_order(
+    context_id: str,
+    items: list[dict[str, Any]],
+    channel: str,
+    customer_name: str = "",
+    customer_email: str = "",
+    customer_phone: str = "",
+    customer_shipping_address: str = "",
+    note: str = "",
+    user_id: Optional[int] = None
+) -> str:
     """
     Create a payment order with multiple items and save to database.
 
     Args:
-      payload: {
-        "context_id": "payment_abc123",
-        "items": [
-          {"sku": "SKU001", "name": "Product A", "quantity": 2, "unit_price": 100.0, "currency": "USD"},
-          {"sku": "SKU002", "name": "Product B", "quantity": 1, "unit_price": 50.0, "currency": "USD"}
-        ],
-        "customer": {"name": "John", "email": "john@example.com", "phone": "...", "shipping_address": "..."},
-        "channel": "redirect|qr",
-        "note": "optional note",
-        "metadata": {"key": "value"}
-      }
+        context_id: Unique context identifier for the payment session
+        items: List of order items, each containing:
+            - sku: Product SKU (optional if unit_price provided)
+            - name: Product name (optional, will be looked up if sku provided)
+            - quantity: Quantity to purchase (required)
+            - unit_price: Price per unit (optional, will be looked up from product if sku provided)
+            - currency: Currency code (optional, defaults to USD)
+        channel: Payment channel, either "redirect" or "qr"
+        customer_name: Customer name (optional)
+        customer_email: Customer email (optional)
+        customer_phone: Customer phone number (optional)
+        customer_shipping_address: Shipping address (optional)
+        note: Additional notes for the order (optional)
+        user_id: User ID associated with the order (optional)
 
-    Returns: PaymentResponse with order_id, context_id, and next_action
+    Returns:
+        JSON string containing PaymentResponse with order_id, context_id, and next_action
     """
     session = db_connection.get_session()
     try:
-        context_id = payload.get("context_id")
-        items = payload.get("items", [])
-        customer = payload.get("customer", {})
-        channel = payload.get("channel")
-        note = payload.get("note")
-
         # Validate required fields
         if not context_id:
             return ResponseFormat(
@@ -160,11 +167,11 @@ async def create_order(payload: dict[str, Any]) -> str:
         # Create Order
         order = Order(
             context_id=context_id,
-            user_id=payload.get("user_id"),
+            user_id=user_id,
             total_amount=total_amount,
             currency=currency,
             status=OrderStatus.PENDING,
-            note=note
+            note=note or ""
         )
         session.add(order)
         session.flush()  # Get order.id without committing
@@ -228,31 +235,33 @@ async def create_order(payload: dict[str, Any]) -> str:
 
     except Exception as e:
         session.rollback()
-        payment_mcp_logger.exception(f"Failed to create order with payload: {payload}")
+        payment_mcp_logger.exception(
+            f"Failed to create order: context_id={context_id}, items_count={len(items) if items else 0}"
+        )
         return ResponseFormat(status=Status.UNKNOWN_ERROR, message=str(e)).to_json()
     finally:
         session.close()
 
 
-async def query_order_status(payload: dict[str, Any]) -> str:
+async def query_order_status(
+    context_id: str,
+    order_id: Optional[str] = None
+) -> str:
     """
     Query order status from database by context_id and/or order_id.
 
     Args:
-      payload: {
-        "context_id": "payment_abc123",  # Required
-        "order_id": "123"                # Optional - if provided, query specific order
-      }
+        context_id: Payment context identifier (required)
+        order_id: Specific order ID to query (optional). If provided, query specific order.
+                  If not provided, query all orders for the context_id.
 
     Returns:
-      - If order_id provided: Single order with that ID (verified against context_id)
-      - If only context_id: All orders for that context_id
+        JSON string with order status:
+        - If order_id provided: Single order with that ID (verified against context_id)
+        - If only context_id: All orders for that context_id
     """
     session = db_connection.get_session()
     try:
-        context_id = payload.get("context_id")
-        order_id = payload.get("order_id")
-
         if not context_id:
             return ResponseFormat(
                 status=Status.INVALID_PARAMS,
@@ -315,13 +324,13 @@ async def query_order_status(payload: dict[str, Any]) -> str:
             }).to_json()
 
     except Exception as e:
-        payment_mcp_logger.exception(f"Failed to query order status with payload: {payload}")
+        payment_mcp_logger.exception(f"Failed to query order status: context_id={context_id}, order_id={order_id}")
         return ResponseFormat(status=Status.UNKNOWN_ERROR, message=str(e)).to_json()
     finally:
         session.close()
 
 
-async def query_gateway_status(payload: dict[str, Any]) -> str:
+async def query_gateway_status(order_id: str) -> str:
     """
     Query payment gateway for actual order status and update order in database.
     This is called by Payment Agent after receiving callback notification from Redis.
@@ -331,13 +340,13 @@ async def query_gateway_status(payload: dict[str, Any]) -> str:
     2. Update order status in database based on gateway response
 
     Args:
-      payload: {"order_id": "123"}
-    Returns: Gateway response with actual payment status and updated order
+        order_id: The order ID to query
+
+    Returns:
+        JSON string with gateway response and updated order information
     """
     session = db_connection.get_session()
     try:
-        order_id = payload.get("order_id")
-
         try:
             order_id_int = int(order_id)
         except (TypeError, ValueError):
@@ -373,7 +382,7 @@ async def query_gateway_status(payload: dict[str, Any]) -> str:
         }).to_json()
     except Exception as e:
         session.rollback()
-        payment_mcp_logger.exception(f"Failed to query gateway status with payload: {payload}")
+        payment_mcp_logger.exception(f"Failed to query gateway status: order_id={order_id}")
         return ResponseFormat(status=Status.UNKNOWN_ERROR, message=str(e)).to_json()
     finally:
         session.close()

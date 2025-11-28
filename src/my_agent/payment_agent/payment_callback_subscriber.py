@@ -41,9 +41,7 @@ async def process_callback(callback_data: dict) -> bool:
 
         logger.info(f"Processing callback for order_id={callback_message.order_id}")
 
-        result = await query_gateway_status(payload={
-            "order_id": callback_message.order_id
-        })
+        result = await query_gateway_status(order_id=callback_message.order_id)
 
         gateway_response = result.get("gateway_response", {})
         order = result.get("order", {})

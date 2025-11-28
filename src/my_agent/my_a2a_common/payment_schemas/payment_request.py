@@ -18,6 +18,7 @@ class PaymentRequest(BaseModel):
     channel: PaymentChannel
 
     note: Optional[str] = Field(default=None)
+    user_id: Optional[int] = Field(default=None, description="User ID associated with this order")
     metadata: Optional[Dict[str, str]] = Field(default=None)
 
     @model_validator(mode="after")

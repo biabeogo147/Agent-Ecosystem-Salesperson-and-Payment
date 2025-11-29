@@ -11,7 +11,6 @@ from src.my_agent.my_a2a_common.constants import SALESPERSON_AGENT_NAME, PAYMENT
     PAYMENT_STATUS_ARTIFACT_NAME
 
 from src.my_agent.payment_agent.payment_a2a.payment_agent_skills import CREATE_ORDER_SKILL_ID, QUERY_STATUS_SKILL_ID
-from src.my_agent.salesperson_agent import salesperson_agent_logger
 from src.my_agent.salesperson_agent.salesperson_mcp_client import (
     SalespersonMcpClient,
     get_salesperson_mcp_client
@@ -87,8 +86,8 @@ async def _resolve_items_via_product_tool(
     return resolved_items
 
 
-async def _get_current_user_id(client: SalespersonMcpClient) -> Optional[int]:
-    user_payload = await client.get_current_user()
+async def _get_current_user_id(client: SalespersonMcpClient, context_id: str) -> Optional[int]:
+    user_payload = await client.get_current_user_id(context_id=context_id)
     users = (user_payload or {}).get("data", None)
     if not users:
         raise ValueError("No user information returned.")
@@ -110,11 +109,13 @@ async def prepare_create_order_payload(
     the task wholesale to the A2A client or extract the JSON body to call the
     remote skill directly.
     """
+    from src.my_agent.salesperson_agent import salesperson_agent_logger
+
     client = get_salesperson_mcp_client()
     resolved_items = await _resolve_items_via_product_tool(items, client=client)
-    user_id = await _get_current_user_id(client=client)
 
     context_id = generate_context_id(prefix="payment")
+    user_id = await _get_current_user_id(client=client, context_id=context_id)
 
     salesperson_agent_logger.info(f"context_id: {context_id}")
     salesperson_agent_logger.info(f"Resolved items: {resolved_items}")

@@ -24,19 +24,19 @@ flowchart TB
         Merchant -->|"REST API<br/>(Upload Products)"| WebhookAPI
         Customer -->|"Chat Interface (ADK Web)"| SalespersonAgent
 
-        WebhookAPI["Webhook API (8082)"]
+        WebhookAPI["Webhook API"]
 
         subgraph Salesperson_Block
             direction TB
             SalespersonAgent["Salesperson Agent"]
-            SalespersonServer["Salesperson MCP Server (8001)"]
+            SalespersonServer["Salesperson MCP Server"]
             SalespersonAgent -->|"MCP"| SalespersonServer
         end
 
         subgraph Payment_Block
             direction TB
             PaymentAgent["Payment Agent"]
-            PaymentServer["Payment MCP Server (8000)"]
+            PaymentServer["Payment MCP Server"]
             PaymentAgent -->|"MCP"| PaymentServer
         end
 
@@ -61,7 +61,7 @@ flowchart TB
 ```mermaid
 flowchart TB
     Merchant["Merchant (Provider)"]
-    Webhook["Webhook API (8082)"]
+    Webhook["Webhook API"]
     
     PG[(PostgreSQL)]
     ES[(Elasticsearch)]

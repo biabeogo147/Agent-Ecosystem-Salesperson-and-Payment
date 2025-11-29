@@ -81,10 +81,10 @@ _client: SalespersonMcpClient | None = None
 
 
 def get_salesperson_mcp_client() -> SalespersonMcpClient:
-    from src.my_agent.salesperson_agent import a2a_salesperson_logger
+    from src.my_agent.salesperson_agent import salesperson_agent_logger
     global _client
     if _client is None:
-        _client = SalespersonMcpClient(logger=a2a_salesperson_logger)
+        _client = SalespersonMcpClient(logger=salesperson_agent_logger)
     return _client
 
 

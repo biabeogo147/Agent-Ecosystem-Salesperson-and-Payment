@@ -101,10 +101,7 @@ app = FastAPI(title="Salesperson MCP", lifespan=lifespan)
 app.routes.append(Mount("/mcp", app=handle_streamable_http))
 
 # Add middlewares in reverse order (last added = first executed)
-app.add_middleware(
-    LoggingMiddleware,
-    logger=salesperson_mcp_logger
-)
+app.add_middleware(LoggingMiddleware)
 app.add_middleware(AppContextMiddleware)
 
 

@@ -107,7 +107,7 @@ class AppLogger(Enum):
 
 # Context variable to track current app logger
 _current_app_logger: ContextVar[AppLogger] = ContextVar('current_app_logger', default=AppLogger.DEFAULT)
-logger = setup_logger("app_logger", logging.DEBUG, "app_logger") # Default logger
+logger = setup_logger("app_logger", logging.DEBUG, "app_logger.log") # Default logger
 
 
 def get_current_logger() -> logging.Logger:

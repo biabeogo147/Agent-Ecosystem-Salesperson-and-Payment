@@ -92,9 +92,10 @@ async def create_order(
     Returns:
         JSON string containing PaymentResponse with order_id, context_id, and next_action
     """
+    payment_mcp_logger.info(f"create_order called: context_id={context_id}, channel={channel}")
+
     session = db_connection.get_session()
     try:
-        # Validate required fields
         if not context_id:
             return ResponseFormat(
                 status=Status.INVALID_PARAMS,
@@ -123,6 +124,8 @@ async def create_order(
             unit_price = item.get("unit_price")
             item_currency = item.get("currency", "USD")
             item_name = item.get("name")
+
+            payment_mcp_logger.info(f"Processing item: sku={sku}, quantity={quantity}, unit_price={unit_price}, currency={item_currency}, name={item_name}")
 
             # If unit_price not provided, lookup from product database
             if unit_price is None:
@@ -174,7 +177,7 @@ async def create_order(
             note=note or ""
         )
         session.add(order)
-        session.flush()  # Get order.id without committing
+        await session.flush()  # Get order.id without committing
 
         # Create OrderItems
         for item_data in order_items:
@@ -188,13 +191,19 @@ async def create_order(
             )
             session.add(order_item)
 
-        session.commit()
-        session.refresh(order)
+        await session.commit()
+        await session.refresh(order)
+        await session.refresh(order, attribute_names=["items"])
 
         order_id = str(order.id)
         return_url = f"{CALLBACK_SERVICE_URL}/return/vnpay?order_id={order_id}"
         cancel_url = f"{CALLBACK_SERVICE_URL}/cancel/vnpay?order_id={order_id}"
         notify_url = f"{CALLBACK_SERVICE_URL}/callback/vnpay?order_id={order_id}"
+
+        payment_mcp_logger.info(f"Order created: {order.to_dict()}")
+        payment_mcp_logger.info(f"Return URL: {return_url}")
+        payment_mcp_logger.info(f"Cancel URL: {cancel_url}")
+        payment_mcp_logger.info(f"Notify URL: {notify_url}")
 
         paygate_response = await _stub_paygate_create(
             channel, order.id, float(total_amount),
@@ -226,18 +235,11 @@ async def create_order(
             next_action=next_action,
         )
 
-        payment_mcp_logger.info(
-            f"Order created: order_id={order_id}, context_id={context_id}, "
-            f"items={len(order_items)}, total={total_amount} {currency}"
-        )
-
         return ResponseFormat(data=res.model_dump()).to_json()
 
     except Exception as e:
         session.rollback()
-        payment_mcp_logger.exception(
-            f"Failed to create order: context_id={context_id}, items_count={len(items) if items else 0}"
-        )
+        payment_mcp_logger.exception(f"Failed to create order: context_id={context_id}, items_count={len(items) if items else 0}")
         return ResponseFormat(status=Status.UNKNOWN_ERROR, message=str(e)).to_json()
     finally:
         session.close()

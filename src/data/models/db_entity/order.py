@@ -14,7 +14,7 @@ class Order(Base):
     user_id = Column(Integer, ForeignKey("user.id"), nullable=True)
     total_amount = Column(DECIMAL(18, 2), nullable=False)
     currency = Column(String, nullable=False, default="USD")
-    status = Column(Enum(OrderStatus), nullable=False, default=OrderStatus.PENDING)
+    status = Column(Enum(OrderStatus, name="order_status_enum"), nullable=False, default=OrderStatus.PENDING)
     note = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

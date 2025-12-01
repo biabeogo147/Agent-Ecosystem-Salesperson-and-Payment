@@ -30,8 +30,8 @@ def _map_order_status_to_payment_status(order_status: OrderStatus) -> PaymentSta
 
 
 async def _stub_paygate_create(
-        channel: PaymentChannel, oid: int, total: float,
-        return_url: Optional[str], cancel_url: Optional[str], notify_url: Optional[str] = None
+        channel: str, oid: int, total: float,
+        return_url: str, cancel_url: str, notify_url: str
 ) -> dict[str, Any]:
     exp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() + 15*60))
     if channel == PaymentChannel.REDIRECT.value:
@@ -134,7 +134,7 @@ async def create_order(
                         status=Status.INVALID_PARAMS,
                         message="Each item must have either 'sku' or 'unit_price'"
                     ).to_json()
-                product = session.query(Product).filter(Product.sku == sku).first()
+                product = await session.query(Product).filter(Product.sku == sku).first()
                 if not product:
                     return ResponseFormat(
                         status=Status.PRODUCT_NOT_FOUND,
@@ -238,11 +238,11 @@ async def create_order(
         return ResponseFormat(data=res.model_dump()).to_json()
 
     except Exception as e:
-        session.rollback()
+        await session.rollback()
         payment_mcp_logger.exception(f"Failed to create order: context_id={context_id}, items_count={len(items) if items else 0}")
         return ResponseFormat(status=Status.UNKNOWN_ERROR, message=str(e)).to_json()
     finally:
-        session.close()
+        await session.close()
 
 
 async def query_order_status(
@@ -280,7 +280,7 @@ async def query_order_status(
                     message=f"Invalid order_id format: {order_id}. Must be an integer."
                 ).to_json()
 
-            order = session.query(Order).filter(
+            order = await session.query(Order).filter(
                 Order.id == order_id_int,
                 Order.context_id == context_id
             ).first()
@@ -300,7 +300,7 @@ async def query_order_status(
 
         else:
             # Query all orders for context_id
-            orders = session.query(Order).filter(Order.context_id == context_id).all()
+            orders = await session.query(Order).filter(Order.context_id == context_id).all()
 
             if not orders:
                 return ResponseFormat(
@@ -329,7 +329,7 @@ async def query_order_status(
         payment_mcp_logger.exception(f"Failed to query order status: context_id={context_id}, order_id={order_id}")
         return ResponseFormat(status=Status.UNKNOWN_ERROR, message=str(e)).to_json()
     finally:
-        session.close()
+        await session.close()
 
 
 async def query_gateway_status(order_id: str) -> str:
@@ -362,7 +362,7 @@ async def query_gateway_status(order_id: str) -> str:
         actual_status = gateway_response.get("status", "failed")
 
         # Step 2: Update order status in database
-        order = session.query(Order).filter(Order.id == order_id_int).first()
+        order = await session.query(Order).filter(Order.id == order_id_int).first()
         if not order:
             return ResponseFormat(status=Status.ORDER_NOT_FOUND, message="Order not found").to_json()
 
@@ -375,19 +375,19 @@ async def query_gateway_status(order_id: str) -> str:
                 message=f"Invalid status from gateway: {actual_status}. Must be one of: {', '.join(valid_statuses)}"
             ).to_json()
 
-        session.commit()
-        session.refresh(order)
+        await session.commit()
+        await session.refresh(order)
 
         return ResponseFormat(data={
             "gateway_response": gateway_response,
             "order": order.to_dict()
         }).to_json()
     except Exception as e:
-        session.rollback()
+        await session.rollback()
         payment_mcp_logger.exception(f"Failed to query gateway status: order_id={order_id}")
         return ResponseFormat(status=Status.UNKNOWN_ERROR, message=str(e)).to_json()
     finally:
-        session.close()
+        await session.close()
 
 
 payment_mcp_logger.info("Initializing ADK tool for payment...")

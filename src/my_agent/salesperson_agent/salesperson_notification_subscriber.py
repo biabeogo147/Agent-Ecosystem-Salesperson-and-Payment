@@ -5,11 +5,12 @@ This module subscribes to the salesperson:notification Redis channel and process
 notification messages from the Payment Agent.
 
 Simplified flow:
-1. Receive notification from Redis (order_id + context_id only)
-2. Query order status via A2A (payment.query-status) to get actual status
-3. Push notification to WebSocket clients via callback
+1. Receive notification from Redis (order_id only)
+2. Query order from database to get session_id (context_id in Order)
+3. Query order status via A2A (payment.query-status) to get actual status
+4. Push notification to WebSocket clients via callback
 
-Callback signature: async def callback(context_id: str, message: dict) -> None
+Callback signature: async def callback(session_id: str, message: dict) -> None
 """
 import asyncio
 import json
@@ -31,7 +32,6 @@ _notification_callback: NotificationCallback | None = None
 class SalespersonNotification(BaseModel):
     """Schema for salesperson notification message from Payment Agent."""
     order_id: str
-    context_id: str
     timestamp: str
 
 
@@ -40,9 +40,10 @@ async def process_notification(notification_data: dict) -> bool:
     Process a salesperson notification message.
 
     Flow:
-    1. Parse notification message (order_id + context_id)
-    2. Query order status via A2A (payment.query-status)
-    3. Push status to WebSocket clients via callback
+    1. Parse notification message (order_id only)
+    2. Query Order from database to get session_id (context_id)
+    3. Query order status via A2A (payment.query-status)
+    4. Push status to WebSocket clients via callback
 
     Args:
         notification_data: Notification message data from Redis
@@ -55,11 +56,23 @@ async def process_notification(notification_data: dict) -> bool:
     try:
         notification = SalespersonNotification.model_validate(notification_data)
 
-        logger.info(
-            f"Received payment notification: "
-            f"order_id={notification.order_id}, "
-            f"context_id={notification.context_id}"
-        )
+        logger.info(f"Received payment notification: order_id={notification.order_id}")
+
+        # Query Order from database to get session_id (context_id)
+        from src.data.models.db_entity import Order
+        from src.data.db.session import get_async_session
+
+        async with get_async_session() as session:
+            order = await session.query(Order).filter(
+                Order.id == int(notification.order_id)
+            ).first()
+
+        if not order:
+            logger.error(f"Order not found: {notification.order_id}")
+            return False
+
+        session_id = order.context_id
+        logger.info(f"Found session_id={session_id} for order_id={notification.order_id}")
 
         # Query order status via A2A to get actual status
         from src.my_agent.salesperson_agent.salesperson_a2a.salesperson_a2a_client import (
@@ -67,15 +80,13 @@ async def process_notification(notification_data: dict) -> bool:
         )
         a2a_client = get_salesperson_a2a_client()
         payment_response = await a2a_client.query_status(
-            context_id=notification.context_id,
+            context_id=session_id,
             order_id=notification.order_id
         )
 
         # Extract status from response
         status = payment_response.status.value if payment_response.status else "unknown"
-        logger.info(
-            f"Order {notification.order_id} status queried via A2A: status={status}"
-        )
+        logger.info(f"Order {notification.order_id} status queried via A2A: status={status}")
 
         # Log based on status
         if status == "SUCCESS":
@@ -95,8 +106,8 @@ async def process_notification(notification_data: dict) -> bool:
                 "status": status,
                 "timestamp": notification.timestamp
             }
-            await _notification_callback(notification.context_id, message)
-            logger.info(f"Notification pushed via callback for context: {notification.context_id}")
+            await _notification_callback(session_id, message)
+            logger.info(f"Notification pushed via callback for session: {session_id}")
         else:
             logger.debug("No callback registered, skipping push notification")
 
@@ -175,7 +186,7 @@ def start_subscriber_with_callback(callback: NotificationCallback) -> asyncio.Ta
 
     This is the preferred method when integrating with WebSocket server.
     The callback will be called for each processed notification with:
-    - context_id: str - The context/conversation ID
+    - session_id: str - The chat session ID (from Order.context_id)
     - message: dict - The notification message to push
 
     Args:

@@ -22,13 +22,13 @@ STATIC_DIR = Path(__file__).parent / "static"
 
 class ChatRequest(BaseModel):
     """Request model for chat messages."""
-    context_id: str
+    session_id: str
     message: str
 
 
 class ChatResponse(BaseModel):
     """Response model for chat messages."""
-    context_id: str
+    session_id: str
     message_id: str
     response: str
     raw: dict | None = None
@@ -50,12 +50,12 @@ app.add_middleware(
 )
 
 
-def build_jsonrpc_payload(context_id: str, message: str) -> dict:
+def build_jsonrpc_payload(session_id: str, message: str) -> dict:
     """
     Build JSON-RPC 2.0 payload for ADK agent.
 
     Args:
-        context_id: Conversation context ID
+        session_id: Chat session ID
         message: User message text
 
     Returns:
@@ -66,7 +66,7 @@ def build_jsonrpc_payload(context_id: str, message: str) -> dict:
         "id": str(uuid.uuid4()),
         "method": "tasks/send",
         "params": {
-            "id": context_id,
+            "id": session_id,
             "message": {
                 "role": "user",
                 "parts": [{"type": "text", "text": message}]
@@ -128,15 +128,15 @@ async def chat_proxy(request: ChatRequest):
     Proxy chat messages to ADK Salesperson Agent.
 
     Args:
-        request: Chat request with context_id and message
+        request: Chat request with session_id and message
 
     Returns:
         Agent response
     """
-    logger.info(f"Chat request: context_id={request.context_id}, message={request.message[:50]}...")
+    logger.info(f"Chat request: session_id={request.session_id}, message={request.message[:50]}...")
 
     try:
-        payload = build_jsonrpc_payload(request.context_id, request.message)
+        payload = build_jsonrpc_payload(request.session_id, request.message)
 
         async with httpx.AsyncClient(timeout=60.0) as client:
             response = await client.post(
@@ -151,7 +151,7 @@ async def chat_proxy(request: ChatRequest):
         logger.info(f"Agent response: {agent_text[:100]}...")
 
         return ChatResponse(
-            context_id=request.context_id,
+            session_id=request.session_id,
             message_id=str(uuid.uuid4()),
             response=agent_text,
             raw=jsonrpc_response

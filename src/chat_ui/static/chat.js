@@ -4,7 +4,7 @@
  */
 
 // State
-let contextId = localStorage.getItem('contextId') || generateUUID();
+let sessionId = localStorage.getItem('sessionId') || generateUUID();
 let ws = null;
 let config = null;
 
@@ -12,7 +12,7 @@ let config = null;
 const chatMessages = document.getElementById('chat-messages');
 const messageInput = document.getElementById('message-input');
 const sendBtn = document.getElementById('send-btn');
-const contextIdDisplay = document.getElementById('context-id');
+const sessionIdDisplay = document.getElementById('session-id');
 const newSessionBtn = document.getElementById('new-session-btn');
 const wsStatus = document.getElementById('ws-status');
 const wsStatusText = document.getElementById('ws-status-text');
@@ -21,9 +21,9 @@ const toastContainer = document.getElementById('toast-container');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
-    // Display context ID
-    contextIdDisplay.textContent = contextId.substring(0, 8) + '...';
-    localStorage.setItem('contextId', contextId);
+    // Display session ID
+    sessionIdDisplay.textContent = sessionId.substring(0, 8) + '...';
+    localStorage.setItem('sessionId', sessionId);
 
     // Load config
     await loadConfig();
@@ -66,7 +66,7 @@ async function loadConfig() {
  * Connect to WebSocket server
  */
 function connectWebSocket() {
-    const wsUrl = `${config?.ws_url || 'ws://localhost:8084'}/ws/${contextId}`;
+    const wsUrl = `${config?.ws_url || 'ws://localhost:8084'}/ws/${sessionId}`;
     console.log('Connecting to WebSocket:', wsUrl);
 
     try {
@@ -168,7 +168,7 @@ async function sendMessage() {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                context_id: contextId,
+                session_id: sessionId,
                 message: message
             })
         });
@@ -369,10 +369,10 @@ function showToast(message, type = 'info') {
  * Start a new chat session
  */
 function startNewSession() {
-    // Generate new context ID
-    contextId = generateUUID();
-    localStorage.setItem('contextId', contextId);
-    contextIdDisplay.textContent = contextId.substring(0, 8) + '...';
+    // Generate new session ID
+    sessionId = generateUUID();
+    localStorage.setItem('sessionId', sessionId);
+    sessionIdDisplay.textContent = sessionId.substring(0, 8) + '...';
 
     // Clear chat messages (keep welcome message)
     chatMessages.innerHTML = `

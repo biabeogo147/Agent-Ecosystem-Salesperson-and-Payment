@@ -13,26 +13,26 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.config import WS_SERVER_HOST, WS_SERVER_PORT
-from src.websocket_server import ws_server_logger as logger
-from src.websocket_server.connection_manager import manager
+from src.my_agent.salesperson_agent.websocket_server import ws_server_logger as logger
+from src.my_agent.salesperson_agent.websocket_server.connection_manager import manager
 
 
 # Global reference to subscriber task
 _subscriber_task: asyncio.Task | None = None
 
 
-async def notification_callback(context_id: str, message: dict) -> None:
+async def notification_callback(session_id: str, message: dict) -> None:
     """
     Callback function called when a notification is processed.
-    Sends the message to all WebSocket clients in the given context.
+    Sends the message to all WebSocket clients in the given session.
 
     Args:
-        context_id: The context/conversation ID
+        session_id: The chat session ID
         message: The notification message to send
     """
-    sent_count = await manager.send_to_context(context_id, message)
+    sent_count = await manager.send_to_session(session_id, message)
     logger.info(
-        f"Notification pushed to {sent_count} client(s) for context: {context_id}"
+        f"Notification pushed to {sent_count} client(s) for session: {session_id}"
     )
 
 
@@ -86,33 +86,33 @@ app.add_middleware(
 )
 
 
-@app.websocket("/ws/{context_id}")
-async def websocket_endpoint(websocket: WebSocket, context_id: str):
+@app.websocket("/ws/{session_id}")
+async def websocket_endpoint(websocket: WebSocket, session_id: str):
     """
     WebSocket endpoint for clients to connect and receive notifications.
 
-    Clients connect with their context_id (conversation ID) and will receive
-    all payment status updates for that context.
+    Clients connect with their session_id (chat session ID) and will receive
+    all payment status updates for that session.
 
     Args:
         websocket: The WebSocket connection
-        context_id: The context/conversation ID to subscribe to
+        session_id: The chat session ID to subscribe to
     """
-    await manager.connect(websocket, context_id)
+    await manager.connect(websocket, session_id)
 
     try:
         while True:
             # Keep connection alive, receive any client messages
             data = await websocket.receive_text()
-            logger.debug(f"Received from client [{context_id}]: {data}")
+            logger.debug(f"Received from client [{session_id}]: {data}")
 
     except WebSocketDisconnect:
-        manager.disconnect(websocket, context_id)
-        logger.info(f"Client disconnected from context: {context_id}")
+        manager.disconnect(websocket, session_id)
+        logger.info(f"Client disconnected from session: {session_id}")
 
     except Exception as e:
-        logger.error(f"WebSocket error for context {context_id}: {e}")
-        manager.disconnect(websocket, context_id)
+        logger.error(f"WebSocket error for session {session_id}: {e}")
+        manager.disconnect(websocket, session_id)
 
 
 @app.get("/health")
@@ -120,20 +120,7 @@ async def health_check():
     """Health check endpoint."""
     return {
         "status": "healthy",
-        "active_contexts": len(manager.get_active_contexts()),
-        "total_connections": manager.get_connection_count()
-    }
-
-
-@app.get("/stats")
-async def get_stats():
-    """Get server statistics."""
-    contexts = manager.get_active_contexts()
-    return {
-        "active_contexts": contexts,
-        "connections_per_context": {
-            ctx: manager.get_connection_count(ctx) for ctx in contexts
-        },
+        "active_sessions": len(manager.get_active_sessions()),
         "total_connections": manager.get_connection_count()
     }
 

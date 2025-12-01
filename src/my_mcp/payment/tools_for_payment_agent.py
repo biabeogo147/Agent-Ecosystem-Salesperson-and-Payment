@@ -2,6 +2,7 @@ import time
 from decimal import Decimal
 from typing import Optional, Any
 
+from sqlalchemy import select
 from google.adk.tools import FunctionTool
 
 from src.config import *
@@ -52,7 +53,7 @@ async def _stub_paygate_create(
 async def _stub_paygate_query(order_id: int) -> dict[str, Any]:
     return {
         "order_id": order_id,
-        "status": "paid",
+        "status": "PAID",
         "transaction_id": f"VNP{order_id}_{int(time.time())}",
         "paid_amount": None,
         "gateway_response_code": "00"
@@ -134,7 +135,8 @@ async def create_order(
                         status=Status.INVALID_PARAMS,
                         message="Each item must have either 'sku' or 'unit_price'"
                     ).to_json()
-                product = await session.query(Product).filter(Product.sku == sku).first()
+                result = await session.execute(select(Product).where(Product.sku == sku))
+                product = result.scalar_one_or_none()
                 if not product:
                     return ResponseFormat(
                         status=Status.PRODUCT_NOT_FOUND,
@@ -280,10 +282,13 @@ async def query_order_status(
                     message=f"Invalid order_id format: {order_id}. Must be an integer."
                 ).to_json()
 
-            order = await session.query(Order).filter(
-                Order.id == order_id_int,
-                Order.context_id == context_id
-            ).first()
+            result = await session.execute(
+                select(Order).where(
+                    Order.id == order_id_int,
+                    Order.context_id == context_id
+                )
+            )
+            order = result.scalar_one_or_none()
 
             if not order:
                 return ResponseFormat(
@@ -300,7 +305,8 @@ async def query_order_status(
 
         else:
             # Query all orders for context_id
-            orders = await session.query(Order).filter(Order.context_id == context_id).all()
+            result = await session.execute(select(Order).where(Order.context_id == context_id))
+            orders = result.scalars().all()
 
             if not orders:
                 return ResponseFormat(
@@ -362,7 +368,8 @@ async def query_gateway_status(order_id: str) -> str:
         actual_status = gateway_response.get("status", "failed")
 
         # Step 2: Update order status in database
-        order = await session.query(Order).filter(Order.id == order_id_int).first()
+        result = await session.execute(select(Order).where(Order.id == order_id_int))
+        order = result.scalar_one_or_none()
         if not order:
             return ResponseFormat(status=Status.ORDER_NOT_FOUND, message="Order not found").to_json()
 
@@ -377,6 +384,7 @@ async def query_gateway_status(order_id: str) -> str:
 
         await session.commit()
         await session.refresh(order)
+        await session.refresh(order, attribute_names=["items"])
 
         return ResponseFormat(data={
             "gateway_response": gateway_response,

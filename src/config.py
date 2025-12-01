@@ -11,8 +11,6 @@ IS_LLM_AGENT = os.getenv("IS_LLM_AGENT", "false").lower() == "true"
 MCP_SERVER_HOST_PAYMENT = os.getenv("MCP_SERVER_HOST_PAYMENT", "localhost")
 MCP_SERVER_PORT_PAYMENT = int(os.getenv("MCP_SERVER_PORT_PAYMENT", "8002"))
 MCP_PAYMENT_TOKEN = os.getenv("MCP_PAYMENT_TOKEN", "secret-token")
-CHECKOUT_URL=os.getenv("CHECKOUT_URL", "http://localhost:3000/checkout")
-QR_URL=os.getenv("QR_URL", "http://localhost:3000/qr")
 
 MCP_SERVER_HOST_SALESPERSON = os.getenv("MCP_SERVER_HOST_SALESPERSON", "localhost")
 MCP_SERVER_PORT_SALESPERSON = int(os.getenv("MCP_SERVER_PORT_SALESPERSON", "8001"))
@@ -56,6 +54,8 @@ WEBHOOK_PORT = int(os.getenv("WEBHOOK_PORT", "8082"))
 CALLBACK_SERVICE_HOST = os.getenv("CALLBACK_SERVICE_HOST", "0.0.0.0")
 CALLBACK_SERVICE_PORT = int(os.getenv("CALLBACK_SERVICE_PORT", "8083"))
 CALLBACK_SERVICE_URL = os.getenv("CALLBACK_SERVICE_URL", "http://localhost:8083")
+CHECKOUT_URL=os.getenv("CHECKOUT_URL", "http://localhost:8083/checkout")
+QR_URL=os.getenv("QR_URL", "http://localhost:8083/qr")
 
 WS_SERVER_HOST = os.getenv("WS_SERVER_HOST", "0.0.0.0")
 WS_SERVER_PORT = int(os.getenv("WS_SERVER_PORT", "8084"))

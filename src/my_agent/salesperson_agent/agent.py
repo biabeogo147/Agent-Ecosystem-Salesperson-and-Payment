@@ -5,7 +5,7 @@ from src.config import *
 from src.my_agent.salesperson_agent.salesperson_a2a.salesperson_a2a_client import create_payment_order_tool, \
     query_payment_order_status_tool
 from src.my_agent.salesperson_agent.salesperson_mcp_client import prepare_find_product_tool, prepare_calc_shipping_tool, \
-    prepare_reserve_stock_tool, prepare_search_product_documents_tool
+    prepare_search_product_documents_tool
 
 instruction_path = os.path.join(os.path.dirname(__file__), "instruction.txt")
 with open(instruction_path, "r", encoding="utf-8") as f:
@@ -22,7 +22,6 @@ def gemini_salesperson_agent() -> Agent:
         tools=[
             prepare_find_product_tool,
             prepare_calc_shipping_tool,
-            prepare_reserve_stock_tool,
             create_payment_order_tool,
             query_payment_order_status_tool,
             prepare_search_product_documents_tool,
@@ -43,7 +42,6 @@ def llm_salesperson_agent() -> LlmAgent:
         tools=[
             prepare_find_product_tool,
             prepare_calc_shipping_tool,
-            prepare_reserve_stock_tool,
             create_payment_order_tool,
             query_payment_order_status_tool,
             prepare_search_product_documents_tool,

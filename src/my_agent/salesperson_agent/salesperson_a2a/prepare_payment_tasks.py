@@ -17,7 +17,7 @@ from src.my_agent.salesperson_agent.salesperson_mcp_client import (
 )
 
 
-def generate_context_id(prefix: str = "ctx") -> str:
+def _generate_context_id(prefix: str = "ctx") -> str:
     """Generate context_id locally at salesperson agent.
 
     This is generated locally without calling MCP to avoid unnecessary network calls.
@@ -86,6 +86,22 @@ async def _resolve_items_via_product_tool(
     return resolved_items
 
 
+async def _reserve_stock_for_items(
+    items: List[PaymentItem],
+    *,
+    client: SalespersonMcpClient,
+) -> None:
+    """Reserve stock cho tất cả items. Raise error nếu không đủ hàng."""
+    for item in items:
+        result = await client.reserve_stock(sku=item.sku, quantity=item.quantity)
+        # Response format: {"status": "00", "message": "SUCCESS", "data": true/false}
+        # Status.SUCCESS.value = "00"
+        status = result.get("status", "")
+        if status != "00":  # Not SUCCESS
+            message = result.get("message", "Failed to reserve stock")
+            raise ValueError(f"Cannot reserve stock for '{item.name}' (SKU: {item.sku}): {message}")
+
+
 async def _get_current_user_id(client: SalespersonMcpClient, context_id: str) -> Optional[int]:
     user_payload = await client.get_current_user_id(context_id=context_id)
     users = (user_payload or {}).get("data", None)
@@ -113,8 +129,9 @@ async def prepare_create_order_payload(
 
     client = get_salesperson_mcp_client()
     resolved_items = await _resolve_items_via_product_tool(items, client=client)
+    await _reserve_stock_for_items(resolved_items, client=client)
 
-    context_id = generate_context_id(prefix="payment")
+    context_id = _generate_context_id(prefix="payment")
     user_id = await _get_current_user_id(client=client, context_id=context_id)
 
     salesperson_agent_logger.info(f"context_id: {context_id}")

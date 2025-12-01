@@ -110,5 +110,4 @@ async def prepare_search_product_documents(query: str) -> Dict[str, Any]:
 
 prepare_find_product_tool = FunctionTool(prepare_find_product)
 prepare_calc_shipping_tool = FunctionTool(prepare_calc_shipping)
-prepare_reserve_stock_tool = FunctionTool(prepare_reserve_stock)
 prepare_search_product_documents_tool = FunctionTool(prepare_search_product_documents)

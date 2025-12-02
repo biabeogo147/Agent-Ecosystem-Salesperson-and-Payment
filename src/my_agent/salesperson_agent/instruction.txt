@@ -56,7 +56,7 @@ Primary responsibilities
          "metadata": {"order_source": "website"}
        }
 
-5. Tool: _query_payment_order_status
+5. Tool: query_payment_order_status
    - Purpose: Query the current status of an existing payment order.
    - Input parameters:
        context_id (string): unique identifier of the order context.

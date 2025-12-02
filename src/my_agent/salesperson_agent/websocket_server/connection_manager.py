@@ -20,7 +20,6 @@ class ConnectionManager:
     """
 
     def __init__(self):
-        # session_id -> list of WebSocket connections
         self.active_connections: dict[str, list[WebSocket]] = {}
 
     async def connect(self, websocket: WebSocket, session_id: str) -> None:

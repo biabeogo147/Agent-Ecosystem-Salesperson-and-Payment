@@ -31,9 +31,7 @@ async def notification_callback(session_id: str, message: dict) -> None:
         message: The notification message to send
     """
     sent_count = await manager.send_to_session(session_id, message)
-    logger.info(
-        f"Notification pushed to {sent_count} client(s) for session: {session_id}"
-    )
+    logger.info(f"Notification pushed to {sent_count} client(s) for session: {session_id}")
 
 
 @asynccontextmanager
@@ -51,13 +49,11 @@ async def lifespan(_: FastAPI):
 
     logger.info(f"WebSocket Server starting on {WS_SERVER_HOST}:{WS_SERVER_PORT}")
 
-    # Import here to avoid circular imports
     from src.my_agent.salesperson_agent.salesperson_notification_subscriber import (
         start_subscriber_with_callback,
         stop_subscriber,
     )
 
-    # Start notification subscriber with our callback
     _subscriber_task = start_subscriber_with_callback(notification_callback)
     logger.info("Notification subscriber started as background task")
 

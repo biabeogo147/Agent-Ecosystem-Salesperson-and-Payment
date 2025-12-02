@@ -23,7 +23,6 @@ class PostgresConnection:
         host = config.POSTGRES_HOST
         port = config.POSTGRES_PORT
 
-
         self.engine = create_async_engine(
             f"postgresql+asyncpg://{user}:{password}@{host}:{port}/{database}",
             pool_size=20,

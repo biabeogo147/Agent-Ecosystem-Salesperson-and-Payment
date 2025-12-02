@@ -123,7 +123,7 @@ async def _create_payment_order(
     return response.to_dict()
 
 
-async def _query_payment_order_status(
+async def query_payment_order_status(
     context_id: str,
     order_id: Optional[str] = None
 ) -> dict[str, Any]:
@@ -153,4 +153,4 @@ def _extract_payment_response(message: Message) -> PaymentResponse:
 
 
 create_payment_order_tool = FunctionTool(_create_payment_order)
-query_payment_order_status_tool = FunctionTool(_query_payment_order_status)
+query_payment_order_status_tool = FunctionTool(query_payment_order_status)

@@ -32,6 +32,7 @@ _notification_callback: NotificationCallback | None = None
 class SalespersonNotification(BaseModel):
     """Schema for salesperson notification message from Payment Agent."""
     order_id: str
+    context_id: str
     timestamp: str
 
 
@@ -51,44 +52,23 @@ async def process_notification(notification_data: dict) -> bool:
     Returns:
         True if processed successfully, False otherwise
     """
+    from src.my_agent.salesperson_agent.salesperson_a2a.salesperson_a2a_client import query_payment_order_status
+
     global _notification_callback
 
     try:
         notification = SalespersonNotification.model_validate(notification_data)
 
-        logger.info(f"Received payment notification: order_id={notification.order_id}")
+        logger.info(f"Received payment notification: order_id={notification.order_id} - context_id={notification.context_id}")
 
-        # Query Order from database to get session_id (context_id)
-        from src.data.models.db_entity import Order
-        from src.data.db.session import get_async_session
-
-        async with get_async_session() as session:
-            order = await session.query(Order).filter(
-                Order.id == int(notification.order_id)
-            ).first()
-
-        if not order:
-            logger.error(f"Order not found: {notification.order_id}")
-            return False
-
-        session_id = order.context_id
-        logger.info(f"Found session_id={session_id} for order_id={notification.order_id}")
-
-        # Query order status via A2A to get actual status
-        from src.my_agent.salesperson_agent.salesperson_a2a.salesperson_a2a_client import (
-            get_salesperson_a2a_client
-        )
-        a2a_client = get_salesperson_a2a_client()
-        payment_response = await a2a_client.query_status(
-            context_id=session_id,
-            order_id=notification.order_id
+        payment_response = await query_payment_order_status(
+            context_id=notification.context_id,
+            order_id=notification.order_id,
         )
 
-        # Extract status from response
-        status = payment_response.status.value if payment_response.status else "unknown"
+        status = payment_response.get("status", {}).get("value", "unknown")
         logger.info(f"Order {notification.order_id} status queried via A2A: status={status}")
 
-        # Log based on status
         if status == "SUCCESS":
             logger.info(f"Payment SUCCESS for order {notification.order_id}")
         elif status == "CANCELLED":
@@ -98,7 +78,6 @@ async def process_notification(notification_data: dict) -> bool:
         else:
             logger.info(f"Payment status '{status}' for order {notification.order_id}")
 
-        # Push to WebSocket clients via callback
         if _notification_callback:
             message = {
                 "type": "payment_status",

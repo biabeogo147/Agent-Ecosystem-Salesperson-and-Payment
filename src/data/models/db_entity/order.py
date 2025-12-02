@@ -11,7 +11,7 @@ class Order(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     context_id = Column(String, nullable=False, index=True)  # Correlation ID from salesperson
-    conversation_id = Column(String, nullable=True, index=True)  # Conversation ID for multi-session notification
+    conversation_id = Column(Integer, ForeignKey("conversation.id"), nullable=True, index=True)  # Conversation ID for multi-session notification
     user_id = Column(Integer, ForeignKey("user.id"), nullable=True)
     total_amount = Column(DECIMAL(18, 2), nullable=False)
     currency = Column(String, nullable=False, default="USD")
@@ -21,6 +21,7 @@ class Order(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     user = relationship("User", backref="orders")
+    conversation = relationship("Conversation", backref="orders")
     items = relationship("OrderItem", back_populates="order", cascade="all, delete-orphan")
 
     __table_args__ = (

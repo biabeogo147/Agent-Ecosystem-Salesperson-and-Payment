@@ -3,6 +3,7 @@ from decimal import Decimal
 from typing import Optional, Any
 
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from google.adk.tools import FunctionTool
 
 from src.config import *
@@ -17,7 +18,6 @@ from src.my_agent.my_a2a_common.payment_schemas.payment_response import PaymentR
 from src.utils.response_format import ResponseFormat
 from src.utils.status import Status
 from . import payment_mcp_logger
-
 
 def _map_order_status_to_payment_status(order_status: OrderStatus) -> PaymentStatus:
     mapping = {
@@ -308,7 +308,11 @@ async def query_order_status(
 
         else:
             # Query all orders for context_id
-            result = await session.execute(select(Order).where(Order.context_id == context_id))
+            result = await session.execute(
+                select(Order)
+                .where(Order.context_id == context_id)
+                .options(selectinload(Order.items))
+            )
             orders = result.scalars().all()
 
             if not orders:

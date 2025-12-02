@@ -5,7 +5,6 @@ CREATE TYPE order_status_enum AS ENUM ('PENDING', 'SUCCESS', 'PAID', 'FAILED', '
 
 -- ==============================================
 -- Table: merchant
--- Description: Stores merchant information
 -- ==============================================
 CREATE TABLE IF NOT EXISTS merchant (
     id SERIAL PRIMARY KEY,
@@ -16,7 +15,6 @@ CREATE TABLE IF NOT EXISTS merchant (
 
 -- ==============================================
 -- Table: user
--- Description: Stores user account information
 -- ==============================================
 CREATE TABLE IF NOT EXISTS "user" (
     id SERIAL PRIMARY KEY,
@@ -34,7 +32,6 @@ CREATE INDEX IF NOT EXISTS idx_user_email ON "user"(email);
 
 -- ==============================================
 -- Table: product
--- Description: Stores product catalog
 -- ==============================================
 CREATE TABLE IF NOT EXISTS product (
     sku VARCHAR(255) PRIMARY KEY,
@@ -59,7 +56,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Create trigger for product
 DROP TRIGGER IF EXISTS product_updated_at_trigger ON product;
 CREATE TRIGGER product_updated_at_trigger
     BEFORE UPDATE ON product
@@ -67,12 +63,24 @@ CREATE TRIGGER product_updated_at_trigger
     EXECUTE FUNCTION update_product_updated_at();
 
 -- ==============================================
+-- Table: conversation 
+-- ==============================================
+CREATE TABLE IF NOT EXISTS conversation (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255),
+    user_id INTEGER NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
+    summary TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE
+);
+
+-- ==============================================
 -- Table: order
--- Description: Stores customer orders
 -- ==============================================
 CREATE TABLE IF NOT EXISTS "order" (
     id SERIAL PRIMARY KEY,
     context_id VARCHAR(255) NOT NULL,
+    conversation_id INTEGER REFERENCES conversation(id) ON DELETE SET NULL,
     user_id INTEGER REFERENCES "user"(id) ON DELETE SET NULL,
     total_amount DECIMAL(18, 2) NOT NULL,
     currency VARCHAR(255) NOT NULL DEFAULT 'USD',
@@ -83,10 +91,10 @@ CREATE TABLE IF NOT EXISTS "order" (
 );
 
 CREATE INDEX IF NOT EXISTS idx_order_context_id ON "order"(context_id);
+CREATE INDEX IF NOT EXISTS idx_order_conversation_id ON "order"(conversation_id);
 
 -- ==============================================
 -- Table: order_item
--- Description: Order line items - represents individual products in an order
 -- ==============================================
 CREATE TABLE IF NOT EXISTS order_item (
     id SERIAL PRIMARY KEY,
@@ -99,21 +107,7 @@ CREATE TABLE IF NOT EXISTS order_item (
 );
 
 -- ==============================================
--- Table: conversation
--- Description: Stores user conversation sessions
--- ==============================================
-CREATE TABLE IF NOT EXISTS conversation (
-    id SERIAL PRIMARY KEY,
-    title VARCHAR(255),
-    user_id INTEGER NOT NULL REFERENCES "user"(id) ON DELETE CASCADE,
-    summary TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE
-);
-
--- ==============================================
 -- Table: message
--- Description: Stores messages within conversations
 -- ==============================================
 CREATE TABLE IF NOT EXISTS message (
     id SERIAL PRIMARY KEY,
@@ -127,7 +121,6 @@ CREATE TABLE IF NOT EXISTS message (
 -- Insert sample data
 -- ==============================================
 
--- Insert sample merchants
 INSERT INTO merchant (name) VALUES 
     ('Tech Store'),
     ('Fashion Boutique'),

@@ -5,10 +5,11 @@ This module subscribes to the salesperson:notification Redis channel and process
 notification messages from the Payment Agent.
 
 Simplified flow:
-1. Receive notification from Redis (order_id only)
-2. Query order from database to get session_id (context_id in Order)
-3. Query order status via A2A (payment.query-status) to get actual status
-4. Push notification to WebSocket clients via callback
+1. Receive notification from Redis (order_id, context_id, user_id, conversation_id)
+2. Query order status via A2A (payment.query-status) to get actual status
+3. Push notification to WebSocket clients via:
+   - Multi-session broadcast if user_id and conversation_id provided
+   - Fallback to context_id as session_id for backwards compatibility
 
 Callback signature: async def callback(session_id: str, message: dict) -> None
 """
@@ -33,6 +34,8 @@ class SalespersonNotification(BaseModel):
     """Schema for salesperson notification message from Payment Agent."""
     order_id: str
     context_id: str
+    user_id: Optional[int] = None
+    conversation_id: Optional[str] = None
     timestamp: str
 
 
@@ -41,10 +44,11 @@ async def process_notification(notification_data: dict) -> bool:
     Process a salesperson notification message.
 
     Flow:
-    1. Parse notification message (order_id only)
-    2. Query Order from database to get session_id (context_id)
-    3. Query order status via A2A (payment.query-status)
-    4. Push status to WebSocket clients via callback
+    1. Parse notification message (order_id, context_id, user_id, conversation_id)
+    2. Query order status via A2A (payment.query-status)
+    3. Push status to WebSocket clients:
+       - Use broadcast_to_user_conversation if user_id and conversation_id present
+       - Fallback to callback with context_id as session_id
 
     Args:
         notification_data: Notification message data from Redis
@@ -53,13 +57,19 @@ async def process_notification(notification_data: dict) -> bool:
         True if processed successfully, False otherwise
     """
     from src.my_agent.salesperson_agent.salesperson_a2a.salesperson_a2a_client import query_payment_order_status
+    from src.my_agent.salesperson_agent.websocket_server.connection_manager import manager
 
     global _notification_callback
 
     try:
         notification = SalespersonNotification.model_validate(notification_data)
 
-        logger.info(f"Received payment notification: order_id={notification.order_id} - context_id={notification.context_id}")
+        logger.info(
+            f"Received payment notification: order_id={notification.order_id}, "
+            f"context_id={notification.context_id}, "
+            f"user_id={notification.user_id}, "
+            f"conversation_id={notification.conversation_id}"
+        )
 
         payment_response = await query_payment_order_status(
             context_id=notification.context_id,
@@ -78,17 +88,36 @@ async def process_notification(notification_data: dict) -> bool:
         else:
             logger.info(f"Payment status '{status}' for order {notification.order_id}")
 
-        if _notification_callback:
-            message = {
-                "type": "payment_status",
-                "order_id": notification.order_id,
-                "status": status,
-                "timestamp": notification.timestamp
-            }
-            await _notification_callback(session_id, message)
-            logger.info(f"Notification pushed via callback for session: {session_id}")
+        # Build notification message
+        message = {
+            "type": "payment_status",
+            "order_id": notification.order_id,
+            "context_id": notification.context_id,
+            "status": status,
+            "timestamp": notification.timestamp
+        }
+
+        # Multi-session broadcast via Redis lookup if user_id and conversation_id present
+        if notification.user_id and notification.conversation_id:
+            sent_count = await manager.broadcast_to_user_conversation(
+                user_id=notification.user_id,
+                conversation_id=notification.conversation_id,
+                message=message
+            )
+            logger.info(
+                f"Notification broadcast: user_id={notification.user_id}, "
+                f"conversation_id={notification.conversation_id}, "
+                f"sent_to={sent_count} connections"
+            )
+        elif _notification_callback:
+            # Fallback: Use context_id as session_id (backwards compatible)
+            await _notification_callback(notification.context_id, message)
+            logger.info(f"Notification pushed via callback for context: {notification.context_id}")
         else:
-            logger.debug("No callback registered, skipping push notification")
+            logger.warning(
+                "No user_id/conversation_id for multi-session broadcast "
+                "and no callback registered, skipping push notification"
+            )
 
         return True
 
@@ -167,6 +196,9 @@ def start_subscriber_with_callback(callback: NotificationCallback) -> asyncio.Ta
     The callback will be called for each processed notification with:
     - session_id: str - The chat session ID (from Order.context_id)
     - message: dict - The notification message to push
+
+    Note: If user_id and conversation_id are present in the notification,
+    the multi-session broadcast via Redis will be used instead of the callback.
 
     Args:
         callback: Async function to call when notification is processed

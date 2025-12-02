@@ -11,6 +11,7 @@ class Order(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     context_id = Column(String, nullable=False, index=True)  # Correlation ID from salesperson
+    conversation_id = Column(String, nullable=True, index=True)  # Conversation ID for multi-session notification
     user_id = Column(Integer, ForeignKey("user.id"), nullable=True)
     total_amount = Column(DECIMAL(18, 2), nullable=False)
     currency = Column(String, nullable=False, default="USD")
@@ -24,12 +25,14 @@ class Order(Base):
 
     __table_args__ = (
         Index("idx_order_context_id", "context_id"),
+        Index("idx_order_conversation_id", "conversation_id"),
     )
 
     def to_dict(self):
         return {
             "id": self.id,
             "context_id": self.context_id,
+            "conversation_id": self.conversation_id,
             "user_id": self.user_id,
             "total_amount": float(self.total_amount),
             "currency": self.currency,

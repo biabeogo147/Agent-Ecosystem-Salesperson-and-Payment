@@ -40,7 +40,8 @@ class PaymentMcpClient(BaseMcpClient):
         customer_phone: str = "",
         customer_shipping_address: str = "",
         note: str = "",
-        user_id: Optional[int] = None
+        user_id: Optional[int] = None,
+        conversation_id: Optional[str] = None
     ) -> dict[str, Any]:
         """Create an order using the shared MCP payment tool."""
         self._logger.debug(
@@ -61,6 +62,8 @@ class PaymentMcpClient(BaseMcpClient):
             }
             if user_id is not None:
                 params["user_id"] = user_id
+            if conversation_id is not None:
+                params["conversation_id"] = conversation_id
 
             response = await self._call_tool_json("create_order", params)
             self._logger.debug(f"[PaymentMcpClient] create_order raw response: {response}")
@@ -136,7 +139,8 @@ async def create_order(
     customer_phone: str = "",
     customer_shipping_address: str = "",
     note: str = "",
-    user_id: Optional[int] = None
+    user_id: Optional[int] = None,
+    conversation_id: Optional[str] = None
 ) -> dict[str, Any]:
     """Create an order using the shared MCP payment tool."""
     client = get_payment_mcp_client()
@@ -149,7 +153,8 @@ async def create_order(
         customer_phone=customer_phone,
         customer_shipping_address=customer_shipping_address,
         note=note,
-        user_id=user_id
+        user_id=user_id,
+        conversation_id=conversation_id
     )
 
 

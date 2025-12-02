@@ -61,7 +61,7 @@ class SalespersonMcpClient(BaseMcpClient):
         )
         return self._ensure_response_format(payload, tool="search_product_documents")
 
-    async def get_current_user_id(self, *, context_id: str) -> int | None:
+    async def get_current_user_id(self, *, context_id: str) -> dict[str, Any]:
         """
         Get the current authenticated user ID for the given context.
         

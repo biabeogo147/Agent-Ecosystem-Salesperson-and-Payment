@@ -63,3 +63,8 @@ WS_SERVER_PORT = int(os.getenv("WS_SERVER_PORT", "8084"))
 CHAT_UI_HOST = os.getenv("CHAT_UI_HOST", "0.0.0.0")
 CHAT_UI_PORT = int(os.getenv("CHAT_UI_PORT", "8085"))
 ADK_AGENT_URL = os.getenv("ADK_AGENT_URL", "http://localhost:8000")
+
+# JWT Configuration
+JWT_SECRET = os.getenv("JWT_SECRET", "your-secret-key-change-in-production")
+JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
+JWT_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "1440"))  # 24 hours default

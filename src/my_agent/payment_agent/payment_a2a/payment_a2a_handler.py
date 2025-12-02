@@ -154,7 +154,8 @@ class PaymentA2AHandler:
                 customer_phone=request.customer.phone or "",
                 customer_shipping_address=request.customer.shipping_address or "",
                 note=request.note or "",
-                user_id=request.user_id
+                user_id=request.user_id,
+                conversation_id=request.conversation_id
             )
             response = PaymentResponse.model_validate(raw_response)
             validate_payment_response(

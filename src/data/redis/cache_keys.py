@@ -5,6 +5,7 @@ class TTL:
     SEARCH = 120            # 2 minutes - search results
     PRODUCT_LIST = 180      # 3 minutes - product lists
     VECTOR_SEARCH = 600     # 10 minutes - vector search (embeddings rarely change)
+    WS_SESSION = 86400      # 24 hours - WebSocket session mapping
 
 
 class CacheKeys:
@@ -59,6 +60,12 @@ class CacheKeys:
         """Redis channel key for salesperson notifications."""
         return "salesperson:notification"
 
+    # WebSocket session mapping keys
+    @staticmethod
+    def ws_user_conversation_sessions(user_id: int, conversation_id: str) -> str:
+        """Redis Set key for WebSocket sessions by user and conversation."""
+        return f"ws:user:{user_id}:conv:{conversation_id}"
+
 
 class CachePatterns:
     """Cache key patterns for bulk operations (invalidation, clearing)."""
@@ -82,3 +89,8 @@ class CachePatterns:
     def all_pattern() -> str:
         """Pattern to match all cache keys (use with caution!)."""
         return "*"
+
+    @staticmethod
+    def ws_user_sessions_pattern(user_id: int) -> str:
+        """Pattern to match all WebSocket session keys for a user."""
+        return f"ws:user:{user_id}:conv:*"

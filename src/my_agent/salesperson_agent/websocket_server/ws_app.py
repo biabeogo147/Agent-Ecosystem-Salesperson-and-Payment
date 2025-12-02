@@ -5,16 +5,22 @@ This FastAPI application provides:
 1. WebSocket endpoint for frontend clients to receive real-time notifications
 2. Redis subscriber for payment notifications (integrated via lifespan)
 3. Automatic push of payment status updates to connected clients
+4. JWT authentication for WebSocket connections
+5. Multi-session notification broadcasting via Redis session mapping
 """
 import asyncio
+import json
 from contextlib import asynccontextmanager
+from typing import Optional
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.auth import auth_router
 from src.config import WS_SERVER_HOST, WS_SERVER_PORT
 from src.my_agent.salesperson_agent.websocket_server import ws_server_logger as logger
 from src.my_agent.salesperson_agent.websocket_server.connection_manager import manager
+from src.utils.jwt_utils import decode_token
 
 
 # Global reference to subscriber task
@@ -81,26 +87,144 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Mount auth router for login endpoint
+app.include_router(auth_router, prefix="/auth")
+
+
+def _extract_user_from_token(token: str) -> Optional[dict]:
+    """
+    Extract user info from JWT token.
+
+    Args:
+        token: JWT token string
+
+    Returns:
+        Dict with user_id and username, or None if invalid
+    """
+    try:
+        payload = decode_token(token)
+        user_id = payload.get("user_id")
+        username = payload.get("username")
+        if user_id is None:
+            return None
+        return {"user_id": int(user_id), "username": username}
+    except Exception as e:
+        logger.warning(f"Failed to decode JWT token: {e}")
+        return None
+
 
 @app.websocket("/ws/{session_id}")
-async def websocket_endpoint(websocket: WebSocket, session_id: str):
+async def websocket_endpoint(
+    websocket: WebSocket,
+    session_id: str,
+    token: str = Query(None)
+):
     """
     WebSocket endpoint for clients to connect and receive notifications.
 
-    Clients connect with their session_id (chat session ID) and will receive
-    all payment status updates for that session.
+    Flow:
+    1. Client connects with JWT token in query param: /ws/{session_id}?token=<JWT>
+    2. Server validates JWT and extracts user_id
+    3. Client sends initial message: {"type": "register", "conversation_id": "..."}
+    4. Server registers session in Redis for multi-device notification
+    5. Client receives notifications for that conversation
 
     Args:
         websocket: The WebSocket connection
         session_id: The chat session ID to subscribe to
+        token: JWT token for authentication (query param)
     """
+    # Step 1: Validate JWT token
+    if not token:
+        logger.warning(f"WebSocket connection rejected: missing token for session {session_id}")
+        await websocket.close(code=4001, reason="Missing authentication token")
+        return
+
+    user_info = _extract_user_from_token(token)
+    if not user_info:
+        logger.warning(f"WebSocket connection rejected: invalid token for session {session_id}")
+        await websocket.close(code=4002, reason="Invalid or expired token")
+        return
+
+    user_id = user_info["user_id"]
+    logger.info(f"WebSocket authenticated: session_id={session_id}, user_id={user_id}")
+
+    # Step 2: Accept connection
     await manager.connect(websocket, session_id)
 
     try:
+        # Step 3: Wait for initial register message with conversation_id
+        try:
+            first_message_raw = await asyncio.wait_for(
+                websocket.receive_text(),
+                timeout=30.0  # 30 seconds timeout for registration
+            )
+            first_message = json.loads(first_message_raw)
+        except asyncio.TimeoutError:
+            logger.warning(f"Registration timeout for session {session_id}")
+            await websocket.send_json({
+                "type": "error",
+                "message": "Registration timeout. Please send register message."
+            })
+            manager.disconnect(websocket, session_id)
+            return
+        except json.JSONDecodeError:
+            logger.warning(f"Invalid JSON in register message for session {session_id}")
+            await websocket.send_json({
+                "type": "error",
+                "message": "Invalid JSON format"
+            })
+            manager.disconnect(websocket, session_id)
+            return
+
+        # Step 4: Validate register message
+        if first_message.get("type") != "register":
+            logger.warning(f"First message is not register for session {session_id}")
+            await websocket.send_json({
+                "type": "error",
+                "message": "First message must be type 'register'"
+            })
+            manager.disconnect(websocket, session_id)
+            return
+
+        conversation_id = first_message.get("conversation_id")
+        if not conversation_id:
+            logger.warning(f"Missing conversation_id in register message for session {session_id}")
+            await websocket.send_json({
+                "type": "error",
+                "message": "Missing conversation_id in register message"
+            })
+            manager.disconnect(websocket, session_id)
+            return
+
+        # Step 5: Register session in Redis for multi-device notification
+        await manager.register_session(session_id, user_id, str(conversation_id))
+
+        # Send confirmation
+        await websocket.send_json({
+            "type": "registered",
+            "session_id": session_id,
+            "user_id": user_id,
+            "conversation_id": conversation_id,
+            "message": "Successfully registered for notifications"
+        })
+        logger.info(
+            f"Session registered: session_id={session_id}, "
+            f"user_id={user_id}, conversation_id={conversation_id}"
+        )
+
+        # Step 6: Keep connection alive, receive any client messages
         while True:
-            # Keep connection alive, receive any client messages
             data = await websocket.receive_text()
             logger.debug(f"Received from client [{session_id}]: {data}")
+
+            # Handle ping/pong for keepalive
+            try:
+                msg = json.loads(data)
+                if msg.get("type") == "ping":
+                    await websocket.send_json({"type": "pong"})
+            except json.JSONDecodeError:
+                pass
 
     except WebSocketDisconnect:
         manager.disconnect(websocket, session_id)

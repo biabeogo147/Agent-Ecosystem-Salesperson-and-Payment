@@ -104,10 +104,10 @@ async def _reserve_stock_for_items(
 
 async def _get_current_user_id(client: SalespersonMcpClient, context_id: str) -> Optional[int]:
     user_payload = await client.get_current_user_id(context_id=context_id)
-    users = (user_payload or {}).get("data", None)
-    if not users:
+    user = (user_payload or {}).get("data", {})
+    if not user:
         raise ValueError("No user information returned.")
-    return users.get("user_id")
+    return user.get("user_id")
 
 
 async def prepare_create_order_payload(
@@ -117,6 +117,7 @@ async def prepare_create_order_payload(
     *,
     note: Optional[str] = None,
     metadata: Optional[Dict[str, str]] = None,
+    conversation_id: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Build the full payload required to call the payment agent's order skill.
 
@@ -148,6 +149,7 @@ async def prepare_create_order_payload(
         channel=channel,
         note=note,
         user_id=user_id,
+        conversation_id=conversation_id,
         metadata=metadata,
     )
 

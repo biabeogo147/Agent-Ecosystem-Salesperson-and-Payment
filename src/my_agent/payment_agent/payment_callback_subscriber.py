@@ -55,10 +55,12 @@ async def process_callback(callback_data: dict) -> bool:
         )
 
         # Notify Salesperson Agent about the callback
-        # Salesperson will query order status via A2A (payment.query-status)
+        # Include user_id and conversation_id for multi-session broadcasting
         await notify_salesperson(
             order_id=callback_message.order_id,
-            context_id=order.get("context_id", "")
+            context_id=order.get("context_id", ""),
+            user_id=order.get("user_id"),
+            conversation_id=order.get("conversation_id")
         )
 
         return True
@@ -68,16 +70,23 @@ async def process_callback(callback_data: dict) -> bool:
         return False
 
 
-async def notify_salesperson(order_id: str, context_id: str) -> bool:
+async def notify_salesperson(
+    order_id: str,
+    context_id: str,
+    user_id: Optional[int] = None,
+    conversation_id: Optional[str] = None
+) -> bool:
     """
     Notify Salesperson Agent about payment callback via Redis Pub/Sub.
 
-    Publishes a simple notification message to the salesperson:notification channel.
-    Salesperson Agent will then query order status via A2A (payment.query-status).
+    Publishes a notification message to the salesperson:notification channel
+    with user_id and conversation_id for multi-session broadcasting.
 
     Args:
         order_id: The order ID
         context_id: The context ID linking to Salesperson Agent session
+        user_id: The user ID for multi-session lookup
+        conversation_id: The conversation ID for multi-session lookup
 
     Returns:
         True if notification was published successfully, False otherwise
@@ -88,6 +97,8 @@ async def notify_salesperson(order_id: str, context_id: str) -> bool:
         message = {
             "order_id": order_id,
             "context_id": context_id,
+            "user_id": user_id,
+            "conversation_id": conversation_id,
             "timestamp": datetime.datetime.now(datetime.UTC).isoformat()
         }
 
@@ -97,7 +108,8 @@ async def notify_salesperson(order_id: str, context_id: str) -> bool:
         )
         logger.info(
             f"Published notification to Salesperson: "
-            f"order_id={order_id}, context_id={context_id}"
+            f"order_id={order_id}, context_id={context_id}, "
+            f"user_id={user_id}, conversation_id={conversation_id}"
         )
         return True
     except Exception as e:

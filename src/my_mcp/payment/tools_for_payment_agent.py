@@ -69,7 +69,8 @@ async def create_order(
     customer_phone: str = "",
     customer_shipping_address: str = "",
     note: str = "",
-    user_id: Optional[int] = None
+    user_id: Optional[int] = None,
+    conversation_id: Optional[str] = None
 ) -> str:
     """
     Create a payment order with multiple items and save to database.
@@ -89,6 +90,7 @@ async def create_order(
         customer_shipping_address: Shipping address (optional)
         note: Additional notes for the order (optional)
         user_id: User ID associated with the order (optional)
+        conversation_id: Conversation ID for multi-session notification (optional)
 
     Returns:
         JSON string containing PaymentResponse with order_id, context_id, and next_action
@@ -172,6 +174,7 @@ async def create_order(
         # Create Order
         order = Order(
             context_id=context_id,
+            conversation_id=conversation_id,
             user_id=user_id,
             total_amount=total_amount,
             currency=currency,

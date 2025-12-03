@@ -199,6 +199,15 @@ async def serve_index():
     return FileResponse(index_path)
 
 
+@app.get("/login")
+async def serve_login():
+    """Serve the login page."""
+    login_path = STATIC_DIR / "login.html"
+    if not login_path.exists():
+        raise HTTPException(status_code=404, detail="login.html not found")
+    return FileResponse(login_path)
+
+
 # Mount static files (after specific routes)
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 

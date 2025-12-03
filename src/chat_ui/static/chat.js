@@ -21,6 +21,14 @@ const toastContainer = document.getElementById('toast-container');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
+    // Check authentication
+    if (!checkAuth()) {
+        return; // Will redirect to login
+    }
+
+    // Display user info
+    displayUserInfo();
+
     // Display session ID
     sessionIdDisplay.textContent = sessionId.substring(0, 8) + '...';
     localStorage.setItem('sessionId', sessionId);
@@ -34,6 +42,59 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Setup event listeners
     setupEventListeners();
 });
+
+/**
+ * Check if user is authenticated
+ */
+function checkAuth() {
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+        console.log('No auth token found, redirecting to login');
+        window.location.href = '/login';
+        return false;
+    }
+    return true;
+}
+
+/**
+ * Display user info in header
+ */
+function displayUserInfo() {
+    const username = localStorage.getItem('username');
+    const usernameDisplay = document.getElementById('username-display');
+    if (usernameDisplay && username) {
+        usernameDisplay.textContent = username;
+    }
+}
+
+/**
+ * Logout user
+ */
+function logout() {
+    // Clear auth data
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('username');
+
+    // Close WebSocket
+    if (ws) {
+        ws.close();
+    }
+
+    // Redirect to login
+    window.location.href = '/login';
+}
+
+/**
+ * Get authorization headers with Bearer token
+ */
+function getAuthHeaders() {
+    const token = localStorage.getItem('authToken');
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+    };
+}
 
 /**
  * Generate a UUID v4
@@ -66,8 +127,18 @@ async function loadConfig() {
  * Connect to WebSocket server
  */
 function connectWebSocket() {
-    const wsUrl = `${config?.ws_url || 'ws://localhost:8084'}/ws/${sessionId}`;
-    console.log('Connecting to WebSocket:', wsUrl);
+    const token = localStorage.getItem('authToken');
+
+    // Redirect to login if no token
+    if (!token) {
+        console.log('No auth token, redirecting to login');
+        window.location.href = '/login';
+        return;
+    }
+
+    // Build WebSocket URL with token
+    const wsUrl = `${config?.ws_url || 'ws://localhost:8084'}/ws/${sessionId}?token=${encodeURIComponent(token)}`;
+    console.log('Connecting to WebSocket:', wsUrl.replace(token, '***'));
 
     try {
         ws = new WebSocket(wsUrl);
@@ -75,22 +146,51 @@ function connectWebSocket() {
         ws.onopen = () => {
             console.log('WebSocket connected');
             updateConnectionStatus(true);
+
+            // Send register message with conversation_id
+            const registerMessage = {
+                type: 'register',
+                conversation_id: sessionId
+            };
+            ws.send(JSON.stringify(registerMessage));
+            console.log('Sent register message:', registerMessage);
         };
 
         ws.onmessage = (event) => {
             console.log('WebSocket message:', event.data);
             try {
-                const notification = JSON.parse(event.data);
-                handleNotification(notification);
+                const message = JSON.parse(event.data);
+
+                // Handle different message types
+                if (message.type === 'registered') {
+                    console.log('Session registered:', message);
+                    showToast('Connected to notification server', 'success');
+                } else if (message.type === 'error') {
+                    console.error('WebSocket error message:', message);
+                    showToast(message.message || 'Connection error', 'error');
+                } else if (message.type === 'pong') {
+                    // Heartbeat response, ignore
+                } else {
+                    // Assume it's a notification
+                    handleNotification(message);
+                }
             } catch (error) {
-                console.error('Failed to parse notification:', error);
+                console.error('Failed to parse message:', error);
             }
         };
 
-        ws.onclose = () => {
-            console.log('WebSocket disconnected');
+        ws.onclose = (event) => {
+            console.log('WebSocket disconnected, code:', event.code);
             updateConnectionStatus(false);
-            // Reconnect after 3 seconds
+
+            // Check for auth errors (4001 = missing token, 4002 = invalid token)
+            if (event.code === 4001 || event.code === 4002) {
+                console.log('Auth error, redirecting to login');
+                logout();
+                return;
+            }
+
+            // Reconnect after 3 seconds for other disconnections
             setTimeout(connectWebSocket, 3000);
         };
 
@@ -140,6 +240,16 @@ function setupEventListeners() {
             startNewSession();
         }
     });
+
+    // Logout button
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            if (confirm('Are you sure you want to logout?')) {
+                logout();
+            }
+        });
+    }
 }
 
 /**
@@ -164,14 +274,18 @@ async function sendMessage() {
     try {
         const response = await fetch('/api/chat', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: getAuthHeaders(),
             body: JSON.stringify({
                 session_id: sessionId,
                 message: message
             })
         });
+
+        if (response.status === 401) {
+            // Token expired or invalid
+            logout();
+            return;
+        }
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);

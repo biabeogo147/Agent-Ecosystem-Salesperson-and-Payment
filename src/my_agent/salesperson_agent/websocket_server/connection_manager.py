@@ -54,7 +54,7 @@ class ConnectionManager:
         self,
         session_id: str,
         user_id: int,
-        conversation_id: str
+        conversation_id: int,
     ) -> None:
         """
         Register session metadata and add to Redis set for multi-session lookup.
@@ -141,7 +141,7 @@ class ConnectionManager:
     async def get_sessions_for_user_conversation(
         self,
         user_id: int,
-        conversation_id: str
+        conversation_id: int
     ) -> list[str]:
         """
         Get all session_ids for a user's conversation from Redis.
@@ -165,7 +165,7 @@ class ConnectionManager:
     async def broadcast_to_user_conversation(
         self,
         user_id: int,
-        conversation_id: str,
+        conversation_id: int,
         message: dict[str, Any]
     ) -> int:
         """
@@ -272,5 +272,4 @@ class ConnectionManager:
         return self.session_metadata.get(session_id)
 
 
-# Singleton instance
 manager = ConnectionManager()

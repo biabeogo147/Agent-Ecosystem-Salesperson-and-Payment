@@ -11,16 +11,19 @@ This FastAPI application provides:
 import asyncio
 import json
 from contextlib import asynccontextmanager
-from typing import Optional
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.auth import auth_router
 from src.config import WS_SERVER_HOST, WS_SERVER_PORT
+from src.utils.response_format import ResponseFormat
 from src.my_agent.salesperson_agent.websocket_server import ws_server_logger as logger
 from src.my_agent.salesperson_agent.websocket_server.connection_manager import manager
-from src.utils.jwt_utils import decode_token
+from src.my_agent.salesperson_agent.websocket_server.auth import (
+    auth_router,
+    authenticate_websocket,
+    extract_token_from_query,
+)
 
 
 # Global reference to subscriber task
@@ -91,28 +94,6 @@ app.add_middleware(
 app.include_router(auth_router, prefix="/auth")
 
 
-def _extract_user_from_token(token: str) -> Optional[dict]:
-    """
-    Extract user info from JWT token.
-
-    Args:
-        token: JWT token string
-
-    Returns:
-        Dict with user_id and username, or None if invalid
-    """
-    try:
-        payload = decode_token(token)
-        user_id = payload.get("user_id")
-        username = payload.get("username")
-        if user_id is None:
-            return None
-        return {"user_id": int(user_id), "username": username}
-    except Exception as e:
-        logger.warning(f"Failed to decode JWT token: {e}")
-        return None
-
-
 @app.websocket("/ws/{session_id}")
 async def websocket_endpoint(
     websocket: WebSocket,
@@ -134,20 +115,14 @@ async def websocket_endpoint(
         session_id: The chat session ID to subscribe to
         token: JWT token for authentication (query param)
     """
-    # Step 1: Validate JWT token
-    if not token:
-        logger.warning(f"WebSocket connection rejected: missing token for session {session_id}")
-        await websocket.close(code=4001, reason="Missing authentication token")
-        return
-
-    user_info = _extract_user_from_token(token)
+    # Step 1: Authenticate using auth module
+    validated_token = extract_token_from_query(token)
+    user_info = await authenticate_websocket(websocket, validated_token, session_id)
     if not user_info:
-        logger.warning(f"WebSocket connection rejected: invalid token for session {session_id}")
-        await websocket.close(code=4002, reason="Invalid or expired token")
+        # authenticate_websocket already closed the connection with appropriate error
         return
 
-    user_id = user_info["user_id"]
-    logger.info(f"WebSocket authenticated: session_id={session_id}, user_id={user_id}")
+    user_id = user_info.user_id
 
     # Step 2: Accept connection
     await manager.connect(websocket, session_id)
@@ -198,7 +173,7 @@ async def websocket_endpoint(
             return
 
         # Step 5: Register session in Redis for multi-device notification
-        await manager.register_session(session_id, user_id, str(conversation_id))
+        await manager.register_session(session_id, user_id, conversation_id)
 
         # Send confirmation
         await websocket.send_json({
@@ -233,16 +208,6 @@ async def websocket_endpoint(
     except Exception as e:
         logger.error(f"WebSocket error for session {session_id}: {e}")
         manager.disconnect(websocket, session_id)
-
-
-@app.get("/health")
-async def health_check():
-    """Health check endpoint."""
-    return {
-        "status": "healthy",
-        "active_sessions": len(manager.get_active_sessions()),
-        "total_connections": manager.get_connection_count()
-    }
 
 
 if __name__ == "__main__":

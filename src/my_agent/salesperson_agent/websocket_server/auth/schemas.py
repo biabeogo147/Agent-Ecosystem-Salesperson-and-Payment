@@ -1,8 +1,6 @@
 """
 Pydantic schemas for authentication.
 """
-from typing import Optional
-
 from pydantic import BaseModel, Field
 
 
@@ -19,13 +17,6 @@ class LoginResponse(BaseModel):
     user_id: int
     username: str
     expires_in: int = Field(description="Token expiration time in seconds")
-
-
-class TokenPayload(BaseModel):
-    """JWT token payload schema."""
-    user_id: int
-    username: str
-    exp: Optional[int] = None
 
 
 class UserInfo(BaseModel):

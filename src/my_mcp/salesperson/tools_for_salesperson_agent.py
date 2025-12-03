@@ -4,12 +4,19 @@ import random
 import asyncio
 
 from google.adk.tools import FunctionTool
+from passlib.context import CryptContext
+from sqlalchemy import select, or_
 
 from . import salesperson_mcp_logger
 
-from src.config import EMBED_VECTOR_DIM
+from src.config import EMBED_VECTOR_DIM, JWT_EXPIRE_MINUTES
 from src.utils.response_format import ResponseFormat
 from src.utils.status import Status
+from src.utils.jwt_utils import create_access_token
+from src.data.models.db_entity.user import User
+from src.data.postgres.connection import db_connection
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 from src.utils.app_string import *
 from src.data.redis.cache_ops import get_cached_value, set_cached_value
 from src.data.redis.cache_keys import CacheKeys, TTL
@@ -133,30 +140,83 @@ async def get_current_user_id(context_id: str) -> str:
     """
     Get the current authenticated user ID for the given context.
     This is called by payment agent to retrieve user_id when creating orders.
-    
+
     Args:
         context_id: The payment context identifier
-        
+
     Returns:
         JSON with user_id
-        
+
     TODO: Implement actual user session lookup based on context_id
     Currently returns a placeholder value.
     """
     salesperson_mcp_logger.info(f"Get current user ID for context: {context_id}")
-    
+
     # TODO: Implement actual logic to get user_id from session/context
     # This should:
     # 1. Look up the session associated with context_id
     # 2. Extract the authenticated user_id from session
     # 3. Return the user_id
-    
+
     # Placeholder: Return a mock user_id
     # In production, this should fetch from Redis session or similar
     user_id = 1  # Default user for testing
-    
+
     salesperson_mcp_logger.debug(f"Retrieved user_id={user_id} for context={context_id}")
     return ResponseFormat(data={"user_id": user_id}).to_json()
+
+
+async def authenticate_user(username: str, password: str) -> str:
+    """
+    Authenticate user with username/email and password.
+    Returns JWT token and user info if successful.
+
+    Args:
+        username: Username or email
+        password: User password
+
+    Returns:
+        JSON with access_token, token_type, user_id, username, expires_in
+        or error status if authentication fails
+    """
+    salesperson_mcp_logger.info(f"Authenticate user: {username}")
+    session = db_connection.get_session()
+    try:
+        result = await session.execute(
+            select(User).where(or_(User.username == username, User.email == username))
+        )
+        user = result.scalar_one_or_none()
+
+        if not user:
+            salesperson_mcp_logger.warning(f"Login failed: user not found - {username}")
+            return ResponseFormat(
+                status=Status.FAILURE,
+                message="Invalid username or password"
+            ).to_json()
+
+        if not pwd_context.verify(password, user.hashed_password):
+            salesperson_mcp_logger.warning(f"Login failed: invalid password - {username}")
+            return ResponseFormat(
+                status=Status.FAILURE,
+                message="Invalid username or password"
+            ).to_json()
+
+        access_token = create_access_token(user_id=user.id, username=user.username)
+
+        salesperson_mcp_logger.info(f"Login successful: user_id={user.id}, username={user.username}")
+
+        return ResponseFormat(data={
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user_id": user.id,
+            "username": user.username,
+            "expires_in": JWT_EXPIRE_MINUTES * 60
+        }).to_json()
+    except Exception as e:
+        salesperson_mcp_logger.exception(f"Authentication error: {e}")
+        return ResponseFormat(status=Status.UNKNOWN_ERROR, message=str(e)).to_json()
+    finally:
+        await session.close()
 
 
 salesperson_mcp_logger.info("Initializing ADK tool for salesperson...")
@@ -165,6 +225,7 @@ calc_shipping_tool = FunctionTool(calc_shipping)
 reserve_stock_tool = FunctionTool(reserve_stock)
 search_product_documents_tool = FunctionTool(search_product_documents)
 get_current_user_id_tool = FunctionTool(get_current_user_id)
+authenticate_user_tool = FunctionTool(authenticate_user)
 
 ADK_TOOLS_FOR_SALESPERSON = {
     find_product_tool.name: find_product_tool,
@@ -172,6 +233,7 @@ ADK_TOOLS_FOR_SALESPERSON = {
     reserve_stock_tool.name: reserve_stock_tool,
     search_product_documents_tool.name: search_product_documents_tool,
     get_current_user_id_tool.name: get_current_user_id_tool,
+    authenticate_user_tool.name: authenticate_user_tool,
 }
 
 for adk_tool in ADK_TOOLS_FOR_SALESPERSON.values():

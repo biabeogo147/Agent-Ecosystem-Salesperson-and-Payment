@@ -1,9 +1,3 @@
-"""
-WebSocket server for real-time payment notifications.
-
-This service provides real-time push notifications to frontend clients
-when payment status updates are received via Redis Pub/Sub.
-"""
 import logging
 
 

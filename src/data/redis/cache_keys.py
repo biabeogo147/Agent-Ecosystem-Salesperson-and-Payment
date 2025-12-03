@@ -62,7 +62,7 @@ class CacheKeys:
 
     # WebSocket session mapping keys
     @staticmethod
-    def ws_user_conversation_sessions(user_id: int, conversation_id: str) -> str:
+    def ws_user_conversation_sessions(user_id: int, conversation_id: int) -> str:
         """Redis Set key for WebSocket sessions by user and conversation."""
         return f"ws:user:{user_id}:conv:{conversation_id}"
 

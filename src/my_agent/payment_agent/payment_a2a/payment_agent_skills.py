@@ -24,7 +24,6 @@ CREATE_ORDER_SKILL = AgentSkill(
     examples=["Create a payment for the cart currently in checkout."],
 )
 
-# TODO: Có nên xóa skill query status
 QUERY_STATUS_SKILL = AgentSkill(
     id=QUERY_STATUS_SKILL_ID,
     name="Query payment status",

@@ -31,7 +31,7 @@ async def create_document_endpoint(data: DocumentCreate):
             )
         logger.info(f"Product found: {product.sku} - {product.name}")
 
-        result = insert_document(data)
+        result = await insert_document(data)
         return JSONResponse(
             status_code=201,
             content=ResponseFormat(

@@ -19,3 +19,8 @@ deploy/db_es_redis/volume
 deploy/db_es_redis/logs
 deploy/milvus/volumes
 /.claude/
+
+.opencode
+AGENTS.md
+CLAUDE.md
+/plans/

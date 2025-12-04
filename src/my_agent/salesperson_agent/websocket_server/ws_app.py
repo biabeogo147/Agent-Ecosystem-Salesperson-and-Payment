@@ -1,13 +1,3 @@
-"""
-WebSocket server application for real-time notifications.
-
-This FastAPI application provides:
-1. WebSocket endpoint for frontend clients to receive real-time notifications
-2. Redis subscriber for payment notifications (integrated via lifespan)
-3. Automatic push of payment status updates to connected clients
-4. JWT authentication for WebSocket connections
-5. Multi-session notification broadcasting via Redis session mapping
-"""
 import asyncio
 import json
 from contextlib import asynccontextmanager
@@ -16,17 +6,13 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.config import WS_SERVER_HOST, WS_SERVER_PORT
-from src.utils.response_format import ResponseFormat
 from src.my_agent.salesperson_agent.websocket_server import ws_server_logger as logger
 from src.my_agent.salesperson_agent.websocket_server.connection_manager import manager
 from src.my_agent.salesperson_agent.websocket_server.auth import (
     auth_router,
-    authenticate_websocket,
-    extract_token_from_query,
 )
+from my_agent.salesperson_agent.websocket_server.auth import extract_token_from_query, authenticate_websocket
 
-
-# Global reference to subscriber task
 _subscriber_task: asyncio.Task | None = None
 
 
@@ -81,7 +67,6 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Add CORS middleware for frontend access
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # In production, specify exact origins
@@ -90,7 +75,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount auth router for login endpoint
 app.include_router(auth_router, prefix="/auth")
 
 

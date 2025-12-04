@@ -29,12 +29,12 @@ class AppContextMiddleware(BaseHTTPMiddleware):
 @asynccontextmanager
 async def lifespan(_: Starlette):
     # Startup
-    logger.info("Payment Agent A2A Server starting...")
+    logger.info("Payment Agent App starting...")
     start_subscriber_background()
     logger.info("Payment callback subscriber started")
     yield
     # Shutdown
-    logger.info("Payment Agent A2A Server shutting down...")
+    logger.info("Payment Agent App shutting down...")
     await stop_subscriber()
     logger.info("Payment callback subscriber stopped")
 
@@ -48,9 +48,9 @@ middleware = [
     Middleware(AppContextMiddleware)
 ]
 
-a2a_app = Starlette(debug=False, routes=routes, middleware=middleware, lifespan=lifespan)
+payment_agent_app = Starlette(debug=False, routes=routes, middleware=middleware, lifespan=lifespan)
 
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(a2a_app, host="0.0.0.0", port=PAYMENT_AGENT_SERVER_PORT)
+    uvicorn.run(payment_agent_app, host="0.0.0.0", port=PAYMENT_AGENT_SERVER_PORT)

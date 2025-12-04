@@ -1,8 +1,3 @@
-/**
- * Chat UI JavaScript
- * Handles chat messages and WebSocket notifications
- */
-
 // State
 let sessionId = localStorage.getItem('sessionId') || generateUUID();
 let ws = null;
@@ -100,7 +95,7 @@ function getAuthHeaders() {
  * Generate a UUID v4
  */
 function generateUUID() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
         const r = Math.random() * 16 | 0;
         const v = c === 'x' ? r : (r & 0x3 | 0x8);
         return v.toString(16);
@@ -162,17 +157,51 @@ function connectWebSocket() {
                 const message = JSON.parse(event.data);
 
                 // Handle different message types
-                if (message.type === 'registered') {
-                    console.log('Session registered:', message);
-                    showToast('Connected to notification server', 'success');
-                } else if (message.type === 'error') {
-                    console.error('WebSocket error message:', message);
-                    showToast(message.message || 'Connection error', 'error');
-                } else if (message.type === 'pong') {
-                    // Heartbeat response, ignore
-                } else {
-                    // Assume it's a notification
-                    handleNotification(message);
+                switch (message.type) {
+                    case 'registered':
+                        console.log('Session registered:', message);
+                        showToast('Connected to notification server', 'success');
+                        break;
+
+                    case 'chat_response':
+                        // Chat response from agent (complete message)
+                        console.log('Chat response received:', message);
+                        hideTypingIndicator();
+                        if (message.content) {
+                            addMessage(message.content, 'agent');
+                        }
+                        sendBtn.disabled = false;
+                        messageInput.focus();
+                        break;
+
+                    case 'chat_token':
+                        // Streaming token (TODO: implement streaming UI)
+                        console.log('Streaming token:', message.token);
+                        break;
+
+                    case 'payment_status':
+                        // Payment notification
+                        console.log('Payment status update:', message);
+                        handleNotification(message);
+                        break;
+
+                    case 'error':
+                        console.error('WebSocket error message:', message);
+                        hideTypingIndicator();
+                        showToast(message.message || 'Connection error', 'error');
+                        sendBtn.disabled = false;
+                        break;
+
+                    case 'pong':
+                        // Heartbeat response, ignore
+                        break;
+
+                    default:
+                        console.warn('Unknown message type:', message.type);
+                        // Try to handle as notification for backward compatibility
+                        if (message.order_id) {
+                            handleNotification(message);
+                        }
                 }
             } catch (error) {
                 console.error('Failed to parse message:', error);
@@ -259,6 +288,13 @@ async function sendMessage() {
     const message = messageInput.value.trim();
     if (!message) return;
 
+    // Check if WebSocket is connected
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+        showToast('Not connected to server. Reconnecting...', 'error');
+        connectWebSocket();
+        return;
+    }
+
     // Clear input
     messageInput.value = '';
 
@@ -272,39 +308,21 @@ async function sendMessage() {
     sendBtn.disabled = true;
 
     try {
-        const response = await fetch('/api/chat', {
-            method: 'POST',
-            headers: getAuthHeaders(),
-            body: JSON.stringify({
-                session_id: sessionId,
-                message: message
-            })
-        });
+        // Send message via WebSocket
+        const chatMessage = {
+            type: 'chat',
+            message: message
+        };
 
-        if (response.status === 401) {
-            // Token expired or invalid
-            logout();
-            return;
-        }
+        ws.send(JSON.stringify(chatMessage));
+        console.log('Sent chat message via WebSocket:', chatMessage);
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        // Remove typing indicator
-        hideTypingIndicator();
-
-        // Add agent response
-        addMessage(data.response, 'agent');
+        // Response will be handled by ws.onmessage handler
 
     } catch (error) {
         console.error('Failed to send message:', error);
         hideTypingIndicator();
-        addMessage('Sorry, an error occurred. Please try again.', 'agent');
         showToast('Failed to send message', 'error');
-    } finally {
         sendBtn.disabled = false;
         messageInput.focus();
     }

@@ -1,9 +1,3 @@
-"""
-Custom Chat UI for Salesperson Agent.
-
-A simple chat interface that replaces ADK web, with integrated WebSocket
-support for real-time payment notifications.
-"""
 import logging
 
 

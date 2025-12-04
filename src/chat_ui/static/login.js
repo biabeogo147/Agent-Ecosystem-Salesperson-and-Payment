@@ -1,8 +1,3 @@
-/**
- * Login Page JavaScript
- * Handles user authentication
- */
-
 // DOM Elements
 const loginForm = document.getElementById('login-form');
 const usernameInput = document.getElementById('username');

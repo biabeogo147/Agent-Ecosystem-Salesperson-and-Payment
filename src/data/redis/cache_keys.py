@@ -60,6 +60,11 @@ class CacheKeys:
         """Redis channel key for salesperson notifications."""
         return "salesperson:notification"
 
+    @staticmethod
+    def websocket_notification() -> str:
+        """Redis channel key for WebSocket Server notifications from Salesperson Agent."""
+        return "websocket:notification"
+
     # WebSocket session mapping keys
     @staticmethod
     def ws_user_conversation_sessions(user_id: int, conversation_id: int) -> str:

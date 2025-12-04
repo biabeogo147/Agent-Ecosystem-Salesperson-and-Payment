@@ -1,8 +1,7 @@
 @echo off
-SET ENV_NAME=Shopping-Agent-and-Merchant-Agent-with-Payment-System
-
-REM >>> ĐƯỜNG DẪN TỚI activate.bat <<<
-CALL "D:\Anaconda\Scripts\activate.bat" %ENV_NAME%
+REM >>> ĐƯỜNG DẪN TỚI VENV <<<
+REM Thay đổi đường dẫn này theo vị trí venv của bạn
+CALL "venv\Scripts\activate.bat"
 
 echo Starting Salesperson MCP Server...
 start cmd /k "python -m src.my_mcp.salesperson.server_salesperson_tool"
@@ -11,7 +10,7 @@ echo Starting Payment MCP Server...
 start cmd /k "python -m src.my_mcp.payment.server_payment_tool"
 
 echo Starting Payment A2A Agent...
-start cmd /k "python -m src.my_agent.payment_agent.payment_a2a.a2a_app"
+start cmd /k "python -m src.my_agent.payment_agent.payment_a2a.payment_agent_app"
 
 echo Starting Callback Service...
 start cmd /k "python -m src.payment_callback.callback_app"
@@ -23,4 +22,3 @@ echo Starting ADK Web UI...
 start cmd /k "adk web ./src/my_agent"
 
 echo All services launched!
-pause

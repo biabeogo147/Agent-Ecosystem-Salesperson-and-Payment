@@ -62,7 +62,18 @@ WS_SERVER_PORT = int(os.getenv("WS_SERVER_PORT", "8084"))
 
 CHAT_UI_HOST = os.getenv("CHAT_UI_HOST", "0.0.0.0")
 CHAT_UI_PORT = int(os.getenv("CHAT_UI_PORT", "8085"))
-ADK_AGENT_URL = os.getenv("ADK_AGENT_URL", "http://localhost:8000")
+
+# Salesperson Agent App Configuration
+SALESPERSON_AGENT_APP_HOST = os.getenv("SALESPERSON_AGENT_APP_HOST", "0.0.0.0")
+SALESPERSON_AGENT_APP_PORT = int(os.getenv("SALESPERSON_AGENT_APP_PORT", "8086"))
+SALESPERSON_AGENT_APP_URL = os.getenv(
+    "SALESPERSON_AGENT_APP_URL",
+    f"http://localhost:{SALESPERSON_AGENT_APP_PORT}"
+)
+SALESPERSON_AGENT_APP_WS_URL = os.getenv(
+    "SALESPERSON_AGENT_APP_WS_URL",
+    f"ws://localhost:{SALESPERSON_AGENT_APP_PORT}/agent/stream"
+)
 
 # JWT Configuration
 JWT_SECRET = os.getenv("JWT_SECRET", "your-secret-key-change-in-production")

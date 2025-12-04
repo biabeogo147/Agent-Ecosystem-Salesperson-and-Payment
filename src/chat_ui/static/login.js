@@ -5,8 +5,7 @@ const passwordInput = document.getElementById('password');
 const loginBtn = document.getElementById('login-btn');
 const errorMessage = document.getElementById('error-message');
 
-// Config
-let config = null;
+const authApiUrl = 'http://localhost:8084';
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
@@ -18,37 +17,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
-    // Load config to get API URL
-    await loadConfig();
-
     // Setup form submission
     loginForm.addEventListener('submit', handleLogin);
 });
-
-/**
- * Load configuration from server
- */
-async function loadConfig() {
-    try {
-        const response = await fetch('/api/config');
-        config = await response.json();
-        console.log('Config loaded:', config);
-    } catch (error) {
-        console.error('Failed to load config:', error);
-        config = {
-            ws_url: 'ws://localhost:8084'
-        };
-    }
-}
-
-/**
- * Get the auth API base URL from WebSocket URL
- */
-function getAuthApiUrl() {
-    const wsUrl = config?.ws_url || 'ws://localhost:8084';
-    // Convert ws:// to http:// or wss:// to https://
-    return wsUrl.replace('ws://', 'http://').replace('wss://', 'https://');
-}
 
 /**
  * Handle login form submission
@@ -69,7 +40,7 @@ async function handleLogin(event) {
     hideError();
 
     try {
-        const authUrl = `${getAuthApiUrl()}/auth/login`;
+        const authUrl = `${authApiUrl}/auth/login`;
         console.log('Logging in to:', authUrl);
 
         const response = await fetch(authUrl, {

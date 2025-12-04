@@ -26,22 +26,39 @@ def extract_user_from_token(token: str) -> Optional[UserInfo]:
 
 async def authenticate_user(username: str, password: str) -> Optional[dict]:
     """
-    Authenticate user via MCP tool.
+    Authenticate user via Salesperson Agent App (over WebSocket).
     Returns dict with access_token and user info, or None if failed.
     """
-    from src.my_agent.salesperson_agent.salesperson_mcp_client import get_salesperson_mcp_client
+    from src.config import SALESPERSON_AGENT_APP_WS_URL
+    from src.websocket_server.streaming.agent_stream_client import AgentStreamClient
 
     try:
-        client = get_salesperson_mcp_client()
-        result = await client.authenticate_user(username=username, password=password)
-
-        if result.get("status") != "00":  # Status.SUCCESS
-            logger.warning(f"Login failed via MCP: {result.get('message')}")
+        async with AgentStreamClient(SALESPERSON_AGENT_APP_WS_URL) as agent_client:
+            # Send authentication request
+            await agent_client.send({
+                "type": "authenticate",
+                "username": username,
+                "password": password
+            })
+            
+            # Wait for response
+            async for msg in agent_client.receive():
+                msg_type = msg.get("type")
+                
+                if msg_type == "authenticate_response":
+                    if msg.get("status") == "success":
+                        logger.info(f"Login successful via Agent App: username={username}")
+                        return msg.get("data")
+                    else:
+                        logger.warning(f"Login failed via Agent App: {msg.get('message')}")
+                        return None
+                
+                elif msg_type == "error":
+                    logger.error(f"Agent App returned error during auth: {msg.get('message')}")
+                    return None
+            
             return None
 
-        logger.info(f"Login successful via MCP: username={username}")
-        return result.get("data")
-
     except Exception as e:
-        logger.exception(f"MCP authenticate_user error: {e}")
+        logger.exception(f"authenticate_user error: {e}")
         return None

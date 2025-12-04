@@ -6,6 +6,7 @@ load_dotenv()
 MODEL_NAME = os.environ.get("MODEL_NAME")
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 OPENAI_API_BASE = os.environ.get("OPENAI_API_BASE")
+EMBED_MODEL = os.environ.get("EMBED_MODEL", "text-embedding-ada-002")
 IS_LLM_AGENT = os.getenv("IS_LLM_AGENT", "false").lower() == "true"
 
 MCP_SERVER_HOST_PAYMENT = os.getenv("MCP_SERVER_HOST_PAYMENT", "localhost")

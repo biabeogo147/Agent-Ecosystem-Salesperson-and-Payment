@@ -237,9 +237,9 @@ curl -X POST http://localhost:8082/webhook/documents \
 **Behind the Scenes:**
 1. Webhook API nhận request
 2. Validate product_sku tồn tại trong PostgreSQL
-3. Generate embedding vector (mock - cần replace production):
+3. Generate embedding vector using OpenAI API:
    ```python
-   embedding = [0.123, -0.456, 0.789, ...] # 384 dimensions
+   embedding = await embed(text)  # 1536 dimensions (text-embedding-ada-002)
    ```
 4. Insert vào Milvus collection "Document":
    ```python

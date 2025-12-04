@@ -320,7 +320,7 @@ Searches product documentation in vector database (Milvus).
 **Workflow**:
 1. Check Redis cache for existing results
 2. If cache miss:
-   - Generate query embedding (currently mock, replace with real embeddings)
+   - Generate query embedding using OpenAI text-embedding-ada-002
    - Search Milvus vector database
    - Filter by product_sku if provided
    - Extract document chunks with similarity scores

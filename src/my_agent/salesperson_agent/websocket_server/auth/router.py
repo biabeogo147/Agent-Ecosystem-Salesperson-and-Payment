@@ -1,6 +1,3 @@
-"""
-Authentication router with login endpoint.
-"""
 from fastapi import APIRouter
 
 from src.my_agent.salesperson_agent.websocket_server.auth.schemas import LoginRequest, LoginResponse

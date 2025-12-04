@@ -23,3 +23,4 @@ deploy/milvus/volumes
 .opencode
 AGENTS.md
 CLAUDE.md
+/plans/

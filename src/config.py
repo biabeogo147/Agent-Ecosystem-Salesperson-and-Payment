@@ -42,7 +42,7 @@ MILVUS_PASSWORD = os.getenv("MILVUS_PASSWORD", "Milvus")
 RENEW_VS = os.getenv("RENEW_VS", "false").lower() == "true"
 VS_NAME = os.getenv("VS_NAME", "knowledge_base_vs")
 IS_METADATA = True
-EMBED_VECTOR_DIM = 1024
+EMBED_VECTOR_DIM = 1536  # text-embedding-ada-002 output dimension
 DEFAULT_TEXT_FIELD = "text"
 DEFAULT_METRIC_TYPE = "COSINE"
 KNOWLEDGE_BASE_DB = "knowledge_base"

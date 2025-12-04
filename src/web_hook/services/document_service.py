@@ -1,3 +1,4 @@
+import asyncio
 from typing import List
 
 from pymilvus import MilvusException
@@ -5,21 +6,15 @@ from pymilvus import MilvusException
 from src.web_hook import webhook_logger as logger
 from src.data.milvus.connection import get_client_instance
 from src.web_hook.schemas.document_schemas import DocumentCreate
-from src.config import DEFAULT_EMBEDDING_FIELD, DEFAULT_TEXT_FIELD, EMBED_VECTOR_DIM
+from src.config import DEFAULT_EMBEDDING_FIELD, DEFAULT_TEXT_FIELD
+from src.utils.client import embed
 
 
-def generate_mock_embedding(text: str) -> List[float]:
-    """Generate a mock embedding vector. Replace with real embedding model in production."""
-    import random
-    random.seed(hash(text) % (2**32))
-    return [random.uniform(-1, 1) for _ in range(EMBED_VECTOR_DIM)]
-
-
-def insert_document(data: DocumentCreate, collection_name: str = "Document") -> dict:
+async def insert_document(data: DocumentCreate, collection_name: str = "Document") -> dict:
     """Insert a document into the vector database."""
     client = get_client_instance()
 
-    embedding = generate_mock_embedding(data.text)
+    embedding = await embed(data.text)
 
     doc_data = {
         DEFAULT_TEXT_FIELD: data.text,
@@ -37,7 +32,9 @@ def insert_document(data: DocumentCreate, collection_name: str = "Document") -> 
     logger.info(f"Document merchant_id {data.merchant_id}")
 
     try:
-        result = client.insert(collection_name=collection_name, data=[doc_data])
+        result = await asyncio.to_thread(
+            client.insert, collection_name=collection_name, data=[doc_data]
+        )
         logger.info(f"Document inserted successfully with ID {result}")
 
         ids = result.get("ids", [])

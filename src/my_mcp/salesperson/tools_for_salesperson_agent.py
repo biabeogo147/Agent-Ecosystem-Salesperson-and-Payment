@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import random
 import asyncio
 
 from google.adk.tools import FunctionTool
@@ -9,7 +8,8 @@ from sqlalchemy import select, or_
 
 from . import salesperson_mcp_logger
 
-from src.config import EMBED_VECTOR_DIM, JWT_EXPIRE_MINUTES
+from src.config import JWT_EXPIRE_MINUTES
+from src.utils.client import embed
 from src.utils.response_format import ResponseFormat
 from src.utils.status import Status
 from src.utils.jwt_utils import create_access_token
@@ -100,9 +100,7 @@ async def search_product_documents(query: str, product_sku: str | None = None, l
     try:
         client = await asyncio.to_thread(get_client_instance)
 
-        # TODO: Replace with actual query embedding
-        random.seed(hash(query) % (2**32))
-        query_embedding = [random.uniform(-1, 1) for _ in range(EMBED_VECTOR_DIM)]
+        query_embedding = await embed(query)
 
         search_params = {
             "collection_name": "Document",

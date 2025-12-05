@@ -1,17 +1,13 @@
-"""
-Authentication services - business logic for auth operations.
-"""
 from typing import Optional
 
-from src.my_agent.salesperson_agent.websocket_server.auth.schemas import UserInfo
 from src.utils.jwt_utils import decode_token
 from src.utils.logger import get_current_logger
-
-logger = get_current_logger()
+from src.websocket_server.auth.schemas import UserInfo
 
 
 def extract_user_from_token(token: str) -> Optional[UserInfo]:
     """Extract user info from JWT token."""
+    logger = get_current_logger()
     try:
         payload = decode_token(token)
         user_id = payload.get("user_id")
@@ -31,6 +27,8 @@ async def authenticate_user(username: str, password: str) -> Optional[dict]:
     """
     from src.config import SALESPERSON_AGENT_APP_WS_URL
     from src.websocket_server.streaming.agent_stream_client import AgentStreamClient
+
+    logger = get_current_logger()
 
     try:
         async with AgentStreamClient(SALESPERSON_AGENT_APP_WS_URL) as agent_client:

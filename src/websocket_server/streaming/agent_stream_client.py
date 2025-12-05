@@ -1,15 +1,8 @@
-"""
-WebSocket client for streaming communication with Salesperson Agent App.
-
-This module provides a WebSocket client that connects to the Salesperson Agent App
-and enables streaming chat responses from the agent to be forwarded to browser clients.
-"""
-import asyncio
 import json
 from typing import AsyncIterator
 
 import websockets
-from websockets.client import WebSocketClientProtocol
+from websockets import ClientConnection
 from websockets.exceptions import ConnectionClosed
 
 from src.websocket_server import ws_server_logger as logger
@@ -36,7 +29,7 @@ class AgentStreamClient:
             agent_ws_url: WebSocket URL of Salesperson Agent App (e.g., ws://localhost:8086/agent/stream)
         """
         self.agent_ws_url = agent_ws_url
-        self.ws: WebSocketClientProtocol | None = None
+        self.ws: ClientConnection | None = None
     
     async def __aenter__(self):
         """Connect to agent WebSocket."""

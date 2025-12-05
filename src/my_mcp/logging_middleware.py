@@ -2,7 +2,7 @@ import json
 import logging
 from typing import Optional
 from fastapi import Request
-from starlette.responses import Response
+from starlette.responses import Response, StreamingResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import Message
 
@@ -62,16 +62,18 @@ class LoggingMiddleware(BaseHTTPMiddleware):
 
         response = await call_next(request)
 
+        resp_body_bytes: bytes | None = None
         try:
-            chunks = []
-            read = 0
-            async for section in response.body_iterator:
-                if read < MAX_LOG_BYTES:
-                    need = MAX_LOG_BYTES - read
-                    chunks.append(section[:need])
-                    read += len(section[:need])
-                chunks.append(section)
-            resp_body_bytes = b"".join(chunks)
+            if hasattr(response, 'body_iterator'):
+                chunks: list[bytes] = []
+                read = 0
+                async for section in response.body_iterator:  # type: ignore[union-attr]
+                    if read < MAX_LOG_BYTES:
+                        need = MAX_LOG_BYTES - read
+                        chunks.append(section[:need])
+                        read += len(section[:need])
+                    chunks.append(section)
+                resp_body_bytes = b"".join(chunks)
         except Exception:
             resp_body_bytes = None
 

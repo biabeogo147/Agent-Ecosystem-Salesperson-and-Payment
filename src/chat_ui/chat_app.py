@@ -26,12 +26,6 @@ app.add_middleware(
 )
 
 
-@app.get("/health")
-async def health_check():
-    """Health check endpoint."""
-    return {"status": "healthy"}
-
-
 @app.get("/")
 async def serve_index():
     """Serve the main chat page."""

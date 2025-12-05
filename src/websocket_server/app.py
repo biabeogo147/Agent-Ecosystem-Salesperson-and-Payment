@@ -16,8 +16,6 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.config import WS_SERVER_HOST, WS_SERVER_PORT, SALESPERSON_AGENT_APP_WS_URL
-from src.utils.response_format import ResponseFormat
-from src.websocket_server import ws_server_logger as logger
 from src.websocket_server.connection_manager import manager
 from src.websocket_server.auth import (
     auth_router,
@@ -39,6 +37,9 @@ async def start_notification_receiver() -> None:
     Receives notifications published by Salesperson Agent and broadcasts them
     to connected WebSocket clients based on user_id and conversation_id.
     """
+    from src.websocket_server import get_ws_server_logger
+
+    logger = get_ws_server_logger()
     logger.info("Starting notification receiver...")
     
     try:
@@ -90,38 +91,40 @@ async def start_notification_receiver() -> None:
 
 async def handle_chat_message(
     websocket: WebSocket,
-    session_id: str,
+    conversation_id: str,
     message: str,
     user_id: int
 ) -> None:
     """
     Handle chat message by streaming from Salesperson Agent App.
-    
+
     Establishes WebSocket connection to Agent App and forwards streaming responses
     to the browser client.
-    
+
     Args:
         websocket: Client WebSocket connection
-        session_id: Chat session ID
+        conversation_id: Conversation ID for ADK session history
         message: User's message text
         user_id: Authenticated user ID
     """
+    from src.websocket_server import get_ws_server_logger
+    logger = get_ws_server_logger()
     try:
-        logger.info(f"Handling chat for session {session_id}")
-        
+        logger.info(f"Handling chat for conversation {conversation_id}")
+
         async with AgentStreamClient(SALESPERSON_AGENT_APP_WS_URL) as agent_client:
             # Send message to agent
             await agent_client.send({
                 "type": "chat",
-                "session_id": session_id,
+                "conversation_id": conversation_id,
                 "message": message,
                 "user_id": user_id
             })
-            
+
             # Stream responses back to browser
             async for msg in agent_client.receive():
                 msg_type = msg.get("type")
-                
+
                 if msg_type == "token":
                     # TODO: Forward streaming tokens to browser
                     # For now, just log them
@@ -130,35 +133,35 @@ async def handle_chat_message(
                         "type": "chat_token",
                         "token": msg.get("token")
                     })
-                    
+
                 elif msg_type == "complete":
                     # Send complete response
                     await websocket.send_json({
                         "type": "chat_response",
-                        "session_id": session_id,
+                        "conversation_id": conversation_id,
                         "content": msg.get("content")
                     })
-                    logger.info(f"Chat response sent for session {session_id}")
+                    logger.info(f"Chat response sent for conversation {conversation_id}")
                     break
-                    
+
                 elif msg_type == "error":
                     # Forward error to browser
                     await websocket.send_json({
                         "type": "error",
                         "message": msg.get("message", "Agent error")
                     })
-                    logger.error(f"Agent error for session {session_id}: {msg.get('message')}")
+                    logger.error(f"Agent error for conversation {conversation_id}: {msg.get('message')}")
                     break
-                    
+
     except Exception as e:
-        logger.error(f"Chat streaming error for session {session_id}: {e}")
+        logger.error(f"Chat streaming error for conversation {conversation_id}: {e}")
         try:
             await websocket.send_json({
                 "type": "error",
                 "message": f"Chat error: {str(e)}"
             })
         except Exception:
-            pass  # WebSocket might be closed
+            pass
 
 
 @asynccontextmanager
@@ -172,8 +175,11 @@ async def lifespan(_: FastAPI):
     Shutdown:
     - Stops the notification subscriber
     """
+    from src.websocket_server import get_ws_server_logger
+
     global _notification_receiver_task
 
+    logger = get_ws_server_logger()
     logger.info(f"WebSocket Server starting on {WS_SERVER_HOST}:{WS_SERVER_PORT}")
 
     _notification_receiver_task = asyncio.create_task(start_notification_receiver())
@@ -231,6 +237,9 @@ async def websocket_endpoint(
         session_id: The chat session ID to subscribe to
         token: JWT token for authentication (query param)
     """
+    from src.websocket_server import get_ws_server_logger
+    logger = get_ws_server_logger()
+
     # Step 1: Authenticate using auth module
     validated_token = extract_token_from_query(token)
     user_info = await authenticate_websocket(websocket, validated_token, session_id)
@@ -324,7 +333,7 @@ async def websocket_endpoint(
                     if message_text:
                         await handle_chat_message(
                             websocket=websocket,
-                            session_id=session_id,
+                            conversation_id=conversation_id,
                             message=message_text,
                             user_id=user_id
                         )
@@ -350,6 +359,8 @@ async def websocket_endpoint(
 
 if __name__ == "__main__":
     import uvicorn
+    from src.websocket_server import get_ws_server_logger
 
+    logger = get_ws_server_logger()
     logger.info(f"Starting WebSocket Server on {WS_SERVER_HOST}:{WS_SERVER_PORT}")
     uvicorn.run(app, host=WS_SERVER_HOST, port=WS_SERVER_PORT)

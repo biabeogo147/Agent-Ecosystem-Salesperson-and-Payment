@@ -1,6 +1,3 @@
-"""
-Pydantic schemas for authentication.
-"""
 from pydantic import BaseModel, Field
 
 

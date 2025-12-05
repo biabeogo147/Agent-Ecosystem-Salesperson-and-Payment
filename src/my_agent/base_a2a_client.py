@@ -18,7 +18,7 @@ class BaseA2AClient:
         *,
         base_url: str,
         client: httpx.AsyncClient | None = None,
-        timeout: float = 10.0,
+        timeout: float = 30.0,
         endpoint_path: str = "/",
         logger: logging.Logger,
     ) -> None:

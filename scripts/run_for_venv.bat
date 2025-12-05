@@ -1,7 +1,5 @@
 @echo off
-REM >>> ĐƯỜNG DẪN TỚI VENV <<<
-REM Thay đổi đường dẫn này theo vị trí venv của bạn
-CALL "venv\Scripts\activate.bat"
+CALL ".venv\Scripts\activate.bat"
 
 echo Starting Salesperson MCP Server...
 start cmd /k "python -m src.my_mcp.salesperson.server_salesperson_tool"

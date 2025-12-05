@@ -1,5 +1,8 @@
 // State
-let sessionId = localStorage.getItem('sessionId') || generateUUID();
+let sessionId = localStorage.getItem('sessionId') || generateUUID();  // WebSocket session ID
+let conversationId = localStorage.getItem('conversationId')
+    ? parseInt(localStorage.getItem('conversationId'))
+    : null;  // DB conversation ID (null for new, int for existing)
 let ws = null;
 let config = null;
 
@@ -24,8 +27,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Display user info
     displayUserInfo();
 
-    // Display session ID
-    sessionIdDisplay.textContent = sessionId.substring(0, 8) + '...';
+    // Display conversation ID (or "New" if null)
+    updateConversationDisplay();
     localStorage.setItem('sessionId', sessionId);
 
     // Load config
@@ -37,6 +40,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Setup event listeners
     setupEventListeners();
 });
+
+/**
+ * Update conversation ID display
+ */
+function updateConversationDisplay() {
+    if (conversationId) {
+        sessionIdDisplay.textContent = `Conv #${conversationId}`;
+    } else {
+        sessionIdDisplay.textContent = 'New Chat';
+    }
+}
 
 /**
  * Check if user is authenticated
@@ -92,7 +106,7 @@ function getAuthHeaders() {
 }
 
 /**
- * Generate a UUID v4
+ * Generate a UUID v4 (for WebSocket session ID only)
  */
 function generateUUID() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
@@ -131,7 +145,7 @@ function connectWebSocket() {
         return;
     }
 
-    // Build WebSocket URL with token
+    // Build WebSocket URL with token (sessionId is for WS session, not conversation)
     const wsUrl = `${config?.ws_url || 'ws://localhost:8084'}/ws/${sessionId}?token=${encodeURIComponent(token)}`;
     console.log('Connecting to WebSocket:', wsUrl.replace(token, '***'));
 
@@ -142,10 +156,10 @@ function connectWebSocket() {
             console.log('WebSocket connected');
             updateConnectionStatus(true);
 
-            // Send register message with conversation_id
+            // Send register message with conversation_id (null for new, int for existing)
             const registerMessage = {
                 type: 'register',
-                conversation_id: sessionId
+                conversation_id: conversationId  // null or integer
             };
             ws.send(JSON.stringify(registerMessage));
             console.log('Sent register message:', registerMessage);
@@ -167,6 +181,15 @@ function connectWebSocket() {
                         // Chat response from agent (complete message)
                         console.log('Chat response received:', message);
                         hideTypingIndicator();
+
+                        // Store conversation_id from server (important for new chats)
+                        if (message.conversation_id && message.conversation_id !== conversationId) {
+                            conversationId = message.conversation_id;
+                            localStorage.setItem('conversationId', conversationId);
+                            updateConversationDisplay();
+                            console.log('Stored new conversation_id:', conversationId);
+                        }
+
                         if (message.content) {
                             addMessage(message.content, 'agent');
                         }
@@ -309,15 +332,18 @@ async function sendMessage() {
 
     try {
         // Send message via WebSocket
+        // conversation_id can be null (new) or int (existing)
         const chatMessage = {
             type: 'chat',
-            message: message
+            message: message,
+            conversation_id: conversationId  // null or integer
         };
 
         ws.send(JSON.stringify(chatMessage));
         console.log('Sent chat message via WebSocket:', chatMessage);
 
         // Response will be handled by ws.onmessage handler
+        // Server will return conversation_id in response for new chats
 
     } catch (error) {
         console.error('Failed to send message:', error);
@@ -501,10 +527,16 @@ function showToast(message, type = 'info') {
  * Start a new chat session
  */
 function startNewSession() {
-    // Generate new session ID
+    // Clear conversation ID (server will create new one)
+    conversationId = null;
+    localStorage.removeItem('conversationId');
+
+    // Generate new WebSocket session ID
     sessionId = generateUUID();
     localStorage.setItem('sessionId', sessionId);
-    sessionIdDisplay.textContent = sessionId.substring(0, 8) + '...';
+
+    // Update display
+    updateConversationDisplay();
 
     // Clear chat messages (keep welcome message)
     chatMessages.innerHTML = `

@@ -6,6 +6,7 @@ class TTL:
     PRODUCT_LIST = 180      # 3 minutes - product lists
     VECTOR_SEARCH = 600     # 10 minutes - vector search (embeddings rarely change)
     WS_SESSION = 86400      # 24 hours - WebSocket session mapping
+    CONVERSATION_HISTORY = 3600     # 1 hour - conversation message cache
 
 
 class CacheKeys:
@@ -70,6 +71,12 @@ class CacheKeys:
     def ws_user_conversation_sessions(user_id: int, conversation_id: int) -> str:
         """Redis Set key for WebSocket sessions by user and conversation."""
         return f"ws:user:{user_id}:conv:{conversation_id}"
+
+    # Conversation history keys
+    @staticmethod
+    def conversation_history(conversation_id: int) -> str:
+        """Cache key for conversation messages (recent N messages as JSON)."""
+        return f"conversation:history:{conversation_id}"
 
 
 class CachePatterns:

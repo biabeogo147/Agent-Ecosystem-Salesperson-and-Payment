@@ -2,6 +2,6 @@ import enum
 
 
 class MessageRole(enum.Enum):
-    USER = "user"
-    ASSISTANT = "assistant"
-    SYSTEM = "system"
+    USER = "USER"
+    ASSISTANT = "ASSISTANT"
+    SYSTEM = "SYSTEM"

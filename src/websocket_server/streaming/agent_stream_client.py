@@ -4,8 +4,9 @@ from typing import AsyncIterator
 import websockets
 from websockets import ClientConnection
 from websockets.exceptions import ConnectionClosed
+from src.websocket_server import get_ws_server_logger 
 
-from src.websocket_server import ws_server_logger as logger
+logger = get_ws_server_logger()
 
 
 class AgentStreamClient:

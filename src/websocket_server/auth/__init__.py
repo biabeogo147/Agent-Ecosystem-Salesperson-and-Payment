@@ -5,20 +5,10 @@ from typing import Optional
 
 from fastapi import WebSocket
 
-from src.my_agent.salesperson_agent.websocket_server.auth.router import router as auth_router
-from src.my_agent.salesperson_agent.websocket_server.auth.schemas import UserInfo
-from src.my_agent.salesperson_agent.websocket_server.auth.services import extract_user_from_token
-
-# Logger - import lazily to avoid circular imports
-_logger = None
-
-
-def _get_logger():
-    global _logger
-    if _logger is None:
-        from src.my_agent.salesperson_agent.websocket_server import ws_server_logger
-        _logger = ws_server_logger
-    return _logger
+from src.websocket_server.auth.router import router as auth_router
+from src.websocket_server.auth.schemas import UserInfo
+from src.websocket_server.auth.services import extract_user_from_token
+from src.websocket_server import get_ws_server_logger
 
 
 def extract_token_from_query(token: Optional[str]) -> Optional[str]:
@@ -37,7 +27,7 @@ async def authenticate_websocket(
     Authenticate a WebSocket connection using JWT token.
     Returns UserInfo if successful, None otherwise (connection will be closed).
     """
-    logger = _get_logger()
+    logger = get_ws_server_logger()
 
     if not token:
         logger.warning(f"WebSocket rejected: missing token for session {session_id}")

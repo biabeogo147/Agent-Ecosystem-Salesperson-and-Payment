@@ -34,7 +34,7 @@ _session_service: InMemorySessionService | None = None
 _subscriber_task: asyncio.Task | None = None
 
 
-def extract_agent_response(event: Event | None) -> str:
+def _extract_agent_response(event: Event | None) -> str:
     """
     Extract text response from final agent event.
 
@@ -312,7 +312,7 @@ async def agent_stream_endpoint(websocket: WebSocket):
                         final_event = event
 
                     # Extract response from final event
-                    response_text = extract_agent_response(final_event)
+                    response_text = _extract_agent_response(final_event)
 
                     # Send complete response with conversation_id (so browser can store it)
                     await websocket.send_json({

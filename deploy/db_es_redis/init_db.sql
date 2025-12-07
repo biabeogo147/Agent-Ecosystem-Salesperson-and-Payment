@@ -1,6 +1,6 @@
 -- Create ENUM types first
-CREATE TYPE user_role_enum AS ENUM ('admin', 'user', 'assistant');
-CREATE TYPE message_role_enum AS ENUM ('user', 'assistant', 'system');
+CREATE TYPE user_role_enum AS ENUM ('ADMIN', 'USER', 'ASSISTANT');
+CREATE TYPE message_role_enum AS ENUM ('USER', 'ASSISTANT', 'SYSTEM');
 CREATE TYPE order_status_enum AS ENUM ('PENDING', 'SUCCESS', 'PAID', 'FAILED', 'CANCELLED');
 
 -- ==============================================

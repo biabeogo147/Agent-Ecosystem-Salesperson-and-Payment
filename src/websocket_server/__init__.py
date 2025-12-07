@@ -11,5 +11,6 @@ def get_ws_server_logger():
         ws_server_logger = setup_logger(
             name="websocket_server",
             log_level=logging.DEBUG,
-            log_file="logs/websocket_server.log",
+            log_file="websocket_server.log",
         )
+    return ws_server_logger

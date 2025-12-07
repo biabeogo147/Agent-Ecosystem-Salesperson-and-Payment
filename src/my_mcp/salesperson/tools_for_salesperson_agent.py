@@ -75,7 +75,7 @@ async def reserve_stock(sku: str, quantity: int) -> str:
     return ResponseFormat(data=result).to_json()
 
 
-async def search_product_documents(query: str, product_sku: str | None = None, limit: int = 5) -> str:
+async def search_product_documents(query: str, product_sku: str, limit: int = 5) -> str:
     """
     Search product documents in vector database.
     Args:

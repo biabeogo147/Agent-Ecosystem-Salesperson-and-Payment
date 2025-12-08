@@ -26,7 +26,9 @@ async def websocket_endpoint(
     Flow:
     1. Client connects with JWT token in query param: /ws/{session_id}?token=<JWT>
     2. Server validates JWT and extracts user_id
-    3. Client sends initial message: {"type": "register", "conversation_id": "..."}
+    3. Client sends initial message:
+       - {"type": "register", "conversation_id": 123} → Join existing conversation
+       - {"type": "chat", "message": "Hello"} → Create new conversation
     4. Server registers session in Redis for multi-device notification
     5. Client receives notifications for that conversation
 
@@ -75,41 +77,77 @@ async def websocket_endpoint(
             manager.disconnect(websocket, session_id)
             return
 
-        # Step 4: Validate register message
-        if first_message.get("type") != "register":
-            logger.warning(f"First message is not register for session {session_id}")
+        # Step 4: Handle first message (register or chat)
+        first_msg_type = first_message.get("type")
+
+        if first_msg_type == "register":
+            # Join existing conversation
+            conversation_id = first_message.get("conversation_id")
+            if not conversation_id:
+                logger.warning(f"Missing conversation_id in register message for session {session_id}")
+                await websocket.send_json({
+                    "type": "error",
+                    "message": "Missing conversation_id in register message"
+                })
+                manager.disconnect(websocket, session_id)
+                return
+
+            # Register session in Redis
+            await manager.register_session(session_id, user_id, conversation_id)
+
+            # Send confirmation
+            await websocket.send_json({
+                "type": "registered",
+                "session_id": session_id,
+                "user_id": user_id,
+                "conversation_id": conversation_id,
+                "message": "Successfully registered for notifications"
+            })
+            logger.info(
+                f"Session registered: session_id={session_id}, "
+                f"user_id={user_id}, conversation_id={conversation_id}"
+            )
+
+        elif first_msg_type == "chat":
+            # Create new conversation via first chat message
+            message_text = first_message.get("message")
+            if not message_text:
+                logger.warning(f"Missing message in chat for session {session_id}")
+                await websocket.send_json({
+                    "type": "error",
+                    "message": "Missing message in chat request"
+                })
+                manager.disconnect(websocket, session_id)
+                return
+
+            # Send to Agent with conversation_id=None, Agent will create new conversation
+            conversation_id = await handle_chat_message(
+                websocket=websocket,
+                conversation_id=None,
+                message=message_text,
+                user_id=user_id
+            )
+
+            if conversation_id:
+                # Register session with new conversation_id
+                await manager.register_session(session_id, user_id, conversation_id)
+                logger.info(
+                    f"New conversation created and registered: session_id={session_id}, "
+                    f"user_id={user_id}, conversation_id={conversation_id}"
+                )
+            else:
+                logger.error(f"Failed to create conversation for session {session_id}")
+                manager.disconnect(websocket, session_id)
+                return
+
+        else:
+            logger.warning(f"Invalid first message type for session {session_id}: {first_msg_type}")
             await websocket.send_json({
                 "type": "error",
-                "message": "First message must be type 'register'"
+                "message": "First message must be type 'register' or 'chat'"
             })
             manager.disconnect(websocket, session_id)
             return
-
-        conversation_id = first_message.get("conversation_id")
-        if not conversation_id:
-            logger.warning(f"Missing conversation_id in register message for session {session_id}")
-            await websocket.send_json({
-                "type": "error",
-                "message": "Missing conversation_id in register message"
-            })
-            manager.disconnect(websocket, session_id)
-            return
-
-        # Step 5: Register session in Redis for multi-device notification
-        await manager.register_session(session_id, user_id, conversation_id)
-
-        # Send confirmation
-        await websocket.send_json({
-            "type": "registered",
-            "session_id": session_id,
-            "user_id": user_id,
-            "conversation_id": conversation_id,
-            "message": "Successfully registered for notifications"
-        })
-        logger.info(
-            f"Session registered: session_id={session_id}, "
-            f"user_id={user_id}, conversation_id={conversation_id}"
-        )
 
         # Step 6: Keep connection alive, receive any client messages
         while True:

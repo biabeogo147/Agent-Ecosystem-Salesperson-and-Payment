@@ -156,13 +156,19 @@ function connectWebSocket() {
             console.log('WebSocket connected');
             updateConnectionStatus(true);
 
-            // Send register message with conversation_id (null for new, int for existing)
-            const registerMessage = {
-                type: 'register',
-                conversation_id: conversationId  // null or integer
-            };
-            ws.send(JSON.stringify(registerMessage));
-            console.log('Sent register message:', registerMessage);
+            // Only send register if we have an existing conversation
+            if (conversationId) {
+                const registerMessage = {
+                    type: 'register',
+                    conversation_id: conversationId
+                };
+                ws.send(JSON.stringify(registerMessage));
+                console.log('Sent register message:', registerMessage);
+            } else {
+                // New chat - don't send register, wait for first chat message
+                console.log('New chat - waiting for first message to create conversation');
+                showToast('Ready for new chat', 'success');
+            }
         };
 
         ws.onmessage = (event) => {

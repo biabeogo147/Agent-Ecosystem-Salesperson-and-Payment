@@ -6,24 +6,29 @@ from src.websocket_server.utils.agent_stream_client import AgentStreamClient
 
 async def handle_chat_message(
     websocket: WebSocket,
-    conversation_id: str,
+    conversation_id: int | None,
     message: str,
     user_id: int
-) -> None:
+) -> int | None:
     """
-    Handle chat message by utils from Salesperson Agent App.
+    Handle chat message by streaming from Salesperson Agent App.
 
-    Establishes WebSocket connection to Agent App and forwards utils responses
+    Establishes WebSocket connection to Agent App and forwards streaming responses
     to the browser client.
 
     Args:
         websocket: Client WebSocket connection
-        conversation_id: Conversation ID for ADK session history
+        conversation_id: Conversation ID for ADK session history (None for new conversation)
         message: User's message text
         user_id: Authenticated user ID
+
+    Returns:
+        conversation_id from Agent response (new ID if conversation was created)
     """
     from src.websocket_server import get_ws_server_logger
     logger = get_ws_server_logger()
+    result_conversation_id = conversation_id
+
     try:
         logger.info(f"Handling chat for conversation {conversation_id}")
 
@@ -48,13 +53,15 @@ async def handle_chat_message(
                     })
 
                 elif msg_type == "complete":
+                    # Get conversation_id from response (may be new if created by Agent)
+                    result_conversation_id = msg.get("conversation_id", conversation_id)
                     # Send complete response
                     await websocket.send_json({
                         "type": "chat_response",
-                        "conversation_id": conversation_id,
+                        "conversation_id": result_conversation_id,
                         "content": msg.get("content")
                     })
-                    logger.info(f"Chat response sent for conversation {conversation_id}")
+                    logger.info(f"Chat response sent for conversation {result_conversation_id}")
                     break
 
                 elif msg_type == "error":
@@ -67,7 +74,7 @@ async def handle_chat_message(
                     break
 
     except Exception as e:
-        logger.error(f"Chat utils error for conversation {conversation_id}: {e}")
+        logger.error(f"Chat streaming error for conversation {conversation_id}: {e}")
         try:
             await websocket.send_json({
                 "type": "error",
@@ -75,3 +82,5 @@ async def handle_chat_message(
             })
         except Exception:
             pass
+
+    return result_conversation_id

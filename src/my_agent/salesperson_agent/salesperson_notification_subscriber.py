@@ -50,7 +50,7 @@ async def process_notification(notification_data: dict) -> bool:
             order_id=notification.order_id,
         )
 
-        status = payment_response.get("status", {}).get("value", "unknown")
+        status = payment_response["result"]["response"]["status"]
         logger.info(f"Order {notification.order_id} status queried via A2A: status={status}")
 
         if status == "SUCCESS":

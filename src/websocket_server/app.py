@@ -21,6 +21,7 @@ async def lifespan(_: FastAPI):
     logger = get_ws_server_logger()
     logger.info(f"WebSocket Server starting on {WS_SERVER_HOST}:{WS_SERVER_PORT}")
 
+    # TODO: xem lại notification receiver
     _notification_receiver_task = asyncio.create_task(start_notification_receiver())
     logger.info("Notification receiver started")
 

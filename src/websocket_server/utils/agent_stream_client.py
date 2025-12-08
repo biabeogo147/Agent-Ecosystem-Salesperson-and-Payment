@@ -45,7 +45,8 @@ class AgentStreamClient:
         except Exception as e:
             logger.error(f"Failed to connect to Agent App: {e}")
             raise
-    
+
+    # TODO: tại sao mỗi repsonse lại đóng kết nối?
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         """Disconnect from agent WebSocket."""
         if self.ws:

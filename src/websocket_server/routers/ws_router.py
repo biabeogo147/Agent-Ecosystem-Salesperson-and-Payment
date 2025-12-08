@@ -167,17 +167,43 @@ async def websocket_endpoint(
                     # Handle chat message
                     message_text = msg.get("message")
                     if message_text:
-                        await handle_chat_message(
+                        new_conv_id = await handle_chat_message(
                             websocket=websocket,
                             conversation_id=conversation_id,
                             message=message_text,
                             user_id=user_id
                         )
+                        # Update conversation_id if new conversation was created
+                        if new_conv_id and new_conv_id != conversation_id:
+                            conversation_id = new_conv_id
+                            await manager.register_session(session_id, user_id, conversation_id)
+                            logger.info(f"Session updated with new conversation: {conversation_id}")
                     else:
                         await websocket.send_json({
                             "type": "error",
                             "message": "Missing message in chat request"
                         })
+
+                elif msg_type == "register":
+                    # Switch to different conversation
+                    new_conversation_id = msg.get("conversation_id")
+                    if new_conversation_id:
+                        conversation_id = new_conversation_id
+                        await manager.register_session(session_id, user_id, conversation_id)
+                        await websocket.send_json({
+                            "type": "registered",
+                            "session_id": session_id,
+                            "user_id": user_id,
+                            "conversation_id": conversation_id,
+                            "message": "Successfully registered for notifications"
+                        })
+                        logger.info(f"Session switched to conversation: {conversation_id}")
+                    else:
+                        await websocket.send_json({
+                            "type": "error",
+                            "message": "Missing conversation_id in register message"
+                        })
+
                 else:
                     logger.warning(f"Unknown message type from client: {msg_type}")
 

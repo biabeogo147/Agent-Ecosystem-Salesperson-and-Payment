@@ -1,14 +1,14 @@
 from fastapi import APIRouter
 
-from src.websocket_server.auth.schemas import LoginRequest, LoginResponse
-from src.websocket_server.auth.services import authenticate_user
+from src.websocket_server.schemas import LoginRequest, LoginResponse
+from src.websocket_server.services import authenticate_user
 from src.utils.response_format import ResponseFormat
 from src.utils.status import Status
 
-router = APIRouter(tags=["Authentication"])
+auth_router = APIRouter(tags=["Authentication"])
 
 
-@router.post("/login")
+@auth_router.post("/login")
 async def login(request: LoginRequest):
     """Authenticate user and return JWT token."""
     result = await authenticate_user(request.username, request.password)

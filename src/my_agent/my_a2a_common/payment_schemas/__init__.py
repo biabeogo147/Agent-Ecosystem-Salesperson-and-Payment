@@ -5,11 +5,3 @@ from src.my_agent.my_a2a_common.payment_schemas.customer_info import CustomerInf
 from src.my_agent.my_a2a_common.payment_schemas.next_action import NextAction
 from src.my_agent.my_a2a_common.payment_schemas.query_status_request import QueryStatusRequest
 
-__all__ = [
-    "PaymentRequest",
-    "PaymentResponse",
-    "PaymentItem",
-    "CustomerInfo",
-    "NextAction",
-    "QueryStatusRequest",
-]

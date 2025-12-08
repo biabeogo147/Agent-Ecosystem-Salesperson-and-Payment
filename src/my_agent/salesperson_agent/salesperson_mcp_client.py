@@ -27,14 +27,6 @@ class SalespersonMcpClient(BaseMcpClient):
             session_manager=session_manager,
         )
 
-    async def generate_context_id(self, *, prefix: str) -> str:
-        """Request a new context_id from the MCP server."""
-        payload = await self._call_tool_json("generate_context_id", {"prefix": prefix})
-        data = self._extract_success_data(payload, tool="generate_context_id")
-        if not isinstance(data, str):
-            raise RuntimeError("MCP tool 'generate_context_id' returned non-string data")
-        return data
-
     async def find_product(self, *, query: str) -> dict[str, Any]:
         """Look up products via the MCP ``find_product`` tool."""
         payload = await self._call_tool_json("find_product", {"query": query})

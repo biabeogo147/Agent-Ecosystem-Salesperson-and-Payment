@@ -2,5 +2,5 @@ from pydantic import BaseModel
 
 
 class CallbackMessage(BaseModel):
-    order_id: str
+    order_id: int
     timestamp: str

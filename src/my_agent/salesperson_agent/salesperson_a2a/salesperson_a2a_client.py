@@ -74,7 +74,7 @@ class SalespersonA2AClient(BaseA2AClient):
     async def query_status(
         self,
         context_id: str,
-        order_id: Optional[str] = None
+        order_id: Optional[int] = None
     ) -> ResponseFormatJSONRPC:
         """Query the payment agent for the status of a previously created order.
 
@@ -125,7 +125,7 @@ async def _create_payment_order(
 
 async def query_payment_order_status(
     context_id: str,
-    order_id: Optional[str] = None
+    order_id: Optional[int] = None
 ) -> dict[str, Any]:
     """Query payment order status.
 

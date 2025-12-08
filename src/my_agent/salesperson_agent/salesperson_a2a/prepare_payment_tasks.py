@@ -117,7 +117,7 @@ async def prepare_create_order_payload(
     *,
     note: Optional[str] = None,
     metadata: Optional[Dict[str, str]] = None,
-    conversation_id: Optional[str] = None,
+    conversation_id: Optional[int] = None,
 ) -> Dict[str, Any]:
     """Build the full payload required to call the payment agent's order skill.
 
@@ -212,7 +212,7 @@ async def prepare_create_order_payload(
 
 async def prepare_query_status_payload(
     context_id: str,
-    order_id: Optional[str] = None
+    order_id: Optional[int] = None
 ) -> Dict[str, Any]:
     """Build the task and payload needed for the payment status skill.
 

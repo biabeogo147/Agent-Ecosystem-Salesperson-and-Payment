@@ -11,7 +11,7 @@ callback_router = APIRouter(prefix="/callback", tags=["Payment Callback"])
 
 
 @callback_router.get("/vnpay")
-async def vnpay_callback(order_id: str = Query(..., description="Order ID")):
+async def vnpay_callback(order_id: int = Query(..., description="Order ID")):
     """
     Handle VNPay callback notification.
 

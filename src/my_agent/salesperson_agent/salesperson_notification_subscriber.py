@@ -11,10 +11,10 @@ from src.my_agent.salesperson_agent import salesperson_agent_logger as logger
 
 class SalespersonNotification(BaseModel):
     """Schema for salesperson notification message from Payment Agent."""
-    order_id: str
+    order_id: int
     context_id: str
     user_id: Optional[int] = None
-    conversation_id: Optional[str] = None
+    conversation_id: Optional[int] = None
     timestamp: str
 
 

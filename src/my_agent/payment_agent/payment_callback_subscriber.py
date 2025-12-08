@@ -71,10 +71,10 @@ async def process_callback(callback_data: dict) -> bool:
 
 
 async def notify_salesperson(
-    order_id: str,
+    order_id: int,
     context_id: str,
     user_id: Optional[int] = None,
-    conversation_id: Optional[str] = None
+    conversation_id: Optional[int] = None
 ) -> bool:
     """
     Notify Salesperson Agent about payment callback via Redis Pub/Sub.

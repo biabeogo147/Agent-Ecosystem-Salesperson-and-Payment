@@ -70,7 +70,7 @@ async def create_order(
     customer_shipping_address: str = "",
     note: str = "",
     user_id: Optional[int] = None,
-    conversation_id: Optional[str] = None
+    conversation_id: Optional[int] = None
 ) -> str:
     """
     Create a payment order with multiple items and save to database.
@@ -200,10 +200,9 @@ async def create_order(
         await session.refresh(order)
         await session.refresh(order, attribute_names=["items"])
 
-        order_id = str(order.id)
-        return_url = f"{CALLBACK_SERVICE_URL}/return/vnpay?order_id={order_id}"
-        cancel_url = f"{CALLBACK_SERVICE_URL}/cancel/vnpay?order_id={order_id}"
-        notify_url = f"{CALLBACK_SERVICE_URL}/callback/vnpay?order_id={order_id}"
+        return_url = f"{CALLBACK_SERVICE_URL}/return/vnpay?order_id={order.id}"
+        cancel_url = f"{CALLBACK_SERVICE_URL}/cancel/vnpay?order_id={order.id}"
+        notify_url = f"{CALLBACK_SERVICE_URL}/callback/vnpay?order_id={order.id}"
 
         payment_mcp_logger.info(f"Order created: {order.to_dict()}")
         payment_mcp_logger.info(f"Return URL: {return_url}")
@@ -233,7 +232,7 @@ async def create_order(
             context_id=context_id,
             status=PaymentStatus.PENDING,
             provider_name=PAYGATE_PROVIDER,
-            order_id=order_id,
+            order_id=order.id,
             pay_url=paygate_response.get("pay_url"),
             qr_code_url=paygate_response.get("qr_code_url"),
             expires_at=paygate_response["expires_at"],
@@ -252,7 +251,7 @@ async def create_order(
 
 async def query_order_status(
     context_id: str,
-    order_id: Optional[str] = None
+    order_id: Optional[int] = None
 ) -> str:
     """
     Query order status from database by context_id and/or order_id.
@@ -286,10 +285,12 @@ async def query_order_status(
                 ).to_json()
 
             result = await session.execute(
-                select(Order).where(
+                select(Order)
+                .where(
                     Order.id == order_id_int,
                     Order.context_id == context_id
                 )
+                .options(selectinload(Order.items))
             )
             order = result.scalar_one_or_none()
 
@@ -302,7 +303,7 @@ async def query_order_status(
             res = PaymentResponse(
                 context_id=order.context_id,
                 status=_map_order_status_to_payment_status(order.status),
-                order_id=str(order.id),
+                order_id=order.id,
             )
             return ResponseFormat(data={**res.model_dump(), "order": order.to_dict()}).to_json()
 
@@ -329,7 +330,7 @@ async def query_order_status(
             res = PaymentResponse(
                 context_id=context_id,
                 status=_map_order_status_to_payment_status(latest_order.status),
-                order_id=str(latest_order.id),
+                order_id=latest_order.id,
             )
 
             return ResponseFormat(data={
@@ -345,7 +346,7 @@ async def query_order_status(
         await session.close()
 
 
-async def query_gateway_status(order_id: str) -> str:
+async def query_gateway_status(order_id: int) -> str:
     """
     Query payment gateway for actual order status and update order in database.
     This is called by Payment Agent after receiving callback notification from Redis.

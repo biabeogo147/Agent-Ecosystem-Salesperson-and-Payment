@@ -15,7 +15,7 @@ redirect_router = APIRouter(tags=["Payment Redirect"])
 
 
 @redirect_router.get("/checkout/{order_id}", response_class=HTMLResponse)
-async def checkout_page(request: Request, order_id: str):
+async def checkout_page(request: Request, order_id: int):
     """
     Stub checkout page for testing payment flow.
 
@@ -44,7 +44,7 @@ async def checkout_page(request: Request, order_id: str):
 
 
 @redirect_router.get("/return/vnpay", response_class=HTMLResponse)
-async def vnpay_return(request: Request, order_id: str = Query(..., description="Order ID")):
+async def vnpay_return(request: Request, order_id: int = Query(..., description="Order ID")):
     """
     Handle successful payment redirect from VNPay.
 
@@ -76,7 +76,7 @@ async def vnpay_return(request: Request, order_id: str = Query(..., description=
 
 
 @redirect_router.get("/cancel/vnpay", response_class=HTMLResponse)
-async def vnpay_cancel(request: Request, order_id: str = Query(..., description="Order ID")):
+async def vnpay_cancel(request: Request, order_id: int = Query(..., description="Order ID")):
     """
     Handle cancelled payment redirect from VNPay.
 

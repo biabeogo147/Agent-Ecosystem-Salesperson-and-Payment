@@ -80,7 +80,7 @@ class PaymentMcpClient(BaseMcpClient):
         self,
         *,
         context_id: str,
-        order_id: Optional[str] = None
+        order_id: Optional[int] = None
     ) -> dict[str, Any]:
         """Query order status using the shared MCP payment tool."""
         self._logger.debug(f"[PaymentMcpClient] query_order_status called: context_id={context_id}, order_id={order_id}")
@@ -101,7 +101,7 @@ class PaymentMcpClient(BaseMcpClient):
             self._logger.exception(f"[PaymentMcpClient] query_order_status failed")
             raise
 
-    async def query_gateway_status(self, *, order_id: str) -> dict[str, Any]:
+    async def query_gateway_status(self, *, order_id: int) -> dict[str, Any]:
         """Query payment gateway for actual order status."""
         self._logger.debug(f"[PaymentMcpClient] query_gateway_status called: order_id={order_id}")
 
@@ -160,7 +160,7 @@ async def create_order(
 
 async def query_order_status(
     context_id: str,
-    order_id: Optional[str] = None
+    order_id: Optional[int] = None
 ) -> dict[str, Any]:
     """Query order status using the shared MCP payment tool."""
     client = get_payment_mcp_client()
@@ -170,7 +170,7 @@ async def query_order_status(
     )
 
 
-async def query_gateway_status(order_id: str) -> dict[str, Any]:
+async def query_gateway_status(order_id: int) -> dict[str, Any]:
     """Query payment gateway for actual order status."""
     client = get_payment_mcp_client()
     return await client.query_gateway_status(order_id=order_id)

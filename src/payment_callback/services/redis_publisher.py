@@ -6,7 +6,7 @@ from src.data.redis.connection import redis_connection
 from src.payment_callback import callback_logger
 
 
-async def publish_payment_callback(order_id: str) -> bool:
+async def publish_payment_callback(order_id: int) -> bool:
     """
     Publish payment callback to Redis channel.
     Only publishes order_id - Payment Agent will query gateway for actual status.

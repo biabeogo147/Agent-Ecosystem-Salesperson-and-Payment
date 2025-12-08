@@ -19,7 +19,7 @@ class PaymentRequest(BaseModel):
 
     note: Optional[str] = Field(default=None)
     user_id: Optional[int] = Field(default=None, description="User ID associated with this order")
-    conversation_id: Optional[str] = Field(default=None, description="Conversation ID for multi-session notification")
+    conversation_id: Optional[int] = Field(default=None, description="Conversation ID for multi-session notification")
     metadata: Optional[Dict[str, str]] = Field(default=None)
 
     @model_validator(mode="after")

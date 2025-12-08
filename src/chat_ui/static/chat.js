@@ -198,7 +198,7 @@ function connectWebSocket() {
                         break;
 
                     case 'chat_token':
-                        // Streaming token (TODO: implement streaming UI)
+                        // Streaming token (TODO: implement utils UI)
                         console.log('Streaming token:', message.token);
                         break;
 

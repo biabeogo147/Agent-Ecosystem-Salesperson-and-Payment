@@ -28,7 +28,7 @@ async def authenticate_user(username: str, password: str) -> Optional[dict]:
     Returns dict with access_token and user info, or None if failed.
     """
     from src.config import SALESPERSON_AGENT_APP_WS_URL
-    from src.websocket_server.streaming.agent_stream_client import AgentStreamClient
+    from src.websocket_server.utils.agent_stream_client import AgentStreamClient
 
     logger = get_current_logger()
 

@@ -11,13 +11,13 @@ logger = get_ws_server_logger()
 
 class AgentStreamClient:
     """
-    WebSocket client for streaming communication with Salesperson Agent App.
+    WebSocket client for utils communication with Salesperson Agent App.
     
     Usage:
         async with AgentStreamClient(agent_ws_url) as client:
             await client.send({"type": "chat", "session_id": "...", "message": "..."})
             async for msg in client.receive():
-                # Process streaming messages
+                # Process utils messages
                 if msg.get("type") == "complete":
                     break
     """
@@ -77,7 +77,7 @@ class AgentStreamClient:
     
     async def receive(self) -> AsyncIterator[dict]:
         """
-        Receive streaming messages from agent.
+        Receive utils messages from agent.
         
         Yields:
             Dict messages from agent

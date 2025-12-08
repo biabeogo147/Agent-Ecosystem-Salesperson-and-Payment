@@ -38,7 +38,7 @@ def get_session_service() -> InMemorySessionService | None:
 @agent_router.websocket("/agent/stream")
 async def agent_stream_endpoint(websocket: WebSocket):
     """
-    WebSocket endpoint for streaming chat responses.
+    WebSocket endpoint for utils chat responses.
 
     Protocol:
     Client sends: {"type": "chat", "conversation_id": null|int, "message": "...", "user_id": 123}

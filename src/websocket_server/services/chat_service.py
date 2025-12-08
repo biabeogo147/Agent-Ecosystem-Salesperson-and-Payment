@@ -1,7 +1,7 @@
 from fastapi import WebSocket
 
 from src.config import SALESPERSON_AGENT_APP_WS_URL
-from src.websocket_server.streaming.agent_stream_client import AgentStreamClient
+from src.websocket_server.utils.agent_stream_client import AgentStreamClient
 
 
 async def handle_chat_message(
@@ -11,9 +11,9 @@ async def handle_chat_message(
     user_id: int
 ) -> None:
     """
-    Handle chat message by streaming from Salesperson Agent App.
+    Handle chat message by utils from Salesperson Agent App.
 
-    Establishes WebSocket connection to Agent App and forwards streaming responses
+    Establishes WebSocket connection to Agent App and forwards utils responses
     to the browser client.
 
     Args:
@@ -67,7 +67,7 @@ async def handle_chat_message(
                     break
 
     except Exception as e:
-        logger.error(f"Chat streaming error for conversation {conversation_id}: {e}")
+        logger.error(f"Chat utils error for conversation {conversation_id}: {e}")
         try:
             await websocket.send_json({
                 "type": "error",

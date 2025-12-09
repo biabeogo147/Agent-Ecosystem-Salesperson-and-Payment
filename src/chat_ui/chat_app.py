@@ -6,7 +6,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from src.chat_ui import chat_ui_logger as logger
-from src.config import CHAT_UI_HOST, CHAT_UI_PORT, WS_SERVER_PORT
+from src.config import CHAT_UI_HOST, CHAT_UI_PORT, API_GATEWAY_PORT
 
 STATIC_DIR = Path(__file__).parent / "static"
 
@@ -54,6 +54,6 @@ if __name__ == "__main__":
     import uvicorn
 
     logger.info(f"Starting Chat UI on http://{CHAT_UI_HOST}:{CHAT_UI_PORT}")
-    logger.info(f"WebSocket Server: ws://localhost:{WS_SERVER_PORT}")
+    logger.info(f"API Gateway: ws://localhost:{API_GATEWAY_PORT}")
 
     uvicorn.run(app, host=CHAT_UI_HOST, port=CHAT_UI_PORT)

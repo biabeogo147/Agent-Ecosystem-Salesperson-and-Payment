@@ -3,8 +3,8 @@ import json
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 
-from src.websocket_server.connection_manager import manager
-from src.websocket_server.services import (
+from src.api_gateway.connection_manager import manager
+from src.api_gateway.services import (
     authenticate_websocket,
     extract_token_from_query,
     handle_chat_message,
@@ -37,8 +37,8 @@ async def websocket_endpoint(
         session_id: The chat session ID to subscribe to
         token: JWT token for authentication (query param)
     """
-    from src.websocket_server import get_ws_server_logger
-    logger = get_ws_server_logger()
+    from src.api_gateway import get_api_gateway_logger
+    logger = get_api_gateway_logger()
 
     # Step 1: Authenticate using auth module
     validated_token = extract_token_from_query(token)

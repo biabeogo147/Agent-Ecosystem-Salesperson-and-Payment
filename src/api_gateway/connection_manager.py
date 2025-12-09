@@ -12,7 +12,7 @@ from fastapi import WebSocket
 
 from src.data.redis.cache_keys import CacheKeys, TTL
 from src.data.redis.connection import redis_connection
-from src.websocket_server import get_ws_server_logger
+from src.api_gateway import get_api_gateway_logger
 
 
 class ConnectionManager:
@@ -39,7 +39,7 @@ class ConnectionManager:
             websocket: The WebSocket connection to register
             session_id: The chat session ID to associate with
         """
-        logger = get_ws_server_logger()
+        logger = get_api_gateway_logger()
 
         await websocket.accept()
 
@@ -66,7 +66,7 @@ class ConnectionManager:
             user_id: The authenticated user's ID
             conversation_id: The conversation ID this session is viewing
         """
-        logger = get_ws_server_logger()
+        logger = get_api_gateway_logger()
 
         # Store metadata locally
         self.session_metadata[session_id] = {
@@ -95,7 +95,7 @@ class ConnectionManager:
         Args:
             session_id: The WebSocket session ID to unregister
         """
-        logger = get_ws_server_logger()
+        logger = get_api_gateway_logger()
 
         metadata = self.session_metadata.pop(session_id, None)
         if metadata:
@@ -126,7 +126,7 @@ class ConnectionManager:
             websocket: The WebSocket connection to remove
             session_id: The chat session ID it was associated with
         """
-        logger = get_ws_server_logger()
+        logger = get_api_gateway_logger()
 
         if session_id in self.active_connections:
             try:
@@ -161,7 +161,7 @@ class ConnectionManager:
         Returns:
             List of session_ids registered for this user/conversation
         """
-        logger = get_ws_server_logger()
+        logger = get_api_gateway_logger()
 
         try:
             redis = await redis_connection.get_client()
@@ -192,7 +192,7 @@ class ConnectionManager:
         Returns:
             Total number of connections the message was sent to
         """
-        logger = get_ws_server_logger()
+        logger = get_api_gateway_logger()
 
         session_ids = await self.get_sessions_for_user_conversation(user_id, conversation_id)
         total_sent = 0
@@ -218,7 +218,7 @@ class ConnectionManager:
         Returns:
             Number of connections the message was sent to
         """
-        logger = get_ws_server_logger()
+        logger = get_api_gateway_logger()
 
         sent_count = 0
 

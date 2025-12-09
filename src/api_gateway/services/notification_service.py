@@ -3,7 +3,7 @@ import json
 
 from src.data.redis.connection import redis_connection
 from src.data.redis.cache_keys import CacheKeys
-from src.websocket_server.connection_manager import manager
+from src.api_gateway.connection_manager import manager
 
 
 async def start_notification_receiver() -> None:
@@ -13,9 +13,9 @@ async def start_notification_receiver() -> None:
     Receives notifications published by Salesperson Agent and broadcasts them
     to connected WebSocket clients based on user_id and conversation_id.
     """
-    from src.websocket_server import get_ws_server_logger
+    from src.api_gateway import get_api_gateway_logger
 
-    logger = get_ws_server_logger()
+    logger = get_api_gateway_logger()
     logger.info("Starting notification receiver...")
 
     try:

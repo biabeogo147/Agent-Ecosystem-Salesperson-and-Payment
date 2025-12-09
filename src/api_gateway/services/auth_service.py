@@ -5,7 +5,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from src.utils.jwt_utils import decode_token
 from src.utils.logger import get_current_logger
-from src.websocket_server.schemas import UserInfo
+from src.api_gateway.schemas import UserInfo
 
 
 # HTTP Bearer token scheme for REST endpoints
@@ -90,9 +90,9 @@ async def authenticate_websocket(
     Authenticate a WebSocket connection using JWT token.
     Returns UserInfo if successful, None otherwise (connection will be closed).
     """
-    from src.websocket_server import get_ws_server_logger
+    from src.api_gateway import get_api_gateway_logger
 
-    logger = get_ws_server_logger()
+    logger = get_api_gateway_logger()
 
     if not token:
         logger.warning(f"WebSocket rejected: missing token for session {session_id}")

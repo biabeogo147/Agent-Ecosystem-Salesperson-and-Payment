@@ -59,8 +59,8 @@ CALLBACK_SERVICE_URL = os.getenv("CALLBACK_SERVICE_URL", "http://localhost:8083"
 CHECKOUT_URL=os.getenv("CHECKOUT_URL", "http://localhost:8083/checkout")
 QR_URL=os.getenv("QR_URL", "http://localhost:8083/qr")
 
-WS_SERVER_HOST = os.getenv("WS_SERVER_HOST", "0.0.0.0")
-WS_SERVER_PORT = int(os.getenv("WS_SERVER_PORT", "8084"))
+API_GATEWAY_HOST = os.getenv("API_GATEWAY_HOST", "0.0.0.0")
+API_GATEWAY_PORT = int(os.getenv("API_GATEWAY_PORT", "8084"))
 
 CHAT_UI_HOST = os.getenv("CHAT_UI_HOST", "0.0.0.0")
 CHAT_UI_PORT = int(os.getenv("CHAT_UI_PORT", "8085"))

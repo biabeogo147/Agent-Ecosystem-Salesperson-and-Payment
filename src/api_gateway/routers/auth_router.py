@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from src.websocket_server.schemas import LoginRequest, LoginResponse, UserInfo
-from src.websocket_server.services import authenticate_user, get_current_user
+from src.api_gateway.schemas import LoginRequest, LoginResponse, UserInfo
+from src.api_gateway.services import authenticate_user, get_current_user
 from src.utils.response_format import ResponseFormat
 from src.utils.status import Status
 from src.data.postgres.conversation_ops import (

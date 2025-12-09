@@ -4,9 +4,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.config import WS_SERVER_HOST, WS_SERVER_PORT
-from src.websocket_server.routers import ws_router, auth_router
-from src.websocket_server.services import start_notification_receiver
+from src.config import API_GATEWAY_HOST, API_GATEWAY_PORT
+from src.api_gateway.routers import ws_router, auth_router
+from src.api_gateway.services import start_notification_receiver
 
 
 _notification_receiver_task: asyncio.Task | None = None
@@ -14,12 +14,12 @@ _notification_receiver_task: asyncio.Task | None = None
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    from src.websocket_server import get_ws_server_logger
+    from src.api_gateway import get_api_gateway_logger
 
     global _notification_receiver_task
 
-    logger = get_ws_server_logger()
-    logger.info(f"WebSocket Server starting on {WS_SERVER_HOST}:{WS_SERVER_PORT}")
+    logger = get_api_gateway_logger()
+    logger.info(f"API Gateway starting on {API_GATEWAY_HOST}:{API_GATEWAY_PORT}")
 
     # TODO: xem lại notification receiver
     _notification_receiver_task = asyncio.create_task(start_notification_receiver())
@@ -28,7 +28,7 @@ async def lifespan(_: FastAPI):
     yield
 
     # Shutdown
-    logger.info("WebSocket Server shutting down...")
+    logger.info("API Gateway shutting down...")
     if _notification_receiver_task and not _notification_receiver_task.done():
         _notification_receiver_task.cancel()
         try:
@@ -39,8 +39,8 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(
-    title="WebSocket Notification Server",
-    description="Real-time notification server for payment status updates",
+    title="API Gateway",
+    description="API Gateway for real-time chat and notification server",
     version="1.0.0",
     lifespan=lifespan
 )
@@ -59,8 +59,8 @@ app.include_router(ws_router)
 
 if __name__ == "__main__":
     import uvicorn
-    from src.websocket_server import get_ws_server_logger
+    from src.api_gateway import get_api_gateway_logger
 
-    logger = get_ws_server_logger()
-    logger.info(f"Starting WebSocket Server on {WS_SERVER_HOST}:{WS_SERVER_PORT}")
-    uvicorn.run(app, host=WS_SERVER_HOST, port=WS_SERVER_PORT)
+    logger = get_api_gateway_logger()
+    logger.info(f"Starting API Gateway on {API_GATEWAY_HOST}:{API_GATEWAY_PORT}")
+    uvicorn.run(app, host=API_GATEWAY_HOST, port=API_GATEWAY_PORT)

@@ -1,7 +1,7 @@
 from fastapi import WebSocket
 
 from src.config import SALESPERSON_AGENT_APP_WS_URL
-from src.websocket_server.utils.agent_stream_client import AgentStreamClient
+from src.api_gateway.utils.agent_stream_client import AgentStreamClient
 
 
 async def handle_chat_message(
@@ -25,8 +25,8 @@ async def handle_chat_message(
     Returns:
         conversation_id from Agent response (new ID if conversation was created)
     """
-    from src.websocket_server import get_ws_server_logger
-    logger = get_ws_server_logger()
+    from src.api_gateway import get_api_gateway_logger
+    logger = get_api_gateway_logger()
     result_conversation_id = conversation_id
 
     try:

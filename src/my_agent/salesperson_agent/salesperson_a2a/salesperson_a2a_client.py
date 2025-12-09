@@ -38,6 +38,7 @@ class SalespersonA2AClient(BaseA2AClient):
         customer: Dict[str, str],
         channel: PaymentChannel,
         user_id: int,
+        conversation_id: int,
         *,
         note: str | None = None,
         metadata: Dict[str, str] | None = None,
@@ -53,6 +54,7 @@ class SalespersonA2AClient(BaseA2AClient):
                 customer,
                 channel,
                 user_id,
+                conversation_id=conversation_id,
                 note=note,
                 metadata=metadata,
             )
@@ -125,9 +127,10 @@ async def _create_payment_order(
     Note:
         user_id is automatically retrieved from the execution context.
     """
-    from src.my_agent.salesperson_agent.context import get_current_user_id
+    from src.my_agent.salesperson_agent.context import get_current_user_id, get_current_conversation_id
 
     user_id = get_current_user_id()
+    conversation_id = get_current_conversation_id()
 
     async with SalespersonA2AClient() as client:
         client.logger.debug("tool _create_payment_order invoked (items=%d, channel=%s, user_id=%s)", len(items), channel, user_id)
@@ -136,12 +139,14 @@ async def _create_payment_order(
             customer=customer,
             channel=PaymentChannel(channel),
             user_id=user_id,
+            conversation_id=conversation_id,
             note=note,
             metadata=metadata,
         )
     return response.to_dict()
 
 
+# TODO: lấy context_id ở đâu nếu session inject vào không có
 async def query_payment_order_status(
     context_id: str,
     order_id: Optional[int] = None

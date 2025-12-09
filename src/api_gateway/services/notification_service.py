@@ -35,6 +35,8 @@ async def start_notification_receiver() -> None:
                     notification = json.loads(data)
                     logger.debug(f"Received notification: {notification}")
 
+                    # TODO: lưu vào database notification
+
                     # Broadcast to users based on user_id and conversation_id
                     user_id = notification.get("user_id")
                     conversation_id = notification.get("conversation_id")

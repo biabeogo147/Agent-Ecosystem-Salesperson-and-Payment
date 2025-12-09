@@ -13,7 +13,7 @@ from src.my_agent.salesperson_agent.services import (
     extract_agent_response,
     save_chat_and_update_title,
 )
-from src.my_agent.salesperson_agent.context import current_user_id
+from src.my_agent.salesperson_agent.context import current_user_id, current_conversation_id
 from src.data.postgres.conversation_ops import create_conversation
 
 # ADK app name for session service
@@ -124,8 +124,9 @@ async def agent_stream_endpoint(websocket: WebSocket):
                         session_service=_session_service
                     )
 
-                    # Set user_id context for tool access
-                    token = current_user_id.set(user_id)
+                    # Set user_id, conversation_id context for tool access
+                    user_id_token = current_user_id.set(user_id)
+                    conversation_id_token = current_conversation_id.set(conversation_id)
                     try:
                         # Iterate through AsyncGenerator to get final event
                         final_event = None
@@ -136,7 +137,8 @@ async def agent_stream_endpoint(websocket: WebSocket):
                         ):
                             final_event = event
                     finally:
-                        current_user_id.reset(token)
+                        current_user_id.reset(user_id_token)
+                        current_conversation_id.reset(conversation_id_token)
 
                     # Extract response from final event
                     response_text = extract_agent_response(final_event)

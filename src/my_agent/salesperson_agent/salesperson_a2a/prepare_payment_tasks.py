@@ -107,10 +107,10 @@ async def prepare_create_order_payload(
     customer: Dict[str, str],
     channel: PaymentChannel,
     user_id: int,
+    conversation_id: int,
     *,
     note: Optional[str] = None,
     metadata: Optional[Dict[str, str]] = None,
-    conversation_id: Optional[int] = None,
 ) -> Dict[str, Any]:
     """Build the full payload required to call the payment agent's order skill.
 
@@ -127,6 +127,8 @@ async def prepare_create_order_payload(
 
     context_id = _generate_context_id(prefix="payment")
 
+    salesperson_agent_logger.info(f"user_id: {user_id}")
+    salesperson_agent_logger.info(f"conversation_id: {conversation_id}")
     salesperson_agent_logger.info(f"context_id: {context_id}")
     salesperson_agent_logger.info(f"Resolved items: {resolved_items}")
     salesperson_agent_logger.info(f"Customer: {customer}")

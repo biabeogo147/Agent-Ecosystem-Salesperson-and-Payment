@@ -4,8 +4,10 @@ let conversationId = localStorage.getItem('conversationId')
     ? parseInt(localStorage.getItem('conversationId'))
     : null;  // DB conversation ID (null for new, int for existing)
 let ws = null;
-let config = null;
-let conversations = [];  // List of user's conversations
+let conversations = [];
+let apiGateway = 'localhost:8084';
+let wsApiGateway = `ws://${apiGateway}`;
+let httpApiGateway = `http://${apiGateway}`;
 
 // DOM Elements
 const chatMessages = document.getElementById('chat-messages');
@@ -19,9 +21,7 @@ const toastContainer = document.getElementById('toast-container');
 const conversationList = document.getElementById('conversation-list');
 const newChatBtn = document.getElementById('new-chat-btn');
 
-// Initialize
 document.addEventListener('DOMContentLoaded', async () => {
-    // Configure marked for markdown rendering
     if (typeof marked !== 'undefined') {
         marked.setOptions({
             breaks: true,       // Convert \n to <br>
@@ -43,11 +43,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateConversationDisplay();
     localStorage.setItem('sessionId', sessionId);
 
-    // Load config
-    await loadConfig();
-
     // Load conversation list
     await loadConversations();
+
+    if (conversationId) {
+        await loadConversationHistory(conversationId);
+    }
 
     // Connect WebSocket
     connectWebSocket();
@@ -55,6 +56,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Setup event listeners
     setupEventListeners();
 });
+
+// TODO: có lỗi, một mở một tab nhưng lại có 2 connections trên cùng 1 sessionId, khi đẩy notification sẽ bị nhận 2 lần nếu 2 connection trên cùng 1 tab.
+// TODO: xem các hàm không cần thiết
+// TODO: viết thêm chat_app.py để gọi API sang service khác chứ không gọi trực tiếp trong JS
 
 /**
  * Update conversation ID display
@@ -95,17 +100,14 @@ function displayUserInfo() {
  * Logout user
  */
 function logout() {
-    // Clear auth data
     localStorage.removeItem('authToken');
     localStorage.removeItem('userId');
     localStorage.removeItem('username');
 
-    // Close WebSocket
     if (ws) {
         ws.close();
     }
 
-    // Redirect to login
     window.location.href = '/login';
 }
 
@@ -132,22 +134,6 @@ function generateUUID() {
 }
 
 /**
- * Load configuration from server
- */
-async function loadConfig() {
-    try {
-        const response = await fetch('/api/config');
-        config = await response.json();
-        console.log('Config loaded:', config);
-    } catch (error) {
-        console.error('Failed to load config:', error);
-        config = {
-            ws_url: 'ws://localhost:8084'
-        };
-    }
-}
-
-/**
  * Connect to WebSocket server
  */
 function connectWebSocket() {
@@ -161,7 +147,7 @@ function connectWebSocket() {
     }
 
     // Build WebSocket URL with token (sessionId is for WS session, not conversation)
-    const wsUrl = `${config?.ws_url || 'ws://localhost:8084'}/ws/${sessionId}?token=${encodeURIComponent(token)}`;
+    const wsUrl = `${wsApiGateway}/ws/${sessionId}?token=${encodeURIComponent(token)}`;
     console.log('Connecting to WebSocket:', wsUrl.replace(token, '***'));
 
     try {
@@ -453,9 +439,6 @@ function hideTypingIndicator() {
 function handleNotification(notification) {
     console.log('Handling notification:', notification);
 
-    // Add to notifications list
-    addNotificationItem(notification);
-
     // Show toast
     const statusText = getStatusText(notification.status);
     showToast(`Payment ${statusText}: Order ${notification.order_id}`, getStatusType(notification.status));
@@ -463,32 +446,6 @@ function handleNotification(notification) {
     // Also add to chat as a system message
     const chatMessage = `Payment Update: Order ${notification.order_id} - ${statusText}`;
     addSystemMessage(chatMessage, notification.status);
-}
-
-/**
- * Add notification item to panel
- */
-function addNotificationItem(notification) {
-    // Remove empty state if present
-    const emptyState = notificationsList.querySelector('.empty-state');
-    if (emptyState) {
-        emptyState.remove();
-    }
-
-    const item = document.createElement('div');
-    item.className = `notification-item ${notification.status.toLowerCase()}`;
-
-    const statusText = getStatusText(notification.status);
-    const timestamp = new Date(notification.timestamp).toLocaleTimeString('vi-VN');
-
-    item.innerHTML = `
-        <div class="status">${statusText}</div>
-        <div class="order-id">Order: ${notification.order_id}</div>
-        <div class="timestamp">${timestamp}</div>
-    `;
-
-    // Add to top of list
-    notificationsList.insertBefore(item, notificationsList.firstChild);
 }
 
 /**
@@ -605,7 +562,7 @@ function startNewSession() {
  */
 async function loadConversations() {
     try {
-        const response = await fetch('/auth/conversations?limit=20', {
+        const response = await fetch(`${httpApiGateway}/auth/conversations?limit=20`, {
             headers: getAuthHeaders()
         });
 
@@ -688,7 +645,7 @@ async function loadConversationHistory(convId) {
     `;
 
     try {
-        const response = await fetch(`/auth/conversations/${convId}/messages?limit=50`, {
+        const response = await fetch(`${httpApiGateway}/auth/conversations/${convId}/messages?limit=50`, {
             headers: getAuthHeaders()
         });
 

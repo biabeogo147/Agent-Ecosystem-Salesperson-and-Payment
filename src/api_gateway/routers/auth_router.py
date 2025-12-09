@@ -31,6 +31,7 @@ async def login(request: LoginRequest):
     ).to_dict()
 
 
+# TODO: đổi sang router khác
 @auth_router.get("/conversations")
 async def list_conversations(
     limit: int = Query(default=20, le=50, ge=1),

@@ -12,7 +12,6 @@ class TTL:
 class CacheKeys:
     """Cache key generators for all Redis keys."""
 
-    # Product-related keys
     @staticmethod
     def product_by_sku(sku: str) -> str:
         """Cache key for product by SKU."""
@@ -33,7 +32,6 @@ class CacheKeys:
         """Cache key for all products."""
         return "products:all"
 
-    # Search-related keys
     @staticmethod
     def search_products(query: str, min_price: float = None, max_price: float = None,
                        merchant_id: int = None, limit: int = 20) -> str:
@@ -66,13 +64,11 @@ class CacheKeys:
         """Redis channel key for WebSocket Server notifications from Salesperson Agent."""
         return "websocket:notification"
 
-    # WebSocket session mapping keys
     @staticmethod
     def ws_user_conversation_sessions(user_id: int, conversation_id: int) -> str:
         """Redis Set key for WebSocket sessions by user and conversation."""
         return f"ws:user:{user_id}:conv:{conversation_id}"
 
-    # Conversation history keys
     @staticmethod
     def conversation_history(conversation_id: int) -> str:
         """Cache key for conversation messages (recent N messages as JSON)."""

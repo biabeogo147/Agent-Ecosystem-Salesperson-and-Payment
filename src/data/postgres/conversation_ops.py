@@ -75,7 +75,7 @@ async def get_conversation_with_messages(
         result = await session.execute(
             select(Message)
             .filter(Message.conversation_id == conv.id)
-            .order_by(Message.created_at.desc())
+            .order_by(Message.id.desc())
             .limit(limit)
         )
         messages = list(reversed(result.scalars().all()))  # Oldest first

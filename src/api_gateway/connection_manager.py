@@ -4,15 +4,20 @@ WebSocket connection manager for handling multiple client connections.
 Manages connections grouped by session_id, allowing targeted message delivery
 to specific chat sessions. Integrates with Redis for multi-session broadcasting
 based on (user_id, conversation_id) mapping.
+
+Also manages persistent WebSocket connections to Agent App per session.
 """
 import asyncio
-from typing import Any, Optional
+from typing import Any, Optional, TYPE_CHECKING
 
 from fastapi import WebSocket
 
 from src.data.redis.cache_keys import CacheKeys, TTL
 from src.data.redis.connection import redis_connection
 from src.api_gateway import get_api_gateway_logger
+
+if TYPE_CHECKING:
+    from src.api_gateway.utils.agent_stream_client import AgentStreamClient
 
 
 class ConnectionManager:
@@ -24,12 +29,16 @@ class ConnectionManager:
 
     Additionally tracks user_id and conversation_id per session for multi-device
     notification broadcasting via Redis.
+
+    Also manages persistent WebSocket connections to Agent App per session.
     """
 
     def __init__(self):
         self.active_connections: dict[str, list[WebSocket]] = {}
         # Track metadata per session: {session_id: {user_id, conversation_id}}
         self.session_metadata: dict[str, dict[str, Any]] = {}
+        # Persistent agent connections per session
+        self.agent_connections: dict[str, "AgentStreamClient"] = {}
 
     async def connect(self, websocket: WebSocket, session_id: str) -> None:
         """
@@ -284,6 +293,67 @@ class ConnectionManager:
             Dict with user_id and conversation_id, or None if not found
         """
         return self.session_metadata.get(session_id)
+
+    async def connect_agent(self, session_id: str) -> "AgentStreamClient":
+        """
+        Create or get persistent agent connection for session.
+
+        Args:
+            session_id: The browser session ID
+
+        Returns:
+            AgentStreamClient instance (connected)
+        """
+        from src.api_gateway.utils.agent_stream_client import AgentStreamClient
+        from src.config import SALESPERSON_AGENT_APP_WS_URL
+
+        logger = get_api_gateway_logger()
+
+        if session_id in self.agent_connections:
+            client = self.agent_connections[session_id]
+            if client.is_connected:
+                return client
+            # Connection lost, remove and recreate
+            del self.agent_connections[session_id]
+
+        client = AgentStreamClient(SALESPERSON_AGENT_APP_WS_URL)
+        await client.connect()
+        self.agent_connections[session_id] = client
+        logger.info(f"Created agent connection for session: {session_id}")
+        return client
+
+    async def disconnect_agent(self, session_id: str) -> None:
+        """
+        Close agent connection for session.
+
+        Args:
+            session_id: The browser session ID
+        """
+        logger = get_api_gateway_logger()
+
+        if session_id in self.agent_connections:
+            try:
+                await self.agent_connections[session_id].disconnect()
+                logger.info(f"Closed agent connection for session: {session_id}")
+            except Exception as e:
+                logger.error(f"Error closing agent connection: {e}")
+            finally:
+                del self.agent_connections[session_id]
+
+    def get_agent_connection(self, session_id: str) -> Optional["AgentStreamClient"]:
+        """
+        Get existing agent connection for session.
+
+        Args:
+            session_id: The browser session ID
+
+        Returns:
+            AgentStreamClient if exists and connected, None otherwise
+        """
+        client = self.agent_connections.get(session_id)
+        if client and client.is_connected:
+            return client
+        return None
 
 
 manager = ConnectionManager()

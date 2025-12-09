@@ -29,44 +29,49 @@ def extract_user_from_token(token: str) -> Optional[UserInfo]:
 
 async def authenticate_user(username: str, password: str) -> Optional[dict]:
     """
-    Authenticate user via Salesperson Agent App (over WebSocket).
+    Authenticate user directly via database.
     Returns dict with access_token and user info, or None if failed.
     """
-    from src.config import SALESPERSON_AGENT_APP_WS_URL
-    from src.websocket_server.utils.agent_stream_client import AgentStreamClient
+    from sqlalchemy import select, or_
+    from passlib.context import CryptContext
+    from src.data.models.db_entity.user import User
+    from src.data.postgres.connection import db_connection
+    from src.utils.jwt_utils import create_access_token
+    from src.config import JWT_EXPIRE_MINUTES
 
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
     logger = get_current_logger()
 
+    session = db_connection.get_session()
     try:
-        async with AgentStreamClient(SALESPERSON_AGENT_APP_WS_URL) as agent_client:
-            # Send authentication request
-            await agent_client.send({
-                "type": "authenticate",
-                "username": username,
-                "password": password
-            })
+        result = await session.execute(
+            select(User).where(or_(User.username == username, User.email == username))
+        )
+        user = result.scalar_one_or_none()
 
-            # Wait for response
-            async for msg in agent_client.receive():
-                msg_type = msg.get("type")
-
-                if msg_type == "authenticate_response":
-                    if msg.get("status") == "success":
-                        logger.info(f"Login successful via Agent App: username={username}")
-                        return msg.get("data")
-                    else:
-                        logger.warning(f"Login failed via Agent App: {msg.get('message')}")
-                        return None
-
-                elif msg_type == "error":
-                    logger.error(f"Agent App returned error during auth: {msg.get('message')}")
-                    return None
-
+        if not user:
+            logger.warning(f"Login failed: user not found - {username}")
             return None
 
+        if not pwd_context.verify(password, user.hashed_password):
+            logger.warning(f"Login failed: invalid password - {username}")
+            return None
+
+        access_token = create_access_token(user_id=user.id, username=user.username)
+        logger.info(f"Login successful: user_id={user.id}, username={user.username}")
+
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user_id": user.id,
+            "username": user.username,
+            "expires_in": JWT_EXPIRE_MINUTES * 60
+        }
     except Exception as e:
         logger.exception(f"authenticate_user error: {e}")
         return None
+    finally:
+        await session.close()
 
 
 def extract_token_from_query(token: Optional[str]) -> Optional[str]:

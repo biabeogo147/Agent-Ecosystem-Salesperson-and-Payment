@@ -53,23 +53,6 @@ class SalespersonMcpClient(BaseMcpClient):
         )
         return self._ensure_response_format(payload, tool="search_product_documents")
 
-    async def authenticate_user(self, *, username: str, password: str) -> dict[str, Any]:
-        """
-        Authenticate user via MCP tool.
-
-        Args:
-            username: Username or email
-            password: User password
-
-        Returns:
-            Response with access_token, user_id, username if successful
-        """
-        payload = await self._call_tool_json(
-            "authenticate_user", {"username": username, "password": password}
-        )
-        return self._ensure_response_format(payload, tool="authenticate_user")
-
-
 _client: SalespersonMcpClient | None = None
 
 

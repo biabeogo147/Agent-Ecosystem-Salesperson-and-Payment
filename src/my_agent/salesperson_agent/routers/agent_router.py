@@ -165,46 +165,6 @@ async def agent_stream_endpoint(websocket: WebSocket):
                         "message": str(e)
                     })
 
-            elif data.get("type") == "authenticate":
-                username = data.get("username")
-                password = data.get("password")
-
-                if not username or not password:
-                    await websocket.send_json({
-                        "type": "error",
-                        "message": "Missing username or password"
-                    })
-                    continue
-
-                try:
-                    logger.info(f"Processing authentication request for user: {username}")
-
-                    from src.my_agent.salesperson_agent.salesperson_mcp_client import get_salesperson_mcp_client
-                    client = get_salesperson_mcp_client()
-                    result = await client.authenticate_user(username=username, password=password)
-
-                    if result.get("status") == "00":
-                        await websocket.send_json({
-                            "type": "authenticate_response",
-                            "status": "success",
-                            "data": result.get("data")
-                        })
-                        logger.info(f"Authentication successful for user: {username}")
-                    else:
-                        await websocket.send_json({
-                            "type": "authenticate_response",
-                            "status": "failure",
-                            "message": result.get("message", "Authentication failed")
-                        })
-                        logger.warning(f"Authentication failed for user: {username}")
-
-                except Exception as e:
-                    logger.error(f"Authentication error: {e}")
-                    await websocket.send_json({
-                        "type": "error",
-                        "message": str(e)
-                    })
-
     except WebSocketDisconnect:
         logger.info("Agent stream client disconnected")
     except Exception as e:

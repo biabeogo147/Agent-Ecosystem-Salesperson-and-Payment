@@ -3,20 +3,12 @@ from __future__ import annotations
 import asyncio
 
 from google.adk.tools import FunctionTool
-from passlib.context import CryptContext
-from sqlalchemy import select, or_
 
 from . import salesperson_mcp_logger
 
-from src.config import JWT_EXPIRE_MINUTES
 from src.utils.client import embed
 from src.utils.response_format import ResponseFormat
 from src.utils.status import Status
-from src.utils.jwt_utils import create_access_token
-from src.data.models.db_entity.user import User
-from src.data.postgres.connection import db_connection
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 from src.utils.app_string import *
 from src.data.redis.cache_ops import get_cached_value, set_cached_value
 from src.data.redis.cache_keys import CacheKeys, TTL
@@ -134,72 +126,17 @@ async def search_product_documents(query: str, product_sku: str, limit: int = 5)
         return ResponseFormat(status=Status.UNKNOWN_ERROR, message=str(e)).to_json()
 
 
-async def authenticate_user(username: str, password: str) -> str:
-    """
-    Authenticate user with username/email and password.
-    Returns JWT token and user info if successful.
-
-    Args:
-        username: Username or email
-        password: User password
-
-    Returns:
-        JSON with access_token, token_type, user_id, username, expires_in
-        or error status if authentication fails
-    """
-    salesperson_mcp_logger.info(f"Authenticate user: {username}")
-    session = db_connection.get_session()
-    try:
-        result = await session.execute(
-            select(User).where(or_(User.username == username, User.email == username))
-        )
-        user = result.scalar_one_or_none()
-
-        if not user:
-            salesperson_mcp_logger.warning(f"Login failed: user not found - {username}")
-            return ResponseFormat(
-                status=Status.FAILURE,
-                message="Invalid username or password"
-            ).to_json()
-
-        if not pwd_context.verify(password, user.hashed_password):
-            salesperson_mcp_logger.warning(f"Login failed: invalid password - {username}")
-            return ResponseFormat(
-                status=Status.FAILURE,
-                message="Invalid username or password"
-            ).to_json()
-
-        access_token = create_access_token(user_id=user.id, username=user.username)
-
-        salesperson_mcp_logger.info(f"Login successful: user_id={user.id}, username={user.username}")
-
-        return ResponseFormat(data={
-            "access_token": access_token,
-            "token_type": "bearer",
-            "user_id": user.id,
-            "username": user.username,
-            "expires_in": JWT_EXPIRE_MINUTES * 60
-        }).to_json()
-    except Exception as e:
-        salesperson_mcp_logger.exception(f"Authentication error: {e}")
-        return ResponseFormat(status=Status.UNKNOWN_ERROR, message=str(e)).to_json()
-    finally:
-        await session.close()
-
-
 salesperson_mcp_logger.info("Initializing ADK tool for salesperson...")
 find_product_tool = FunctionTool(find_product)
 calc_shipping_tool = FunctionTool(calc_shipping)
 reserve_stock_tool = FunctionTool(reserve_stock)
 search_product_documents_tool = FunctionTool(search_product_documents)
-authenticate_user_tool = FunctionTool(authenticate_user)
 
 ADK_TOOLS_FOR_SALESPERSON = {
     find_product_tool.name: find_product_tool,
     calc_shipping_tool.name: calc_shipping_tool,
     reserve_stock_tool.name: reserve_stock_tool,
     search_product_documents_tool.name: search_product_documents_tool,
-    authenticate_user_tool.name: authenticate_user_tool,
 }
 
 for adk_tool in ADK_TOOLS_FOR_SALESPERSON.values():

@@ -21,7 +21,6 @@ async def lifespan(_: FastAPI):
     logger = get_api_gateway_logger()
     logger.info(f"API Gateway starting on {API_GATEWAY_HOST}:{API_GATEWAY_PORT}")
 
-    # TODO: xem lại notification receiver
     _notification_receiver_task = asyncio.create_task(start_notification_receiver())
     logger.info("Notification receiver started")
 

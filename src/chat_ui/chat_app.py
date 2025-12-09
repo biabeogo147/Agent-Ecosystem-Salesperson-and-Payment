@@ -10,10 +10,6 @@ from src.config import CHAT_UI_HOST, CHAT_UI_PORT, API_GATEWAY_PORT
 
 STATIC_DIR = Path(__file__).parent / "static"
 
-# TODO: Load history conversations
-# TODO: Remove payment notifications beside, only show in chat area.
-# TODO: Support Markdown rendering in chat area.
-
 app = FastAPI(
     title="Salesperson Chat UI",
     description="Chat interface - WebSocket only communication",

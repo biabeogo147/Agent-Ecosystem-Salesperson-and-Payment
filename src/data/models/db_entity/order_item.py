@@ -4,7 +4,6 @@ from src.data.models import Base
 
 
 class OrderItem(Base):
-    """Order line item - represents a single product in an order."""
     __tablename__ = "order_item"
 
     id = Column(Integer, primary_key=True, autoincrement=True)

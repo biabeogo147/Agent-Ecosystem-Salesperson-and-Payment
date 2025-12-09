@@ -6,7 +6,6 @@ from src.data.models.enum.order_status import OrderStatus
 
 
 class Order(Base):
-    """Order with multiple line items. context_id correlates with salesperson agent."""
     __tablename__ = "order"
 
     id = Column(Integer, primary_key=True, autoincrement=True)

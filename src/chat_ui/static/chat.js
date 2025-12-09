@@ -21,6 +21,16 @@ const newChatBtn = document.getElementById('new-chat-btn');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
+    // Configure marked for markdown rendering
+    if (typeof marked !== 'undefined') {
+        marked.setOptions({
+            breaks: true,       // Convert \n to <br>
+            gfm: true,          // GitHub Flavored Markdown
+            headerIds: false,   // Don't add IDs to headers
+            mangle: false       // Don't escape email addresses
+        });
+    }
+
     // Check authentication
     if (!checkAuth()) {
         return; // Will redirect to login
@@ -383,7 +393,20 @@ function addMessage(text, role) {
 
     const contentDiv = document.createElement('div');
     contentDiv.className = 'message-content';
-    contentDiv.textContent = text;
+
+    // Render markdown for agent messages, plain text for user messages
+    if (role === 'agent' && typeof marked !== 'undefined') {
+        const html = marked.parse(text);
+        contentDiv.innerHTML = DOMPurify.sanitize(html);
+        // Apply syntax highlighting to code blocks
+        contentDiv.querySelectorAll('pre code').forEach((block) => {
+            if (typeof hljs !== 'undefined') {
+                hljs.highlightElement(block);
+            }
+        });
+    } else {
+        contentDiv.textContent = text;
+    }
 
     messageDiv.appendChild(contentDiv);
     chatMessages.appendChild(messageDiv);

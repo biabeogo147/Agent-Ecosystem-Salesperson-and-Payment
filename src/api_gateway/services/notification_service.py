@@ -26,7 +26,7 @@ async def start_notification_receiver() -> None:
         logger.info(f"Subscribed to Redis channel: {CacheKeys.websocket_notification()}")
 
         async for message in pubsub.listen():
-            if message["type"] == "payment_status":
+            if message["type"] == "message":
                 try:
                     data = message["data"]
                     if isinstance(data, bytes):

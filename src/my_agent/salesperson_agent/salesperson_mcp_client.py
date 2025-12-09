@@ -53,21 +53,6 @@ class SalespersonMcpClient(BaseMcpClient):
         )
         return self._ensure_response_format(payload, tool="search_product_documents")
 
-    async def get_current_user_id(self, *, context_id: str) -> dict[str, Any]:
-        """
-        Get the current authenticated user ID for the given context.
-
-        Args:
-            context_id: The payment context identifier
-
-        Returns:
-            user_id if found, None otherwise
-        """
-        payload = await self._call_tool_json(
-            "get_current_user_id", {"context_id": context_id}
-        )
-        return self._ensure_response_format(payload, tool="get_current_user_id")
-
     async def authenticate_user(self, *, username: str, password: str) -> dict[str, Any]:
         """
         Authenticate user via MCP tool.

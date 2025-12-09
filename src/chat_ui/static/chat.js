@@ -5,6 +5,7 @@ let conversationId = localStorage.getItem('conversationId')
     : null;  // DB conversation ID (null for new, int for existing)
 let ws = null;
 let config = null;
+let conversations = [];  // List of user's conversations
 
 // DOM Elements
 const chatMessages = document.getElementById('chat-messages');
@@ -14,8 +15,9 @@ const sessionIdDisplay = document.getElementById('session-id');
 const newSessionBtn = document.getElementById('new-session-btn');
 const wsStatus = document.getElementById('ws-status');
 const wsStatusText = document.getElementById('ws-status-text');
-const notificationsList = document.getElementById('notifications');
 const toastContainer = document.getElementById('toast-container');
+const conversationList = document.getElementById('conversation-list');
+const newChatBtn = document.getElementById('new-chat-btn');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
@@ -33,6 +35,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Load config
     await loadConfig();
+
+    // Load conversation list
+    await loadConversations();
 
     // Connect WebSocket
     connectWebSocket();
@@ -194,6 +199,8 @@ function connectWebSocket() {
                             localStorage.setItem('conversationId', conversationId);
                             updateConversationDisplay();
                             console.log('Stored new conversation_id:', conversationId);
+                            // Reload conversation list to include new conversation
+                            loadConversations();
                         }
 
                         if (message.content) {
@@ -306,6 +313,13 @@ function setupEventListeners() {
             if (confirm('Are you sure you want to logout?')) {
                 logout();
             }
+        });
+    }
+
+    // New chat button in sidebar
+    if (newChatBtn) {
+        newChatBtn.addEventListener('click', () => {
+            startNewSession();
         });
     }
 }
@@ -543,6 +557,7 @@ function startNewSession() {
 
     // Update display
     updateConversationDisplay();
+    renderConversationList();
 
     // Clear chat messages (keep welcome message)
     chatMessages.innerHTML = `
@@ -553,13 +568,6 @@ function startNewSession() {
         </div>
     `;
 
-    // Clear notifications
-    notificationsList.innerHTML = `
-        <div class="empty-state">
-            Chua co thong bao thanh toan
-        </div>
-    `;
-
     // Reconnect WebSocket with new context
     if (ws) {
         ws.close();
@@ -567,4 +575,173 @@ function startNewSession() {
     connectWebSocket();
 
     showToast('New session started', 'success');
+}
+
+/**
+ * Load user's conversations from server
+ */
+async function loadConversations() {
+    try {
+        const response = await fetch('/auth/conversations?limit=20', {
+            headers: getAuthHeaders()
+        });
+
+        if (response.status === 401) {
+            logout();
+            return;
+        }
+
+        const result = await response.json();
+        if (result.status === '00') {
+            conversations = result.data || [];
+            renderConversationList();
+        } else {
+            console.error('Failed to load conversations:', result.message);
+            conversationList.innerHTML = `
+                <div class="empty-state">Failed to load conversations</div>
+            `;
+        }
+    } catch (error) {
+        console.error('Failed to load conversations:', error);
+        conversationList.innerHTML = `
+            <div class="empty-state">Failed to load conversations</div>
+        `;
+    }
+}
+
+/**
+ * Render conversation list in sidebar
+ */
+function renderConversationList() {
+    if (!conversationList) return;
+
+    if (conversations.length === 0) {
+        conversationList.innerHTML = `
+            <div class="empty-state">No conversations yet. Start chatting!</div>
+        `;
+        return;
+    }
+
+    conversationList.innerHTML = conversations.map(conv => `
+        <div class="conversation-item ${conv.id === conversationId ? 'active' : ''}"
+             data-id="${conv.id}"
+             onclick="selectConversation(${conv.id})">
+            <div class="title">${escapeHtml(conv.title)}</div>
+            ${conv.updated_at ? `<div class="time">${formatTime(conv.updated_at)}</div>` : ''}
+        </div>
+    `).join('');
+}
+
+/**
+ * Select a conversation and load its history
+ */
+async function selectConversation(id) {
+    if (id === conversationId) return;
+
+    conversationId = id;
+    localStorage.setItem('conversationId', id);
+    updateConversationDisplay();
+    renderConversationList();
+
+    // Load history for selected conversation
+    await loadConversationHistory(id);
+
+    // Re-register WebSocket for new conversation
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+            type: 'register',
+            conversation_id: id
+        }));
+    }
+}
+
+/**
+ * Load conversation history from server
+ */
+async function loadConversationHistory(convId) {
+    // Clear current messages and show loading
+    chatMessages.innerHTML = `
+        <div class="loading-state">Loading messages...</div>
+    `;
+
+    try {
+        const response = await fetch(`/auth/conversations/${convId}/messages?limit=50`, {
+            headers: getAuthHeaders()
+        });
+
+        if (response.status === 401) {
+            logout();
+            return;
+        }
+
+        if (response.status === 404) {
+            showToast('Conversation not found', 'error');
+            startNewSession();
+            return;
+        }
+
+        const result = await response.json();
+
+        // Clear loading
+        chatMessages.innerHTML = '';
+
+        if (result.status === '00' && result.data) {
+            const { messages } = result.data;
+
+            // Add welcome message first
+            addMessage('Xin chao! Toi la tro ly ban hang. Toi co the giup gi cho ban?', 'agent');
+
+            // Render history messages
+            messages.forEach(msg => {
+                const role = msg.role === 'user' ? 'user' : 'agent';
+                addMessage(msg.content, role);
+            });
+
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        } else {
+            // Empty conversation - show welcome message
+            addMessage('Xin chao! Toi la tro ly ban hang. Toi co the giup gi cho ban?', 'agent');
+        }
+    } catch (error) {
+        console.error('Failed to load conversation history:', error);
+        chatMessages.innerHTML = `
+            <div class="message agent">
+                <div class="message-content">
+                    Xin chao! Toi la tro ly ban hang. Toi co the giup gi cho ban?
+                </div>
+            </div>
+        `;
+        showToast('Failed to load history', 'error');
+    }
+}
+
+/**
+ * Escape HTML to prevent XSS
+ */
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+/**
+ * Format timestamp to relative time or locale string
+ */
+function formatTime(isoString) {
+    if (!isoString) return '';
+
+    const date = new Date(isoString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+
+    return date.toLocaleDateString('vi-VN');
 }

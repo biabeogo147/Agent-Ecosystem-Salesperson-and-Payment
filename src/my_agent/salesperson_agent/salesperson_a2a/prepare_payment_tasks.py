@@ -102,18 +102,11 @@ async def _reserve_stock_for_items(
             raise ValueError(f"Cannot reserve stock for '{item.name}' (SKU: {item.sku}): {message}")
 
 
-async def _get_current_user_id(client: SalespersonMcpClient, context_id: str) -> Optional[int]:
-    user_payload = await client.get_current_user_id(context_id=context_id)
-    user = (user_payload or {}).get("data", {})
-    if not user:
-        raise ValueError("No user information returned.")
-    return user.get("user_id")
-
-
 async def prepare_create_order_payload(
     items: List[Dict],
     customer: Dict[str, str],
     channel: PaymentChannel,
+    user_id: int,
     *,
     note: Optional[str] = None,
     metadata: Optional[Dict[str, str]] = None,
@@ -133,7 +126,6 @@ async def prepare_create_order_payload(
     await _reserve_stock_for_items(resolved_items, client=client)
 
     context_id = _generate_context_id(prefix="payment")
-    user_id = await _get_current_user_id(client=client, context_id=context_id)
 
     salesperson_agent_logger.info(f"context_id: {context_id}")
     salesperson_agent_logger.info(f"Resolved items: {resolved_items}")

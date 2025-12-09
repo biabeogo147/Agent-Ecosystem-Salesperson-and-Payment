@@ -23,7 +23,18 @@
 
         <!-- Main content -->
         <main class="main">
-            <!-- Chat area -->
+            <!-- Conversation sidebar (LEFT) -->
+            <div class="conversation-sidebar">
+                <div class="sidebar-header">
+                    <h3>Conversations</h3>
+                    <button id="new-chat-btn" class="new-chat-btn" title="New Chat">+</button>
+                </div>
+                <div id="conversation-list" class="conversation-list">
+                    <div class="loading-state">Loading...</div>
+                </div>
+            </div>
+
+            <!-- Chat area (CENTER) -->
             <div class="chat-container">
                 <div id="chat-messages" class="chat-messages">
                     <!-- Messages will be added here -->
@@ -48,17 +59,6 @@
                             <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
                         </svg>
                     </button>
-                </div>
-            </div>
-
-            <!-- Notification panel -->
-            <div class="notification-panel">
-                <h3>Payment Notifications</h3>
-                <div id="notifications" class="notifications-list">
-                    <!-- Notifications will be added here -->
-                    <div class="empty-state">
-                        Chua co thong bao thanh toan
-                    </div>
                 </div>
             </div>
         </main>

@@ -134,36 +134,6 @@ async def search_product_documents(query: str, product_sku: str, limit: int = 5)
         return ResponseFormat(status=Status.UNKNOWN_ERROR, message=str(e)).to_json()
 
 
-async def get_current_user_id(context_id: str) -> str:
-    """
-    Get the current authenticated user ID for the given context.
-    This is called by payment agent to retrieve user_id when creating orders.
-
-    Args:
-        context_id: The payment context identifier
-
-    Returns:
-        JSON with user_id
-
-    TODO: Implement actual user session lookup based on context_id
-    Currently returns a placeholder value.
-    """
-    salesperson_mcp_logger.info(f"Get current user ID for context: {context_id}")
-
-    # TODO: Implement actual logic to get user_id from session/context
-    # This should:
-    # 1. Look up the session associated with context_id
-    # 2. Extract the authenticated user_id from session
-    # 3. Return the user_id
-
-    # Placeholder: Return a mock user_id
-    # In production, this should fetch from Redis session or similar
-    user_id = 1  # Default user for testing
-
-    salesperson_mcp_logger.debug(f"Retrieved user_id={user_id} for context={context_id}")
-    return ResponseFormat(data={"user_id": user_id}).to_json()
-
-
 async def authenticate_user(username: str, password: str) -> str:
     """
     Authenticate user with username/email and password.
@@ -222,7 +192,6 @@ find_product_tool = FunctionTool(find_product)
 calc_shipping_tool = FunctionTool(calc_shipping)
 reserve_stock_tool = FunctionTool(reserve_stock)
 search_product_documents_tool = FunctionTool(search_product_documents)
-get_current_user_id_tool = FunctionTool(get_current_user_id)
 authenticate_user_tool = FunctionTool(authenticate_user)
 
 ADK_TOOLS_FOR_SALESPERSON = {
@@ -230,7 +199,6 @@ ADK_TOOLS_FOR_SALESPERSON = {
     calc_shipping_tool.name: calc_shipping_tool,
     reserve_stock_tool.name: reserve_stock_tool,
     search_product_documents_tool.name: search_product_documents_tool,
-    get_current_user_id_tool.name: get_current_user_id_tool,
     authenticate_user_tool.name: authenticate_user_tool,
 }
 

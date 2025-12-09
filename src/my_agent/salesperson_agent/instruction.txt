@@ -42,6 +42,7 @@ Primary responsibilities
        channel (string): one of ["redirect", "qr"], describing the payment channel.
        note (string): additional note for the order.
        metadata (object): extra metadata in key/value pairs.
+   - Note: user_id is automatically handled by the system.
    - Example:
        {
          "items": [{"sku": "ABC123", "quantity": 2}],

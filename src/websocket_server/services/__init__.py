@@ -5,4 +5,5 @@ from src.websocket_server.services.auth_service import (
     authenticate_user,
     extract_token_from_query,
     authenticate_websocket,
+    get_current_user,
 )

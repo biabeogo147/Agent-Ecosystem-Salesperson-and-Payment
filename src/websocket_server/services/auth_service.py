@@ -1,10 +1,15 @@
 from typing import Optional
 
-from fastapi import WebSocket
+from fastapi import WebSocket, Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from src.utils.jwt_utils import decode_token
 from src.utils.logger import get_current_logger
 from src.websocket_server.schemas import UserInfo
+
+
+# HTTP Bearer token scheme for REST endpoints
+bearer_scheme = HTTPBearer()
 
 
 def extract_user_from_token(token: str) -> Optional[UserInfo]:
@@ -96,4 +101,29 @@ async def authenticate_websocket(
         return None
 
     logger.info(f"WebSocket authenticated: session_id={session_id}, user_id={user_info.user_id}")
+    return user_info
+
+
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme)
+) -> UserInfo:
+    """
+    FastAPI dependency to extract and validate user from Bearer token.
+    Use with REST endpoints that require authentication.
+
+    Usage:
+        @router.get("/protected")
+        async def protected_endpoint(current_user: UserInfo = Depends(get_current_user)):
+            return {"user_id": current_user.user_id}
+
+    Raises:
+        HTTPException 401: If token is missing, invalid, or expired
+    """
+    user_info = extract_user_from_token(credentials.credentials)
+    if not user_info:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
     return user_info

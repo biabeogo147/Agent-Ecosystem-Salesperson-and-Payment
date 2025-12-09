@@ -37,6 +37,7 @@ class SalespersonA2AClient(BaseA2AClient):
         items: List[Dict],
         customer: Dict[str, str],
         channel: PaymentChannel,
+        user_id: int,
         *,
         note: str | None = None,
         metadata: Dict[str, str] | None = None,
@@ -44,13 +45,14 @@ class SalespersonA2AClient(BaseA2AClient):
         """Create an order by preparing the payload and forwarding it to A2A."""
         try:
             self.logger.debug(
-                "create_order start (items=%d, channel=%s, note=%s, has_metadata=%s)",
-                len(items), channel.value, bool(note), bool(metadata),
+                "create_order start (items=%d, channel=%s, user_id=%s, note=%s, has_metadata=%s)",
+                len(items), channel.value, user_id, bool(note), bool(metadata),
             )
             payload = await prepare_create_order_payload(
                 items,
                 customer,
                 channel,
+                user_id,
                 note=note,
                 metadata=metadata,
             )
@@ -111,12 +113,29 @@ async def _create_payment_order(
     note: str,
     metadata: Dict[str, str],
 ) -> Dict[str, Any]:
+    """Create a payment order for the customer.
+
+    Args:
+        items: List of items with name/sku and quantity
+        customer: Customer information
+        channel: Payment channel (redirect or qr)
+        note: Order note
+        metadata: Additional metadata
+
+    Note:
+        user_id is automatically retrieved from the execution context.
+    """
+    from src.my_agent.salesperson_agent.context import get_current_user_id
+
+    user_id = get_current_user_id()
+
     async with SalespersonA2AClient() as client:
-        client.logger.debug("tool _create_payment_order invoked (items=%d, channel=%s)", len(items), channel)
+        client.logger.debug("tool _create_payment_order invoked (items=%d, channel=%s, user_id=%s)", len(items), channel, user_id)
         response = await client.create_order(
             items=items,
             customer=customer,
             channel=PaymentChannel(channel),
+            user_id=user_id,
             note=note,
             metadata=metadata,
         )

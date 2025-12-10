@@ -23,7 +23,6 @@ def _map_order_status_to_payment_status(order_status: OrderStatus) -> PaymentSta
     mapping = {
         OrderStatus.PENDING: PaymentStatus.PENDING,
         OrderStatus.SUCCESS: PaymentStatus.SUCCESS,
-        OrderStatus.PAID: PaymentStatus.SUCCESS,
         OrderStatus.FAILED: PaymentStatus.FAILED,
         OrderStatus.CANCELLED: PaymentStatus.CANCELLED,
     }
@@ -53,7 +52,7 @@ async def _stub_paygate_create(
 async def _stub_paygate_query(order_id: int) -> dict[str, Any]:
     return {
         "order_id": order_id,
-        "status": "PAID",
+        "status": "SUCCESS",
         "transaction_id": f"VNP{order_id}_{int(time.time())}",
         "paid_amount": None,
         "gateway_response_code": "00"

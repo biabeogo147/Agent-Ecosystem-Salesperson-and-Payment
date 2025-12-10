@@ -13,9 +13,29 @@ class SalespersonNotification(BaseModel):
     """Schema for salesperson notification message from Payment Agent."""
     order_id: int
     context_id: str
-    user_id: Optional[int] = None
-    conversation_id: Optional[int] = None
+    user_id: int
+    conversation_id: int
     timestamp: str
+
+
+def format_notification_message(status: str, order_id: int) -> str:
+    """
+    Format payment notification as human-readable message.
+
+    Args:
+        status: Payment status (SUCCESS, CANCELLED, FAILED, PENDING)
+        order_id: Order ID
+
+    Returns:
+        Formatted message string
+    """
+    status_messages = {
+        "SUCCESS": f"Đơn hàng #{order_id} đã thanh toán thành công!",
+        "CANCELLED": f"Đơn hàng #{order_id} đã bị hủy.",
+        "FAILED": f"Thanh toán đơn hàng #{order_id} thất bại.",
+        "PENDING": f"Đơn hàng #{order_id} đang chờ thanh toán.",
+    }
+    return status_messages.get(status, f"Đơn hàng #{order_id}: {status}")
 
 
 async def process_notification(notification_data: dict) -> bool:
@@ -25,7 +45,10 @@ async def process_notification(notification_data: dict) -> bool:
     Flow:
     1. Parse notification message (order_id, context_id, user_id, conversation_id)
     2. Query order status via A2A (payment.query-status)
-    3. Publish notification to Redis for WebSocket Server to consume
+    3. Save notification as ASSISTANT message to DB
+    4. Update Redis conversation cache
+    5. Inject into ADK session (if active)
+    6. Publish notification to Redis for WebSocket Server to consume
 
     Args:
         notification_data: Notification message data from Redis
@@ -62,6 +85,58 @@ async def process_notification(notification_data: dict) -> bool:
         else:
             logger.info(f"Payment status '{status}' for order {notification.order_id}")
 
+        notification_message = format_notification_message(status, notification.order_id)
+
+        # 1. Save to DB as ASSISTANT message
+        if notification.conversation_id:
+            try:
+                from src.data.postgres.message_ops import save_message
+                from src.data.models.enum.message_role import MessageRole
+
+                await save_message(
+                    conversation_id=notification.conversation_id,
+                    role=MessageRole.ASSISTANT,
+                    content=notification_message
+                )
+                logger.info(f"Saved notification to DB: conv={notification.conversation_id}")
+            except Exception as e:
+                logger.error(f"Failed to save notification to DB: {e}")
+
+            # 2. Update Redis conversation cache
+            try:
+                from src.data.redis.conversation_cache import append_single_message_to_cache
+
+                await append_single_message_to_cache(
+                    conversation_id=notification.conversation_id,
+                    role="assistant",
+                    content=notification_message
+                )
+                logger.info(f"Updated Redis cache: conv={notification.conversation_id}")
+            except Exception as e:
+                logger.error(f"Failed to update Redis cache: {e}")
+
+        # 3. Inject into ADK session (if active)
+        if notification.user_id and notification.conversation_id:
+            try:
+                from src.my_agent.salesperson_agent.routers.agent_router import get_session_service
+                from src.my_agent.salesperson_agent.services import inject_single_message_to_session
+
+                session_service = get_session_service()
+                if session_service:
+                    injected = await inject_single_message_to_session(
+                        session_service=session_service,
+                        user_id=notification.user_id,
+                        conversation_id=notification.conversation_id,
+                        message=notification_message
+                    )
+                    if injected:
+                        logger.info(f"Injected notification to ADK session: conv={notification.conversation_id}")
+                    else:
+                        logger.debug(f"No active ADK session for injection: conv={notification.conversation_id}")
+            except Exception as e:
+                logger.error(f"Failed to inject to ADK session: {e}")
+
+        # 4. Publish to WebSocket for browser notification
         message = {
             "type": "payment_status",
             "order_id": notification.order_id,
@@ -73,7 +148,7 @@ async def process_notification(notification_data: dict) -> bool:
         }
 
         from src.data.redis.connection import redis_connection
-        
+
         try:
             redis = await redis_connection.get_client()
             await redis.publish(

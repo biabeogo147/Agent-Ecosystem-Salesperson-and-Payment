@@ -91,6 +91,48 @@ async def append_to_cached_history(
         logger.error(f"Failed to append to cached history: {e}")
 
 
+async def append_single_message_to_cache(
+    conversation_id: int,
+    role: str,
+    content: str,
+    max_messages: int = 40
+) -> None:
+    """
+    Append a single message to cached history.
+
+    Used for injecting system notifications or external events
+    without a corresponding user/assistant pair.
+
+    Args:
+        conversation_id: Integer ID of conversation
+        role: Message role ("user", "assistant", or "system")
+        content: Message content
+        max_messages: Maximum messages to keep in cache
+    """
+    logger = get_current_logger()
+    try:
+        redis = await redis_connection.get_client()
+        cache_key = CacheKeys.conversation_history(conversation_id)
+
+        # Get existing history
+        data = await redis.get(cache_key)
+        history = json.loads(data) if data else []
+
+        # Append new message
+        history.append({"role": role, "content": content})
+
+        # Keep only last N messages
+        if len(history) > max_messages:
+            history = history[-max_messages:]
+
+        # Save back with TTL refresh
+        await redis.setex(cache_key, TTL.CONVERSATION_HISTORY, json.dumps(history))
+        logger.debug(f"Appended single message to cache for {conversation_id}: role={role}")
+
+    except Exception as e:
+        logger.error(f"Failed to append single message to cache: {e}")
+
+
 async def delete_cached_history(conversation_id: int) -> bool:
     """
     Delete cached conversation history.

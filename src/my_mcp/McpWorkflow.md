@@ -152,7 +152,7 @@ Queries the current status of an order.
   "status": "success",
   "data": {
     "id": 123,
-    "status": "paid",
+    "status": "SUCCESS",
     "updated_at": "..."
   }
 }

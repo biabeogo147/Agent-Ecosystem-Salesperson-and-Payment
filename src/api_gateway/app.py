@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.config import API_GATEWAY_HOST, API_GATEWAY_PORT
-from src.api_gateway.routers import ws_router, auth_router
+from src.api_gateway.routers import ws_router, auth_router, conversation_router
 from src.api_gateway.services import start_notification_receiver
 
 
@@ -53,6 +53,7 @@ app.add_middleware(
 )
 
 app.include_router(auth_router, prefix="/auth")
+app.include_router(conversation_router, prefix="/conversations")
 app.include_router(ws_router)
 
 

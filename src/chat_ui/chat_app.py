@@ -79,7 +79,7 @@ async def proxy_conversations(
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(
-                f"{API_GATEWAY_URL}/auth/conversations",
+                f"{API_GATEWAY_URL}/conversations",
                 params={"limit": limit},
                 headers={"Authorization": authorization},
                 timeout=10.0
@@ -103,7 +103,7 @@ async def proxy_conversation_messages(
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(
-                f"{API_GATEWAY_URL}/auth/conversations/{conversation_id}/messages",
+                f"{API_GATEWAY_URL}/conversations/{conversation_id}/messages",
                 params={"limit": limit},
                 headers={"Authorization": authorization},
                 timeout=10.0

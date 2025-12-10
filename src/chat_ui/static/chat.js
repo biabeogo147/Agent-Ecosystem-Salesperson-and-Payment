@@ -7,7 +7,6 @@ let ws = null;
 let conversations = [];
 let apiGateway = 'localhost:8084';
 let wsApiGateway = `ws://${apiGateway}`;
-let httpApiGateway = `http://${apiGateway}`;
 
 // DOM Elements
 const chatMessages = document.getElementById('chat-messages');
@@ -58,8 +57,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // TODO: có lỗi, một mở một tab nhưng lại có 2 connections trên cùng 1 sessionId, khi đẩy notification sẽ bị nhận 2 lần nếu 2 connection trên cùng 1 tab.
-// TODO: xem các hàm không cần thiết
-// TODO: viết thêm chat_app.py để gọi API sang service khác chứ không gọi trực tiếp trong JS
 
 /**
  * Update conversation ID display
@@ -211,12 +208,6 @@ function connectWebSocket() {
                         console.log('Streaming token:', message.token);
                         break;
 
-                    case 'payment_status':
-                        // Payment notification
-                        console.log('Payment status update:', message);
-                        handleNotification(message);
-                        break;
-
                     case 'error':
                         console.error('WebSocket error message:', message);
                         hideTypingIndicator();
@@ -230,10 +221,6 @@ function connectWebSocket() {
 
                     default:
                         console.warn('Unknown message type:', message.type);
-                        // Try to handle as notification for backward compatibility
-                        if (message.order_id) {
-                            handleNotification(message);
-                        }
                 }
             } catch (error) {
                 console.error('Failed to parse message:', error);
@@ -434,79 +421,6 @@ function hideTypingIndicator() {
 }
 
 /**
- * Handle incoming notification
- */
-function handleNotification(notification) {
-    console.log('Handling notification:', notification);
-
-    // Show toast
-    const statusText = getStatusText(notification.status);
-    showToast(`Payment ${statusText}: Order ${notification.order_id}`, getStatusType(notification.status));
-
-    // Also add to chat as a system message
-    const chatMessage = `Payment Update: Order ${notification.order_id} - ${statusText}`;
-    addSystemMessage(chatMessage, notification.status);
-}
-
-/**
- * Add system message to chat
- */
-function addSystemMessage(text, status) {
-    const messageDiv = document.createElement('div');
-    messageDiv.className = 'message agent';
-
-    const contentDiv = document.createElement('div');
-    contentDiv.className = 'message-content';
-    contentDiv.style.background = getStatusColor(status);
-    contentDiv.style.color = 'white';
-    contentDiv.innerHTML = `<strong>${text}</strong>`;
-
-    messageDiv.appendChild(contentDiv);
-    chatMessages.appendChild(messageDiv);
-
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-
-/**
- * Get status text in Vietnamese
- */
-function getStatusText(status) {
-    const statusMap = {
-        'SUCCESS': 'Thanh toan thanh cong',
-        'CANCELLED': 'Da huy',
-        'FAILED': 'That bai',
-        'PENDING': 'Dang xu ly'
-    };
-    return statusMap[status] || status;
-}
-
-/**
- * Get status type for toast
- */
-function getStatusType(status) {
-    const typeMap = {
-        'SUCCESS': 'success',
-        'CANCELLED': 'warning',
-        'FAILED': 'error',
-        'PENDING': 'warning'
-    };
-    return typeMap[status] || 'info';
-}
-
-/**
- * Get status color
- */
-function getStatusColor(status) {
-    const colorMap = {
-        'SUCCESS': '#22c55e',
-        'CANCELLED': '#ef4444',
-        'FAILED': '#ef4444',
-        'PENDING': '#f59e0b'
-    };
-    return colorMap[status] || '#6b7280';
-}
-
-/**
  * Show toast notification
  */
 function showToast(message, type = 'info') {
@@ -562,7 +476,7 @@ function startNewSession() {
  */
 async function loadConversations() {
     try {
-        const response = await fetch(`${httpApiGateway}/auth/conversations?limit=20`, {
+        const response = await fetch('/api/conversations?limit=20', {
             headers: getAuthHeaders()
         });
 
@@ -645,7 +559,7 @@ async function loadConversationHistory(convId) {
     `;
 
     try {
-        const response = await fetch(`${httpApiGateway}/auth/conversations/${convId}/messages?limit=50`, {
+        const response = await fetch(`/api/conversations/${convId}/messages?limit=50`, {
             headers: getAuthHeaders()
         });
 

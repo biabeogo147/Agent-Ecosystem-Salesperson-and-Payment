@@ -5,7 +5,7 @@ const passwordInput = document.getElementById('password');
 const loginBtn = document.getElementById('login-btn');
 const errorMessage = document.getElementById('error-message');
 
-const authApiUrl = 'http://localhost:8084';
+const authApiUrl = '';
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
@@ -40,7 +40,7 @@ async function handleLogin(event) {
     hideError();
 
     try {
-        const authUrl = `${authApiUrl}/auth/login`;
+        const authUrl = `${authApiUrl}/api/login`;
         console.log('Logging in to:', authUrl);
 
         const response = await fetch(authUrl, {

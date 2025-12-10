@@ -146,23 +146,35 @@ async def _create_payment_order(
     return response.to_dict()
 
 
-# TODO: lấy context_id ở đâu nếu session inject vào không có
-async def query_payment_order_status(
-    context_id: str,
-    order_id: Optional[int] = None
-) -> dict[str, Any]:
-    """Query payment order status.
+async def query_payment_order_status(order_id: int) -> dict[str, Any]:
+    """Query payment order status directly from payment gateway.
+
+    Use when: User confirms that order status from DB is incorrect.
+    This tool automatically retrieves context_id from order detail via MCP.
 
     Args:
-        context_id: Correlation ID of the original payment request
-        order_id: Optional specific order ID to query (if not provided, returns all orders for context_id)
+        order_id: Order ID to query
     """
+    from src.my_agent.salesperson_agent.salesperson_mcp_client import get_salesperson_mcp_client
+    from src.my_agent.salesperson_agent import salesperson_agent_logger as logger
+
+    logger.debug("tool query_payment_order_status invoked (order_id=%s)", order_id)
+
+    # 1. Get order detail from MCP to retrieve context_id
+    mcp_client = get_salesperson_mcp_client()
+    order_response = await mcp_client.get_order_status(order_id=order_id)
+
+    if order_response.get("status") != "SUCCESS":
+        logger.warning("Order #%s not found when querying payment status", order_id)
+        return {"error": f"Order #{order_id} not found"}
+
+    context_id = order_response["data"]["context_id"]
+    logger.debug("Retrieved context_id=%s for order_id=%s", context_id, order_id)
+
+    # 2. Query payment gateway via A2A
     async with SalespersonA2AClient() as client:
-        client.logger.debug(
-            "tool _query_payment_order_status invoked (context_id=%s, order_id=%s)",
-            context_id, order_id
-        )
         response = await client.query_status(context_id, order_id=order_id)
+
     return response.to_dict()
 
 

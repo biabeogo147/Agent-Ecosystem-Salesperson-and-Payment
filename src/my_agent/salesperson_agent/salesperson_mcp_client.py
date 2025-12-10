@@ -53,6 +53,13 @@ class SalespersonMcpClient(BaseMcpClient):
         )
         return self._ensure_response_format(payload, tool="search_product_documents")
 
+    async def get_order_status(self, *, order_id: int) -> dict[str, Any]:
+        """Get order details via the MCP ``get_order_status`` tool."""
+        payload = await self._call_tool_json(
+            "get_order_status", {"order_id": order_id}
+        )
+        return self._ensure_response_format(payload, tool="get_order_status")
+
 _client: SalespersonMcpClient | None = None
 
 
@@ -84,6 +91,19 @@ async def prepare_search_product_documents(query: str) -> Dict[str, Any]:
     return await client.search_product_documents(query=query)
 
 
+async def prepare_get_order_status(order_id: int) -> Dict[str, Any]:
+    """
+    Lấy chi tiết đơn hàng theo order_id.
+    Status đã được cập nhật từ payment callback.
+
+    Args:
+        order_id: ID của đơn hàng cần kiểm tra
+    """
+    client = get_salesperson_mcp_client()
+    return await client.get_order_status(order_id=order_id)
+
+
 prepare_find_product_tool = FunctionTool(prepare_find_product)
 prepare_calc_shipping_tool = FunctionTool(prepare_calc_shipping)
 prepare_search_product_documents_tool = FunctionTool(prepare_search_product_documents)
+prepare_get_order_status_tool = FunctionTool(prepare_get_order_status)

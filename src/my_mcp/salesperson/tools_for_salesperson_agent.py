@@ -14,6 +14,7 @@ from src.data.redis.cache_ops import get_cached_value, set_cached_value
 from src.data.redis.cache_keys import CacheKeys, TTL
 from src.data.elasticsearch.search_ops import find_products_by_text
 from src.data.postgres.product_ops import find_product_by_sku, update_product_stock
+from src.data.postgres.order_ops import get_order_by_id
 from src.data.milvus.connection import get_client_instance
 
 
@@ -65,6 +66,33 @@ async def reserve_stock(sku: str, quantity: int) -> str:
     result = await update_product_stock(sku, product.stock - quantity)
 
     return ResponseFormat(data=result).to_json()
+
+
+async def get_order_status(order_id: int) -> str:
+    """
+    Get order details by order_id.
+    Status is already updated from payment callback.
+
+    Args:
+        order_id: ID of the order to query
+
+    Returns:
+        Order details including status, items, total_amount, etc.
+    """
+    salesperson_mcp_logger.info(f"Get order status: order_id={order_id}")
+
+    order = await get_order_by_id(order_id)
+
+    if not order:
+        salesperson_mcp_logger.warning(f"Order #{order_id} not found")
+        return ResponseFormat(
+            status=Status.ORDER_NOT_FOUND,
+            data=None,
+            message=f"Không tìm thấy đơn hàng #{order_id}"
+        ).to_json()
+
+    salesperson_mcp_logger.info(f"Order #{order_id} found, status={order.status.value}")
+    return ResponseFormat(data=order.to_dict()).to_json()
 
 
 async def search_product_documents(query: str, product_sku: str, limit: int = 5) -> str:
@@ -130,12 +158,14 @@ salesperson_mcp_logger.info("Initializing ADK tool for salesperson...")
 find_product_tool = FunctionTool(find_product)
 calc_shipping_tool = FunctionTool(calc_shipping)
 reserve_stock_tool = FunctionTool(reserve_stock)
+get_order_status_tool = FunctionTool(get_order_status)
 search_product_documents_tool = FunctionTool(search_product_documents)
 
 ADK_TOOLS_FOR_SALESPERSON = {
     find_product_tool.name: find_product_tool,
     calc_shipping_tool.name: calc_shipping_tool,
     reserve_stock_tool.name: reserve_stock_tool,
+    get_order_status_tool.name: get_order_status_tool,
     search_product_documents_tool.name: search_product_documents_tool,
 }
 

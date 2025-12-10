@@ -57,12 +57,21 @@ Primary responsibilities
          "metadata": {"order_source": "website"}
        }
 
-5. Tool: query_payment_order_status
-   - Purpose: Query the current status of an existing payment order.
+5. Tool: prepare_get_order_status
+   - Purpose: Get detail order from database (fast, for first step).
+   - Use when: User wants to check order status.
    - Input parameters:
-       context_id (string): unique identifier of the order context.
+       order_id (int): ID of the order to check.
    - Example:
-       {"context_id": "123e4567-e89b-12d3-a456-426614174000"}
+       {"order_id": 5}
+
+6. Tool: query_payment_order_status
+   - Purpose: Query payment gateway for the latest order status (more accurate, for confirmation).
+   - Use when: User confirm that order status which differs from database info.
+   - Input parameters:
+       order_id (int): ID of the order to check.
+   - Example:
+       {"order_id": 5}
 
 Communication rules
 - Always explain next steps to the customer. If the payment agent returns next_action.type = REDIRECT, share the link; if SHOW_QR, provide clear scan instructions.

@@ -72,32 +72,54 @@ def get_salesperson_mcp_client() -> SalespersonMcpClient:
 
 
 async def prepare_find_product(query: str) -> Dict[str, Any]:
+    """Look up products in the catalog by keyword or SKU.
+
+    Args:
+        query: Product name, keyword, or SKU to search for.
+    """
     client = get_salesperson_mcp_client()
     return await client.find_product(query=query)
 
 
 async def prepare_calc_shipping(weight: float, distance: float) -> Dict[str, Any]:
+    """Estimate shipping cost based on package weight and distance.
+
+    Args:
+        weight: Total package weight in kilograms.
+        distance: Shipping distance in kilometers.
+    """
     client = get_salesperson_mcp_client()
     return await client.calc_shipping(weight=weight, distance=distance)
 
 
 async def prepare_reserve_stock(sku: str, quantity: int) -> Dict[str, Any]:
+    """Reserve stock for a product.
+
+    Args:
+        sku: Product SKU.
+        quantity: Quantity to reserve.
+    """
     client = get_salesperson_mcp_client()
     return await client.reserve_stock(sku=sku, quantity=quantity)
 
 
 async def prepare_search_product_documents(query: str) -> Dict[str, Any]:
+    """Search products based on user description using vector search.
+
+    Args:
+        query: Natural language description of the product to search for.
+    """
     client = get_salesperson_mcp_client()
     return await client.search_product_documents(query=query)
 
 
 async def prepare_get_order_status(order_id: int) -> Dict[str, Any]:
-    """
-    Lấy chi tiết đơn hàng theo order_id.
-    Status đã được cập nhật từ payment callback.
+    """Get order details from database. Status is updated from payment callback.
+
+    Use this as the first step when user asks about order status.
 
     Args:
-        order_id: ID của đơn hàng cần kiểm tra
+        order_id: ID of the order to check.
     """
     client = get_salesperson_mcp_client()
     return await client.get_order_status(order_id=order_id)

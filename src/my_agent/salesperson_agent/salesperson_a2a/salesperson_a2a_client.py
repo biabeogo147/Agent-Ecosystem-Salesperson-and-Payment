@@ -115,17 +115,16 @@ async def _create_payment_order(
     note: str,
     metadata: Dict[str, str],
 ) -> Dict[str, Any]:
-    """Create a payment order for the customer.
+    """Create a payment order with selected items and customer information.
 
     Args:
-        items: List of items with name/sku and quantity
-        customer: Customer information
-        channel: Payment channel (redirect or qr)
-        note: Order note
-        metadata: Additional metadata
-
-    Note:
-        user_id is automatically retrieved from the execution context.
+        items: List of items, each with "sku" or "name" and "quantity".
+            Example: [{"sku": "ABC123", "quantity": 2}]
+        customer: Customer info with name, email, phone, shipping_address.
+            Example: {"name": "Alice", "email": "alice@example.com", "phone": "0123456789", "shipping_address": "123 Main St, Hanoi"}
+        channel: Payment channel - "redirect" for bank redirect, "qr" for QR code.
+        note: Additional note for the order.
+        metadata: Extra metadata as key/value pairs.
     """
     from src.my_agent.salesperson_agent.context import get_current_user_id, get_current_conversation_id
 

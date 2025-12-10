@@ -17,6 +17,7 @@ from src.my_agent.payment_agent.payment_callback_subscriber import (
 from src.utils.logger import set_app_context, AppLogger
 
 
+# TODO: Xem lại logger, nó vẫn ghi vào default logger chứ không phải logger của app
 class AppContextMiddleware(BaseHTTPMiddleware):
     """Middleware to set app logger context for all requests."""
 

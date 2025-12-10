@@ -4,7 +4,7 @@ from src.data.models import Base
 
 from src.data.models.enum.order_status import OrderStatus
 
-
+# TODO: Thêm customer info
 class Order(Base):
     __tablename__ = "order"
 

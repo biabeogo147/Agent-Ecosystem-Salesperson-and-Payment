@@ -53,7 +53,6 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# TODO: Thêm api lấy agent-card
 app.include_router(agent_router)
 
 

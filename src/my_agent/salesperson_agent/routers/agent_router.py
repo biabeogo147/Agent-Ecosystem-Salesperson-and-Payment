@@ -1,11 +1,15 @@
 import asyncio
 
+from a2a.types import AgentCard, AgentCapabilities
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi.responses import JSONResponse
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai.types import Content, Part
 
-from src.my_agent.salesperson_agent.agent import root_agent
+from my_agent.my_a2a_common.constants import JSON_MEDIA_TYPE
+from src.config import SALESPERSON_AGENT_APP_URL
+from src.my_agent.salesperson_agent.agent import root_agent, _DESCRIPTION
 from src.my_agent.salesperson_agent import salesperson_agent_logger as logger
 from src.my_agent.salesperson_agent.services import (
     recover_session_from_storage,
@@ -14,12 +18,40 @@ from src.my_agent.salesperson_agent.services import (
     save_chat_and_update_title,
 )
 from src.my_agent.salesperson_agent.context import current_user_id, current_conversation_id
+from src.my_agent.salesperson_agent.salesperson_a2a.salesperson_agent_skills import SALESPERSON_SKILLS
 from src.data.postgres.conversation_ops import create_conversation
 
 # ADK app name for session service
 APP_NAME = "salesperson-agent"
 
 agent_router = APIRouter(tags=["Agent"])
+
+
+def build_salesperson_agent_card() -> AgentCard:
+    """Build the A2A agent card for the salesperson agent."""
+    capabilities = AgentCapabilities(
+        streaming=True,
+        push_notifications=False,
+        state_transition_history=False,
+    )
+
+    return AgentCard(
+        name="Salesperson Agent",
+        description=_DESCRIPTION,
+        version="1.0.0",
+        url=SALESPERSON_AGENT_APP_URL,
+        default_input_modes=[JSON_MEDIA_TYPE],
+        default_output_modes=[JSON_MEDIA_TYPE],
+        capabilities=capabilities,
+        skills=SALESPERSON_SKILLS,
+    )
+
+
+@agent_router.get("/.well-known/agent-card.json")
+async def get_agent_card():
+    """Return the A2A agent card for this agent."""
+    agent_card = build_salesperson_agent_card()
+    return JSONResponse(content=agent_card.model_dump(mode="json"))
 
 # Session service reference (set by app.py)
 _session_service: InMemorySessionService | None = None

@@ -465,64 +465,6 @@ POST http://localhost:8081/
 Content-Type: application/json
 ```
 
-**Body (JSON-RPC 2.0):**
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": "req-abc-123",
-  "method": "message.send",
-  "params": {
-    "message": {
-      "message_id": "msg-uuid-1",
-      "role": "user",
-      "context_id": "payment-550e8400-e29b-41d4-a716-446655440000",
-      "parts": [
-        {
-          "root": {
-            "type": "TextPart",
-            "text": "Salesperson agent requests payment order creation"
-          }
-        },
-        {
-          "root": {
-            "type": "DataPart",
-            "data": {
-              "protocol": "A2A_V1",
-              "context_id": "payment-550e8400-e29b-41d4-a716-446655440000",
-              "action": "CREATE_ORDER",
-              "items": [
-                {
-                  "sku": "IPHONE15PRO",
-                  "name": "iPhone 15 Pro 256GB Titanium",
-                  "quantity": 1,
-                  "unit_price": 949.99,
-                  "currency": "USD"
-                }
-              ],
-              "customer": {
-                "name": "John Doe",
-                "email": "john@example.com",
-                "phone": "+1234567890",
-                "shipping_address": "123 Main St, Hanoi"
-              },
-              "channel": "redirect"
-            }
-          }
-        }
-      ]
-    },
-    "metadata": {
-      "task": {
-        "metadata": {
-          "skill_id": "payment.create-order"
-        }
-      }
-    }
-  }
-}
-```
-
 ---
 
 ### Payment Agent Processing
@@ -561,39 +503,6 @@ flowchart LR
     SalesReturn["Return to Salesperson Agent"]
 
     SalesPersonAgent --> |"A2A"| PaymentAgent --> |"MCP Tool Call"| MCPFlow --> |"MCP Response"| Finalize --> |"A2A"| SalesReturn
-```
-
-**A2A Response:**
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": "req-abc-123",
-  "result": {
-    "message": {
-      "role": "agent",
-      "parts": [
-        {
-          "root": {
-            "type": "DataPart",
-            "data": {
-              "context_id": "payment-550e8400-e29b-41d4-a716-446655440000",
-              "status": "PENDING",
-              "provider_name": "nganluong",
-              "order_id": "123",
-              "pay_url": "http://localhost:3000/checkout/123",
-              "expires_at": "2025-01-15T11:15:00Z",
-              "next_action": {
-                "type": "REDIRECT",
-                "url": "http://localhost:3000/checkout/123"
-              }
-            }
-          }
-        }
-      ]
-    }
-  }
-}
 ```
 
 ---
@@ -755,99 +664,6 @@ Sau khi xử lý callback, Payment Agent publish notification cho Salesperson Ag
 
 Salesperson Agent nhận notification từ Redis (chỉ có order_id + context_id), sau đó gọi A2A request đến Payment Agent để lấy **actual status** và chi tiết order:
 
-**A2A Request (JSON-RPC 2.0):**
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": "req-status-456",
-  "method": "message.send",
-  "params": {
-    "message": {
-      "message_id": "msg-uuid-status-1",
-      "role": "user",
-      "context_id": "payment-550e8400-e29b-41d4-a716-446655440000",
-      "parts": [
-        {
-          "root": {
-            "type": "TextPart",
-            "text": "Query payment status for context_id"
-          }
-        },
-        {
-          "root": {
-            "type": "DataPart",
-            "data": {
-              "protocol": "A2A_V1",
-              "context_id": "payment-550e8400-e29b-41d4-a716-446655440000",
-              "order_id": "123",
-              "from_agent": "salesperson_agent",
-              "to_agent": "payment_agent",
-              "action": "QUERY_STATUS"
-            }
-          }
-        }
-      ]
-    },
-    "metadata": {
-      "task": {
-        "metadata": {
-          "skill_id": "payment.query-status"
-        }
-      }
-    }
-  }
-}
-```
-
-**A2A Response (Success):**
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": "req-status-456",
-  "result": {
-    "message": {
-      "role": "agent",
-      "parts": [
-        {
-          "root": {
-            "type": "DataPart",
-            "data": {
-              "context_id": "payment-550e8400-e29b-41d4-a716-446655440000",
-              "status": "SUCCESS",
-              "provider_name": "vnpay",
-              "order_id": "123",
-              "transaction_id": "VNP14210123456789",
-              "order": {
-                "id": 123,
-                "context_id": "payment-550e8400-e29b-41d4-a716-446655440000",
-                "total_amount": 949.99,
-                "currency": "USD",
-                "status": "SUCCESS",
-                "items": [
-                  {
-                    "product_sku": "IPHONE15PRO",
-                    "product_name": "iPhone 15 Pro 256GB Titanium",
-                    "quantity": 1,
-                    "unit_price": 949.99
-                  }
-                ],
-                "created_at": "2025-01-15T11:00:00+00:00",
-                "updated_at": "2025-01-15T11:20:05+00:00"
-              },
-              "next_action": {
-                "type": "NONE"
-              }
-            }
-          }
-        }
-      ]
-    }
-  }
-}
-```
-
 ---
 
 #### Kết Quả: Agent Response to User
@@ -875,43 +691,6 @@ Salesperson Agent nhận notification từ Redis (chỉ có order_id + context_i
 **Case 2: Thanh toán bị hủy**
 
 **User returns via:** `http://localhost:3000/cancel?cid=payment-550e8400-...`
-
-**A2A Response (Cancelled):**
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": "req-status-789",
-  "result": {
-    "message": {
-      "role": "agent",
-      "parts": [
-        {
-          "root": {
-            "type": "DataPart",
-            "data": {
-              "context_id": "payment-550e8400-e29b-41d4-a716-446655440000",
-              "status": "CANCELLED",
-              "provider_name": "vnpay",
-              "order_id": "123",
-              "order": {
-                "id": 123,
-                "status": "CANCELLED",
-                "total_amount": 949.99,
-                "currency": "USD"
-              },
-              "next_action": {
-                "type": "ASK_USER",
-                "message": "Payment was cancelled. Would you like to try again?"
-              }
-            }
-          }
-        }
-      ]
-    }
-  }
-}
-```
 
 **Agent Response to User:**
 

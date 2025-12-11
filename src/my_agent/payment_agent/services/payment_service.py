@@ -98,10 +98,14 @@ async def query_gateway_status(task: Task) -> Message:
 
     client = get_payment_mcp_client()
     raw_response = await client.query_gateway_status(order_id=request.order_id)
+    order = raw_response.get("order", {})
+
+    logger.debug("MCP query_gateway_status raw_response: %s", raw_response)
 
     response = PaymentResponse(
         context_id=request.context_id,
-        status=PaymentStatus(raw_response.get("order", {}).get("status", "FAILED")),
+        order_id=order.get("id"),
+        status=PaymentStatus(order.get("status", "FAILED")),
     )
     validate_payment_response(
         response,

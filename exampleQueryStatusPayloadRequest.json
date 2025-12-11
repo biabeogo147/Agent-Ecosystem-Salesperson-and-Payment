@@ -1,0 +1,112 @@
+{
+  "jsonrpc": "2.0",
+  "id": "138ee424-9ef5-4bae-9d12-aa3e0eda1825",
+  "method": "message.send",
+  "params": {
+    "configuration": null,
+    "message": {
+      "contextId": "payment_c94d7c98a47a",
+      "extensions": null,
+      "kind": "message",
+      "messageId": "71ebc57e-dcd0-4ae8-adea-722af0399f00",
+      "metadata": null,
+      "parts": [
+        {
+          "kind": "text",
+          "metadata": {
+            "speaker": "salesperson_agent"
+          },
+          "text": "Salesperson checks the status of the existing payment order."
+        },
+        {
+          "kind": "data",
+          "metadata": null,
+          "data": {
+            "protocol": "my_a2a_common.v1",
+            "context_id": "payment_c94d7c98a47a",
+            "order_id": 12,
+            "from_agent": "salesperson_agent",
+            "to_agent": "payment_agent",
+            "action": "QUERY_STATUS"
+          }
+        }
+      ],
+      "referenceTaskIds": null,
+      "role": "user",
+      "taskId": null
+    },
+    "metadata": {
+      "task": {
+        "artifacts": [
+          {
+            "artifactId": "1cb94608-ce0b-4de6-8c36-644b001e122d",
+            "description": "Status lookup request for an existing payment context id.",
+            "extensions": null,
+            "metadata": null,
+            "name": "payment-status-request",
+            "parts": [
+              {
+                "kind": "data",
+                "metadata": null,
+                "data": {
+                  "protocol": "my_a2a_common.v1",
+                  "context_id": "payment_c94d7c98a47a",
+                  "order_id": 12,
+                  "from_agent": "salesperson_agent",
+                  "to_agent": "payment_agent",
+                  "action": "QUERY_STATUS"
+                }
+              }
+            ]
+          }
+        ],
+        "contextId": "payment_c94d7c98a47a",
+        "history": [
+          {
+            "contextId": "payment_c94d7c98a47a",
+            "extensions": null,
+            "kind": "message",
+            "messageId": "71ebc57e-dcd0-4ae8-adea-722af0399f00",
+            "metadata": null,
+            "parts": [
+              {
+                "kind": "text",
+                "metadata": {
+                  "speaker": "salesperson_agent"
+                },
+                "text": "Salesperson checks the status of the existing payment order."
+              },
+              {
+                "kind": "data",
+                "metadata": null,
+                "data": {
+                  "protocol": "my_a2a_common.v1",
+                  "context_id": "payment_c94d7c98a47a",
+                  "order_id": 12,
+                  "from_agent": "salesperson_agent",
+                  "to_agent": "payment_agent",
+                  "action": "QUERY_STATUS"
+                }
+              }
+            ],
+            "referenceTaskIds": null,
+            "role": "user",
+            "taskId": null
+          }
+        ],
+        "id": "bf850d77-8237-48a9-b8e9-0e2857b8edfd",
+        "kind": "task",
+        "metadata": {
+          "skill_id": "payment.query-status",
+          "context_id": "payment_c94d7c98a47a",
+          "order_id": 12
+        },
+        "status": {
+          "message": null,
+          "state": "submitted",
+          "timestamp": null
+        }
+      }
+    }
+  }
+}

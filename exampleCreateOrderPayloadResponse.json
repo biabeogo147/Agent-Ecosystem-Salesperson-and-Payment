@@ -1,0 +1,42 @@
+{
+  "jsonrpc": "2.0",
+  "id": "t34350b6-67ed-40bf-8e62-6b68542d4b37",
+  "result": {
+    "contextId": "payment_69d383ace443",
+    "extensions": null,
+    "kind": "message",
+    "messageId": "731370b6-67ed-40bf-8e62-6b6817894b37",
+    "metadata": null,
+    "parts": [
+      {
+        "kind": "text",
+        "metadata": {
+          "speaker": "payment_agent"
+        },
+        "text": "Payment agent replies with status PENDING."
+      },
+      {
+        "kind": "data",
+        "metadata": null,
+        "data": {
+          "context_id": "payment_69d383ace443",
+          "status": "PENDING",
+          "provider_name": "nganluong",
+          "order_id": 13,
+          "pay_url": "http://localhost:8083/checkout/13",
+          "qr_code_url": null,
+          "expires_at": "2025-12-11T14:49:37Z",
+          "next_action": {
+            "type": "REDIRECT",
+            "expires_at": "2025-12-11T14:49:37Z",
+            "url": "http://localhost:8083/checkout/13",
+            "qr_code_url": null
+          }
+        }
+      }
+    ],
+    "referenceTaskIds": null,
+    "role": "agent",
+    "taskId": null
+  }
+}

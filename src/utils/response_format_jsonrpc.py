@@ -1,4 +1,6 @@
 import json
+import uuid
+
 from src.utils.status import Status
 from starlette.responses import Response, JSONResponse
 
@@ -12,7 +14,7 @@ class ResponseFormatJSONRPC:
             data: any = None
     ):
         self.jsonrpc = jsonrpc
-        self.id = id
+        self.id = id or str(uuid.uuid4())
         self.status = status
         self.message = message
         self.data = data

@@ -1,0 +1,42 @@
+{
+  "jsonrpc": "2.0",
+  "id": "f7d93b91-1b24-4f7b-b326-25b58ace0727",
+  "result": {
+    "contextId": "payment_69d383ace443",
+    "extensions": null,
+    "kind": "message",
+    "messageId": "a1ae992f-494e-42fe-b6fe-2a293a19fad2",
+    "metadata": null,
+    "parts": [
+      {
+        "kind": "text",
+        "metadata": {
+          "speaker": "payment_agent"
+        },
+        "text": "Payment agent replies with status SUCCESS."
+      },
+      {
+        "kind": "data",
+        "metadata": null,
+        "data": {
+          "context_id": "payment_69d383ace443",
+          "status": "SUCCESS",
+          "provider_name": null,
+          "order_id": 13,
+          "pay_url": null,
+          "qr_code_url": null,
+          "expires_at": null,
+          "next_action": {
+            "type": "NONE",
+            "expires_at": null,
+            "url": null,
+            "qr_code_url": null
+          }
+        }
+      }
+    ],
+    "referenceTaskIds": null,
+    "role": "agent",
+    "taskId": null
+  }
+}

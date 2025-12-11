@@ -2,7 +2,7 @@ from google.adk.agents import Agent, LlmAgent
 from google.adk.models.lite_llm import LiteLlm
 
 from src.config import *
-from src.my_agent.payment_agent.payment_mcp_client import create_order_tool, query_order_status_tool, query_gateway_status_tool
+from src.my_agent.payment_agent.payment_mcp_client import create_order_tool, query_gateway_status_tool
 
 """
 This module is only used for testing payment directly from adk web without going through salesperson agent.
@@ -26,7 +26,6 @@ def gemini_payment_agent() -> Agent:
         instruction=_INSTRUCTION,
         tools=[
             create_order_tool,
-            query_order_status_tool,
             query_gateway_status_tool
         ]
     )
@@ -44,7 +43,6 @@ def llm_payment_agent() -> LlmAgent:
         instruction=_INSTRUCTION,
         tools=[
             create_order_tool,
-            query_order_status_tool,
             query_gateway_status_tool
         ]
     )

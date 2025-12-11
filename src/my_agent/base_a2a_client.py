@@ -60,7 +60,9 @@ class BaseA2AClient:
 
         self.logger.info("POST message.send (id=%s) -> %s%s", rid, self._base_url, self._endpoint_path)
         try:
+            self.logger.debug("Sending JSON-RPC request (payload=%s)", payload)
             response = await self._client.post(self._endpoint_path, json=payload)
+            self.logger.debug("Received HTTP response (playload=%s)", response.content)
         except httpx.RequestError as exc:
             self.logger.error("HTTP request failed (id=%s): %s", rid, exc)
             raise

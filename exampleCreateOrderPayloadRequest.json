@@ -1,0 +1,168 @@
+{
+  "jsonrpc": "2.0",
+  "id": "61c40f95-b26a-40d8-a61e-cc689066dc4b",
+  "method": "message.send",
+  "params": {
+    "configuration": null,
+    "message": {
+      "contextId": "payment_c94d7c98a47a",
+      "extensions": null,
+      "kind": "message",
+      "messageId": "128b4a7e-358c-4474-8401-d7a51b49a151",
+      "metadata": null,
+      "parts": [
+        {
+          "kind": "text",
+          "metadata": {
+            "speaker": "salesperson_agent"
+          },
+          "text": "Salesperson asks the payment agent to create an order."
+        },
+        {
+          "kind": "data",
+          "metadata": null,
+          "data": {
+            "protocol": "my_a2a_common.v1",
+            "context_id": "payment_c94d7c98a47a",
+            "from_agent": "salesperson_agent",
+            "to_agent": "payment_agent",
+            "action": "CREATE_ORDER",
+            "items": [
+              {
+                "sku": "IPHONE15PRO",
+                "name": "iPhone 15 Pro 256GB Titanium",
+                "quantity": 1,
+                "unit_price": 999.99,
+                "currency": "USD"
+              }
+            ],
+            "customer": {
+              "name": "bia",
+              "email": "biabeogo147@gmail.com",
+              "phone": "0129345656",
+              "shipping_address": "Hà Nội"
+            },
+            "channel": "redirect",
+            "note": "Người mua muốn mua iPhone 15",
+            "user_id": 2,
+            "conversation_id": 10,
+            "metadata": {}
+          }
+        }
+      ],
+      "referenceTaskIds": null,
+      "role": "user",
+      "taskId": null
+    },
+    "metadata": {
+      "task": {
+        "artifacts": [
+          {
+            "artifactId": "80b288f6-2720-450f-9783-0bf695b30ee9",
+            "description": "Structured payment order request sent by the salesperson agent.",
+            "extensions": null,
+            "metadata": null,
+            "name": "payment-request",
+            "parts": [
+              {
+                "kind": "data",
+                "metadata": null,
+                "data": {
+                  "protocol": "my_a2a_common.v1",
+                  "context_id": "payment_c94d7c98a47a",
+                  "from_agent": "salesperson_agent",
+                  "to_agent": "payment_agent",
+                  "action": "CREATE_ORDER",
+                  "items": [
+                    {
+                      "sku": "IPHONE15PRO",
+                      "name": "iPhone 15 Pro 256GB Titanium",
+                      "quantity": 1,
+                      "unit_price": 999.99,
+                      "currency": "USD"
+                    }
+                  ],
+                  "customer": {
+                    "name": "bia",
+                    "email": "biabeogo147@gmail.com",
+                    "phone": "0129345656",
+                    "shipping_address": "Hà Nội"
+                  },
+                  "channel": "redirect",
+                  "note": "Người mua muốn mua iPhone 15",
+                  "user_id": 2,
+                  "conversation_id": 10,
+                  "metadata": {}
+                }
+              }
+            ]
+          }
+        ],
+        "contextId": "payment_c94d7c98a47a",
+        "history": [
+          {
+            "contextId": "payment_c94d7c98a47a",
+            "extensions": null,
+            "kind": "message",
+            "messageId": "128b4a7e-358c-4474-8401-d7a51b49a151",
+            "metadata": null,
+            "parts": [
+              {
+                "kind": "text",
+                "metadata": {
+                  "speaker": "salesperson_agent"
+                },
+                "text": "Salesperson asks the payment agent to create an order."
+              },
+              {
+                "kind": "data",
+                "metadata": null,
+                "data": {
+                  "protocol": "my_a2a_common.v1",
+                  "context_id": "payment_c94d7c98a47a",
+                  "from_agent": "salesperson_agent",
+                  "to_agent": "payment_agent",
+                  "action": "CREATE_ORDER",
+                  "items": [
+                    {
+                      "sku": "IPHONE15PRO",
+                      "name": "iPhone 15 Pro 256GB Titanium",
+                      "quantity": 1,
+                      "unit_price": 999.99,
+                      "currency": "USD"
+                    }
+                  ],
+                  "customer": {
+                    "name": "bia",
+                    "email": "biabeogo147@gmail.com",
+                    "phone": "0129345656",
+                    "shipping_address": "Hà Nội"
+                  },
+                  "channel": "redirect",
+                  "note": "Người mua muốn mua iPhone 15",
+                  "user_id": 2,
+                  "conversation_id": 10,
+                  "metadata": {}
+                }
+              }
+            ],
+            "referenceTaskIds": null,
+            "role": "user",
+            "taskId": null
+          }
+        ],
+        "id": "ef228d1b-5892-4c56-bdb0-f70e0101837c",
+        "kind": "task",
+        "metadata": {
+          "skill_id": "payment.create-order",
+          "context_id": "payment_c94d7c98a47a"
+        },
+        "status": {
+          "message": null,
+          "state": "submitted",
+          "timestamp": null
+        }
+      }
+    }
+  }
+}

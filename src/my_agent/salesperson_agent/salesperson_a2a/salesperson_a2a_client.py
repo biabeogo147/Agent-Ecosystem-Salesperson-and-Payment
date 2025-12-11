@@ -163,9 +163,7 @@ async def query_payment_order_status(order_id: int) -> dict[str, Any]:
     mcp_client = get_salesperson_mcp_client()
     order_response = await mcp_client.get_order_status(order_id=order_id)
 
-    if order_response.get("status") != "SUCCESS":
-        logger.warning("Order #%s not found when querying payment status", order_id)
-        return {"error": f"Order #{order_id} not found"}
+    logger.debug("Retrieved order detail from Payment Agent: %s", order_response)
 
     context_id = order_response["data"]["context_id"]
     logger.debug("Retrieved context_id=%s for order_id=%s", context_id, order_id)

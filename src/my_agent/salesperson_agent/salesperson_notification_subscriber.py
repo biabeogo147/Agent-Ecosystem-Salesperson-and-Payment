@@ -58,6 +58,7 @@ async def process_notification(notification_data: dict) -> bool:
     """
     from src.my_agent.salesperson_agent.salesperson_a2a.salesperson_a2a_client import query_payment_order_status
 
+    # TODO: Chỉ cần gọi MCP Tool để lấy status là được, không cần gọi A2A trực tiếp
     try:
         notification = SalespersonNotification.model_validate(notification_data)
 
@@ -69,7 +70,6 @@ async def process_notification(notification_data: dict) -> bool:
         )
 
         payment_response = await query_payment_order_status(
-            context_id=notification.context_id,
             order_id=notification.order_id,
         )
 

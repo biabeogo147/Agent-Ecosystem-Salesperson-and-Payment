@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+# Patch asyncio.create_task to preserve context (MUST be first)
+from src.utils.async_context import patch_asyncio_create_task
+patch_asyncio_create_task()
+
 from contextlib import asynccontextmanager
 
 from starlette.applications import Starlette
@@ -17,7 +21,6 @@ from src.my_agent.payment_agent.payment_callback_subscriber import (
 from src.utils.logger import set_app_context, AppLogger
 
 
-# TODO: Xem lại logger, nó vẫn ghi vào default logger chứ không phải logger của app
 class AppContextMiddleware(BaseHTTPMiddleware):
     """Middleware to set app logger context for all requests."""
 

@@ -1,3 +1,7 @@
+# Patch asyncio.create_task to preserve context (MUST be first)
+from src.utils.async_context import patch_asyncio_create_task
+patch_asyncio_create_task()
+
 import asyncio
 from contextlib import asynccontextmanager
 

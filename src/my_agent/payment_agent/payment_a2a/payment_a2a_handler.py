@@ -4,9 +4,9 @@ import json
 from uuid import uuid4
 
 from a2a.types import Message, Task, AgentCard, MessageSendParams, AgentCapabilities, Part, TextPart, Role, DataPart
+from fastapi import Request
+from fastapi.responses import Response
 from pydantic import ValidationError
-from starlette.requests import Request
-from starlette.responses import JSONResponse, Response
 
 from src.config import PAYMENT_AGENT_SERVER_HOST, PAYMENT_AGENT_SERVER_PORT
 from src.my_agent.my_a2a_common.constants import JSON_MEDIA_TYPE, PAYMENT_REQUEST_ARTIFACT_NAME, \
@@ -129,9 +129,10 @@ class PaymentA2AHandler:
         response_format = ResponseFormatJSONRPC(data=message.model_dump(mode="json")).to_response()
         return response_format
 
-    async def handle_agent_card(self, _: Request) -> Response:
+    def get_agent_card(self) -> dict:
+        """Return agent card as dict for FastAPI JSONResponse."""
         logger.debug("agent-card requested")
-        return JSONResponse(self._agent_card.model_dump(mode="json"))
+        return self._agent_card.model_dump(mode="json")
 
     async def handle_task(self, task: Task) -> Message:
         """Inspect the task metadata to decide which skill to execute."""

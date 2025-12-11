@@ -6,14 +6,12 @@ patch_asyncio_create_task()
 
 from contextlib import asynccontextmanager
 
-from starlette.applications import Starlette
-from starlette.routing import Route
-from starlette.middleware import Middleware
+from fastapi import FastAPI
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from src.config import PAYMENT_AGENT_SERVER_PORT
 from src.my_agent.payment_agent import a2a_payment_logger as logger
-from src.my_agent.payment_agent.payment_a2a.payment_a2a_handler import PAYMENT_HANDLER
+from src.my_agent.payment_agent.routers import a2a_router
 from src.my_agent.payment_agent.payment_callback_subscriber import (
     start_subscriber_background,
     stop_subscriber
@@ -31,7 +29,7 @@ class AppContextMiddleware(BaseHTTPMiddleware):
 
 
 @asynccontextmanager
-async def lifespan(_: Starlette):
+async def lifespan(_: FastAPI):
     # Startup
     logger.info("Payment Agent App starting...")
     start_subscriber_background()
@@ -43,16 +41,15 @@ async def lifespan(_: Starlette):
     logger.info("Payment callback subscriber stopped")
 
 
-routes = [
-    Route("/.well-known/agent-card.json", PAYMENT_HANDLER.handle_agent_card, methods=["GET"]),
-    Route("/", PAYMENT_HANDLER.handle_message_send, methods=["POST"]),
-]
+payment_agent_app = FastAPI(
+    title="Payment Agent",
+    description="A2A Payment Agent for processing checkout requests",
+    version="1.0.0",
+    lifespan=lifespan
+)
 
-middleware = [
-    Middleware(AppContextMiddleware)
-]
-
-payment_agent_app = Starlette(debug=False, routes=routes, middleware=middleware, lifespan=lifespan)
+payment_agent_app.add_middleware(AppContextMiddleware)
+payment_agent_app.include_router(a2a_router)
 
 
 if __name__ == "__main__":

@@ -1,19 +1,15 @@
-"""
-Payment business logic service.
-
-Handles task dispatching and payment operations via MCP client.
-"""
 from __future__ import annotations
 
 from a2a.types import Task, Message
 
+from my_agent.my_a2a_common.payment_schemas.payment_enums import PaymentStatus
 from src.my_agent.my_a2a_common.payment_schemas import PaymentResponse
 from src.my_agent.payment_agent.payment_mcp_client import get_payment_mcp_client
 from src.my_agent.payment_agent.payment_a2a.payment_agent_skills import (
     CREATE_ORDER_SKILL_ID,
     QUERY_STATUS_SKILL_ID,
 )
-from my_agent.payment_agent.utils.a2a_utils import extract_payment_request, extract_status_request, \
+from my_agent.payment_agent.utils.a2a_util import extract_payment_request, extract_status_request, \
     validate_payment_response, build_payment_response_message
 from src.my_agent.payment_agent import a2a_payment_logger as logger
 
@@ -38,7 +34,7 @@ async def handle_task(task: Task) -> Message:
         return await create_order(task)
 
     if skill_id == QUERY_STATUS_SKILL_ID:
-        return await query_order_status(task)
+        return await query_gateway_status(task)
 
     logger.warning("Unsupported skill requested: %s", skill_id)
     raise ValueError(f"Unsupported skill: {skill_id}")
@@ -87,7 +83,7 @@ async def create_order(task: Task) -> Message:
     return build_payment_response_message(response)
 
 
-async def query_order_status(task: Task) -> Message:
+async def query_gateway_status(task: Task) -> Message:
     """
     Query payment order status via MCP client.
 
@@ -97,19 +93,19 @@ async def query_order_status(task: Task) -> Message:
     Returns:
         Message containing the payment response
     """
-    status_request = extract_status_request(task)
-    logger.debug("query_status: context_id=%s", status_request.context_id)
+    request = extract_status_request(task)
+    logger.debug("query_status: context_id=%s", request.context_id)
 
     client = get_payment_mcp_client()
-    raw_response = await client.query_order_status(
-        context_id=status_request.context_id,
-        order_id=status_request.order_id
-    )
+    raw_response = await client.query_gateway_status(order_id=request.order_id)
 
-    response = PaymentResponse.model_validate(raw_response)
+    response = PaymentResponse(
+        context_id=request.context_id,
+        status=PaymentStatus(raw_response.get("order", {}).get("status", "FAILED")),
+    )
     validate_payment_response(
         response,
-        expected_context_id=status_request.context_id,
+        expected_context_id=request.context_id,
     )
 
     logger.info(

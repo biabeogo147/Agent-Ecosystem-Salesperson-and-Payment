@@ -1,1 +1,1 @@
-from src.my_agent.payment_agent.routers.a2a_router import a2a_router
+from src.my_agent.payment_agent.routers.agent_router import agent_router

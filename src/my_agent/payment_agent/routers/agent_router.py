@@ -1,10 +1,3 @@
-"""
-A2A Router for Payment Agent.
-
-Handles HTTP routes and JSON-RPC parsing for the A2A protocol:
-- GET /.well-known/agent-card.json - Agent card discovery
-- POST / - JSON-RPC message.send handler
-"""
 from __future__ import annotations
 
 import json
@@ -17,26 +10,26 @@ from pydantic import ValidationError
 from src.config import PAYMENT_AGENT_SERVER_HOST, PAYMENT_AGENT_SERVER_PORT
 from src.my_agent.payment_agent import a2a_payment_logger as logger
 from src.my_agent.payment_agent.services import payment_service
-from my_agent.payment_agent.utils.a2a_utils import build_payment_agent_card
+from my_agent.payment_agent.utils.a2a_util import build_payment_agent_card
 from src.utils.response_format_jsonrpc import ResponseFormatJSONRPC
 from src.utils.status import Status
 
 
-a2a_router = APIRouter(tags=["A2A"])
+agent_router = APIRouter(tags=["A2A"])
 
 # Build agent card at module level
 _CARD_BASE_URL = f"http://{PAYMENT_AGENT_SERVER_HOST}:{PAYMENT_AGENT_SERVER_PORT}/"
 _AGENT_CARD = build_payment_agent_card(_CARD_BASE_URL)
 
 
-@a2a_router.get("/.well-known/agent-card.json")
+@agent_router.get("/.well-known/agent-card.json")
 async def get_agent_card():
     """Return the A2A agent card for this agent."""
     logger.debug("agent-card requested")
     return JSONResponse(content=_AGENT_CARD.model_dump(mode="json"))
 
 
-@a2a_router.post("/")
+@agent_router.post("/")
 async def message_send(request: Request) -> Response:
     """
     Handle A2A message.send JSON-RPC requests.

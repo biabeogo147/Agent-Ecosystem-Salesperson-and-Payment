@@ -3,7 +3,6 @@ from decimal import Decimal
 from typing import Optional, Any
 
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 from google.adk.tools import FunctionTool
 
 from src.config import *
@@ -18,15 +17,6 @@ from src.my_agent.my_a2a_common.payment_schemas.payment_response import PaymentR
 from src.utils.response_format import ResponseFormat
 from src.utils.status import Status
 from . import payment_mcp_logger
-
-def _map_order_status_to_payment_status(order_status: OrderStatus) -> PaymentStatus:
-    mapping = {
-        OrderStatus.PENDING: PaymentStatus.PENDING,
-        OrderStatus.SUCCESS: PaymentStatus.SUCCESS,
-        OrderStatus.FAILED: PaymentStatus.FAILED,
-        OrderStatus.CANCELLED: PaymentStatus.CANCELLED,
-    }
-    return mapping.get(order_status, PaymentStatus.PENDING)
 
 
 async def _stub_paygate_create(
@@ -248,103 +238,6 @@ async def create_order(
         await session.close()
 
 
-async def query_order_status(
-    context_id: str,
-    order_id: Optional[int] = None
-) -> str:
-    """
-    Query order status from database by context_id and/or order_id.
-
-    Args:
-        context_id: Payment context identifier (required)
-        order_id: Specific order ID to query (optional). If provided, query specific order.
-                  If not provided, query all orders for the context_id.
-
-    Returns:
-        JSON string with order status:
-        - If order_id provided: Single order with that ID (verified against context_id)
-        - If only context_id: All orders for that context_id
-    """
-    session = db_connection.get_session()
-    try:
-        if not context_id:
-            return ResponseFormat(
-                status=Status.INVALID_PARAMS,
-                message="context_id is required"
-            ).to_json()
-
-        if order_id:
-            # Query specific order by order_id, verify it belongs to context_id
-            try:
-                order_id_int = int(order_id)
-            except (TypeError, ValueError):
-                return ResponseFormat(
-                    status=Status.INVALID_PARAMS,
-                    message=f"Invalid order_id format: {order_id}. Must be an integer."
-                ).to_json()
-
-            result = await session.execute(
-                select(Order)
-                .where(
-                    Order.id == order_id_int,
-                    Order.context_id == context_id
-                )
-                .options(selectinload(Order.items))
-            )
-            order = result.scalar_one_or_none()
-
-            if not order:
-                return ResponseFormat(
-                    status=Status.ORDER_NOT_FOUND,
-                    message=f"Order {order_id} not found for context_id {context_id}"
-                ).to_json()
-
-            res = PaymentResponse(
-                context_id=order.context_id,
-                status=_map_order_status_to_payment_status(order.status),
-                order_id=order.id,
-            )
-            return ResponseFormat(data={**res.model_dump(), "order": order.to_dict()}).to_json()
-
-        else:
-            # Query all orders for context_id
-            result = await session.execute(
-                select(Order)
-                .where(Order.context_id == context_id)
-                .options(selectinload(Order.items))
-            )
-            orders = result.scalars().all()
-
-            if not orders:
-                return ResponseFormat(
-                    status=Status.ORDER_NOT_FOUND,
-                    message=f"No orders found for context_id {context_id}"
-                ).to_json()
-
-            # Return list of orders
-            orders_data = [order.to_dict() for order in orders]
-
-            # For backward compatibility, also return PaymentResponse for the first/latest order
-            latest_order = orders[-1]
-            res = PaymentResponse(
-                context_id=context_id,
-                status=_map_order_status_to_payment_status(latest_order.status),
-                order_id=latest_order.id,
-            )
-
-            return ResponseFormat(data={
-                **res.model_dump(),
-                "orders": orders_data,
-                "total_orders": len(orders)
-            }).to_json()
-
-    except Exception as e:
-        payment_mcp_logger.exception(f"Failed to query order status: context_id={context_id}, order_id={order_id}")
-        return ResponseFormat(status=Status.UNKNOWN_ERROR, message=str(e)).to_json()
-    finally:
-        await session.close()
-
-
 async def query_gateway_status(order_id: int) -> str:
     """
     Query payment gateway for actual order status and update order in database.
@@ -407,12 +300,10 @@ async def query_gateway_status(order_id: int) -> str:
 
 payment_mcp_logger.info("Initializing ADK tool for payment...")
 create_order_tool = FunctionTool(create_order)
-query_order_status_tool = FunctionTool(query_order_status)
 query_gateway_status_tool = FunctionTool(query_gateway_status)
 
 ADK_TOOLS_FOR_PAYMENT = {
     create_order_tool.name: create_order_tool,
-    query_order_status_tool.name: query_order_status_tool,
     query_gateway_status_tool.name: query_gateway_status_tool,
 }
 

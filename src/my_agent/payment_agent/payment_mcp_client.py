@@ -76,31 +76,6 @@ class PaymentMcpClient(BaseMcpClient):
             self._logger.exception(f"[PaymentMcpClient] create_order failed")
             raise
 
-    async def query_order_status(
-        self,
-        *,
-        context_id: str,
-        order_id: Optional[int] = None
-    ) -> dict[str, Any]:
-        """Query order status using the shared MCP payment tool."""
-        self._logger.debug(f"[PaymentMcpClient] query_order_status called: context_id={context_id}, order_id={order_id}")
-
-        try:
-            params = {"context_id": context_id}
-            if order_id is not None:
-                params["order_id"] = order_id
-
-            response = await self._call_tool_json("query_order_status", params)
-            self._logger.debug(f"[PaymentMcpClient] query_order_status raw response: {response}")
-            data = self._extract_success_data(response, tool="query_order_status")
-            if not isinstance(data, dict):
-                raise RuntimeError("MCP tool 'query_order_status' returned non-dict data payload")
-            self._logger.info(f"[PaymentMcpClient] query_order_status success")
-            return data
-        except Exception as e:
-            self._logger.exception(f"[PaymentMcpClient] query_order_status failed")
-            raise
-
     async def query_gateway_status(self, *, order_id: int) -> dict[str, Any]:
         """Query payment gateway for actual order status."""
         self._logger.debug(f"[PaymentMcpClient] query_gateway_status called: order_id={order_id}")
@@ -157,19 +132,6 @@ async def create_order(
         conversation_id=conversation_id
     )
 
-
-async def query_order_status(
-    context_id: str,
-    order_id: Optional[int] = None
-) -> dict[str, Any]:
-    """Query order status using the shared MCP payment tool."""
-    client = get_payment_mcp_client()
-    return await client.query_order_status(
-        context_id=context_id,
-        order_id=order_id
-    )
-
-
 async def query_gateway_status(order_id: int) -> dict[str, Any]:
     """Query payment gateway for actual order status."""
     client = get_payment_mcp_client()
@@ -177,5 +139,4 @@ async def query_gateway_status(order_id: int) -> dict[str, Any]:
 
 
 create_order_tool = FunctionTool(create_order)
-query_order_status_tool = FunctionTool(query_order_status)
 query_gateway_status_tool = FunctionTool(query_gateway_status)

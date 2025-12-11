@@ -11,7 +11,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from src.config import PAYMENT_AGENT_SERVER_PORT
 from src.my_agent.payment_agent import a2a_payment_logger as logger
-from src.my_agent.payment_agent.routers import a2a_router
+from src.my_agent.payment_agent.routers import agent_router
 from src.my_agent.payment_agent.payment_callback_subscriber import (
     start_subscriber_background,
     stop_subscriber
@@ -49,7 +49,7 @@ payment_agent_app = FastAPI(
 )
 
 payment_agent_app.add_middleware(AppContextMiddleware)
-payment_agent_app.include_router(a2a_router)
+payment_agent_app.include_router(agent_router)
 
 
 if __name__ == "__main__":

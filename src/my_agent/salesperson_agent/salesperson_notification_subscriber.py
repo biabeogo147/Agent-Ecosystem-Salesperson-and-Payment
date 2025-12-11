@@ -56,9 +56,8 @@ async def process_notification(notification_data: dict) -> bool:
     Returns:
         True if processed successfully, False otherwise
     """
-    from src.my_agent.salesperson_agent.salesperson_a2a.salesperson_a2a_client import query_payment_order_status
+    from src.my_agent.salesperson_agent.salesperson_mcp_client import get_salesperson_mcp_client
 
-    # TODO: Chỉ cần gọi MCP Tool để lấy status là được, không cần gọi A2A trực tiếp
     try:
         notification = SalespersonNotification.model_validate(notification_data)
 
@@ -69,12 +68,16 @@ async def process_notification(notification_data: dict) -> bool:
             f"conversation_id={notification.conversation_id}"
         )
 
-        payment_response = await query_payment_order_status(
-            order_id=notification.order_id,
-        )
+        client = get_salesperson_mcp_client()
+        response = await client.get_order_status(order_id=notification.order_id)
 
-        status = payment_response["result"]["response"]["status"]
-        logger.info(f"Order {notification.order_id} status queried via A2A: status={status}")
+        if response.get("status") != "success":
+            logger.warning(f"Failed to get order status: {response.get('message')}")
+            return False
+
+        order_data = response.get("data", {})
+        status = order_data.get("status", "UNKNOWN")
+        logger.info(f"Order {notification.order_id} status from DB: status={status}")
 
         if status == "SUCCESS":
             logger.info(f"Payment SUCCESS for order {notification.order_id}")
